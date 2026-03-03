@@ -1,0 +1,247 @@
+---
+title: Block selectors
+description: Customize CSS selectors for block styles
+---
+
+Block Selectors allow blocks to customize the CSS selectors used when generating styles for theme.json (Global Styles).
+
+Selectors can be customized at three levels:
+- **Root** - The block's primary CSS selector
+- **Feature** - Selectors for block supports (color, typography, etc.)
+- **Subfeature** - Selectors for individual style properties
+
+## Root selector
+
+The root selector is the block's primary CSS selector. If not specified, it defaults to `.wp-block-<name>`.
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block-selector"
+	}
+}
+```
+
+<Note>
+For layout to work correctly, the block should have a classname that matches its selector.
+</Note>
+
+## Feature selectors
+
+Feature selectors apply styles for specific block supports (border, color, typography, etc.) to different elements.
+
+### Example: Different elements for color and typography
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"color": ".my-custom-block",
+		"typography": ".my-custom-block > h2"
+	}
+}
+```
+
+This applies:
+- Color styles to `.my-custom-block`
+- Typography styles to `.my-custom-block > h2`
+
+## Subfeature selectors
+
+Subfeature selectors target individual style properties within a feature.
+
+### Example: Typography with different selectors
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"typography": {
+			"root": ".my-custom-block > h2",
+			"text-decoration": ".my-custom-block > h2 span"
+		}
+	}
+}
+```
+
+This applies:
+- Most typography styles to `.my-custom-block > h2`
+- Text decoration to `.my-custom-block > h2 span`
+
+## Shorthand syntax
+
+Instead of using an object with a `root` key, use a string for simpler feature selectors:
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"color": ".my-custom-block",
+		"typography": ".my-custom-block > h2"
+	}
+}
+```
+
+## Fallback behavior
+
+Selectors fall back in this order:
+
+1. Subfeature selector
+2. Feature root selector
+3. Block root selector
+
+### Example with fallbacks
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"color": {
+			"text": ".my-custom-block p"
+		},
+		"typography": {
+			"root": ".my-custom-block > h2",
+			"text-decoration": ".my-custom-block > h2 span"
+		}
+	}
+}
+```
+
+This applies:
+- `color.text` to `.my-custom-block p` (explicit subfeature selector)
+- `color.background` to `.my-custom-block` (falls back to root)
+- `typography.fontSize` to `.my-custom-block > h2` (falls back to feature root)
+- `typography.text-decoration` to `.my-custom-block > h2 span` (explicit subfeature)
+
+## Custom CSS selector
+
+The `css` selector controls which selector is used for custom CSS rules from theme.json's `styles.blocks.<block-type>.css`.
+
+### As a string
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"css": ".my-custom-block > .inner-wrapper"
+	}
+}
+```
+
+### As an object
+
+```json
+{
+	"selectors": {
+		"root": ".my-custom-block",
+		"css": {
+			"root": ".my-custom-block > .inner-wrapper"
+		}
+	}
+}
+```
+
+If not set, the block's root selector is used.
+
+## Available features
+
+Feature selectors can be defined for:
+
+- `border`
+- `color`
+- `dimensions`
+- `filter`
+- `shadow`
+- `spacing`
+- `typography`
+
+## Complete example
+
+```json
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "my-plugin/card",
+	"title": "Card",
+	"selectors": {
+		"root": ".wp-block-card",
+		"color": {
+			"text": ".wp-block-card .card-body",
+			"background": ".wp-block-card"
+		},
+		"typography": {
+			"root": ".wp-block-card .card-title",
+			"fontSize": ".wp-block-card .card-title",
+			"lineHeight": ".wp-block-card .card-title"
+		},
+		"spacing": {
+			"padding": ".wp-block-card .card-body",
+			"margin": ".wp-block-card"
+		},
+		"css": ".wp-block-card"
+	},
+	"supports": {
+		"color": {
+			"text": true,
+			"background": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		}
+	}
+}
+```
+
+## Use cases
+
+### Applying typography to inner heading
+
+```json
+{
+	"selectors": {
+		"root": ".wp-block-my-card",
+		"typography": ".wp-block-my-card h3"
+	}
+}
+```
+
+### Separating background and text colors
+
+```json
+{
+	"selectors": {
+		"root": ".wp-block-my-hero",
+		"color": {
+			"background": ".wp-block-my-hero",
+			"text": ".wp-block-my-hero .content"
+		}
+	}
+}
+```
+
+### Fine-grained spacing control
+
+```json
+{
+	"selectors": {
+		"root": ".wp-block-my-section",
+		"spacing": {
+			"padding": ".wp-block-my-section .inner",
+			"margin": ".wp-block-my-section"
+		}
+	}
+}
+```
+
+## Best practices
+
+- Use descriptive class names for custom selectors
+- Ensure selectors match the actual block HTML structure
+- Keep selectors specific enough to avoid conflicts
+- Test selectors with theme.json Global Styles
+- Document custom selectors for theme developers

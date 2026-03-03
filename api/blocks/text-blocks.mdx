@@ -1,0 +1,372 @@
+---
+title: Text Blocks
+description: Core blocks for creating and formatting textual content in the Gutenberg Block Editor
+---
+
+# Text Blocks
+
+Text blocks are the foundation of content creation in WordPress. These blocks handle all forms of written content, from simple paragraphs to complex code snippets.
+
+## Paragraph
+
+**Name:** `core/paragraph`
+
+**Description:** Start with the basic building block of all narrative.
+
+### Attributes
+
+- `content` (rich-text) - The paragraph content
+- `dropCap` (boolean) - Enable decorative first letter, default: false
+- `placeholder` (string) - Placeholder text
+- `direction` (string) - Text direction: "ltr" or "rtl"
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign, textColumns, textIndent, fitText
+- **Splitting:** true
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Basic paragraph block
+wp.blocks.createBlock('core/paragraph', {
+  content: 'This is a paragraph.',
+});
+
+// Paragraph with drop cap
+wp.blocks.createBlock('core/paragraph', {
+  content: 'This paragraph has a decorative first letter.',
+  dropCap: true,
+});
+```
+
+## Heading
+
+**Name:** `core/heading`
+
+**Description:** Introduce new sections and organize content to help visitors (and search engines) understand the structure of your content.
+
+### Attributes
+
+- `content` (rich-text) - The heading content
+- `level` (number) - Heading level (1-6), default: 2
+- `levelOptions` (array) - Available heading levels
+- `placeholder` (string) - Placeholder text
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign, fitText
+- **Splitting:** true
+
+### Usage
+
+```javascript
+// H2 heading (default)
+wp.blocks.createBlock('core/heading', {
+  content: 'Section Title',
+});
+
+// H1 heading
+wp.blocks.createBlock('core/heading', {
+  content: 'Main Title',
+  level: 1,
+});
+```
+
+## List
+
+**Name:** `core/list`
+
+**Description:** An organized collection of items displayed in a specific order.
+
+### Attributes
+
+- `ordered` (boolean) - Ordered (numbered) or unordered (bulleted)
+- `values` - List items content
+- `type` (string) - List marker type
+- `start` (number) - Starting number for ordered lists
+- `reversed` (boolean) - Reverse numbering
+- `placeholder` (string) - Placeholder text
+
+### Supports
+
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Allowed Blocks:** core/list-item
+
+### Usage
+
+```javascript
+// Unordered list
+wp.blocks.createBlock('core/list', {
+  ordered: false,
+});
+
+// Ordered list starting at 5
+wp.blocks.createBlock('core/list', {
+  ordered: true,
+  start: 5,
+});
+```
+
+## List Item
+
+**Name:** `core/list-item`
+
+**Description:** An individual item within a list.
+
+### Attributes
+
+- `content` (rich-text) - The list item content
+- `placeholder` (string) - Placeholder text
+
+### Supports
+
+- **Parent:** core/list
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Splitting:** true
+- **Allowed Blocks:** core/list (for nested lists)
+
+## Quote
+
+**Name:** `core/quote`
+
+**Description:** Give quoted text visual emphasis. "In quoting others, we cite ourselves." — Julio Cortázar
+
+### Attributes
+
+- `value` (string) - Quote content
+- `citation` (string) - Citation/attribution text
+- `textAlign` (string) - Text alignment
+
+### Supports
+
+- **Align:** left, right, wide, full
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, gradients, text, link, heading
+- **Dimensions:** minHeight
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/quote', {
+  value: '<p>The only way to do great work is to love what you do.</p>',
+  citation: 'Steve Jobs',
+});
+```
+
+## Pullquote
+
+**Name:** `core/pullquote`
+
+**Description:** Give special visual emphasis to a quote from your text.
+
+### Attributes
+
+- `value` (string) - Quote content
+- `citation` (string) - Citation/attribution text
+- `textAlign` (string) - Text alignment
+
+### Supports
+
+- **Align:** left, right, wide, full
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, gradients, text, link
+- **Dimensions:** minHeight
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+## Code
+
+**Name:** `core/code`
+
+**Description:** Display code snippets that respect your spacing and tabs.
+
+### Attributes
+
+- `content` (string) - Code content
+
+### Supports
+
+- **Align:** wide
+- **Color:** background, gradients, text
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/code', {
+  content: 'function hello() {\n  console.log("Hello World");\n}',
+});
+```
+
+## Preformatted
+
+**Name:** `core/preformatted`
+
+**Description:** Add text that respects your spacing and tabs, and also allows styling.
+
+### Attributes
+
+- `content` (string) - Preformatted text content
+
+### Supports
+
+- **Color:** background, gradients, text
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+## Poetry (Verse)
+
+**Name:** `core/verse`
+
+**Description:** Insert poetry. Use special spacing formats. Or quote song lyrics.
+
+### Attributes
+
+- `content` (string) - Verse content
+
+### Supports
+
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, gradients, text, link
+- **Dimensions:** minHeight
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/verse', {
+  content: 'Roses are red\nViolets are blue\nSugar is sweet\nAnd so are you',
+});
+```
+
+## Table
+
+**Name:** `core/table`
+
+**Description:** Create structured content in rows and columns to display information.
+
+### Attributes
+
+- `head` (array) - Table header rows
+- `body` (array) - Table body rows
+- `foot` (array) - Table footer rows
+- `caption` (string) - Table caption
+- `hasFixedLayout` (boolean) - Use fixed table layout
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, gradients, text
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/table', {
+  head: [
+    { cells: [{ content: 'Header 1' }, { content: 'Header 2' }] }
+  ],
+  body: [
+    { cells: [{ content: 'Row 1, Col 1' }, { content: 'Row 1, Col 2' }] },
+    { cells: [{ content: 'Row 2, Col 1' }, { content: 'Row 2, Col 2' }] }
+  ],
+});
+```
+
+## Details
+
+**Name:** `core/details`
+
+**Description:** Hide and show additional content.
+
+### Attributes
+
+- `summary` (string) - Summary/toggle text
+- `showContent` (boolean) - Initially expanded state
+- `name` (string) - Name attribute for accordion groups
+- `placeholder` (string) - Placeholder text
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+
+## Math
+
+**Name:** `core/math`
+
+**Description:** Display mathematical notation using LaTeX.
+
+### Attributes
+
+- `latex` (string) - LaTeX formula
+- `mathML` (string) - MathML representation
+
+### Supports
+
+- **Color:** background, gradients, text
+- **Spacing:** margin, padding
+- **Typography:** fontSize
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/math', {
+  latex: 'E = mc^2',
+});
+```
+
+## Footnotes
+
+**Name:** `core/footnotes`
+
+**Description:** Display footnotes added to the page.
+
+### Supports
+
+- **Color:** background, text, link
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Multiple:** false (only one instance allowed)
+- **Inserter:** false (automatically added)
+
+## Classic
+
+**Name:** `core/freeform`
+
+**Description:** Use the classic WordPress editor.
+
+### Attributes
+
+- `content` (string) - Classic editor content
+
+### Supports
+
+- Limited - Preserves backward compatibility with classic editor content
+
+## Best Practices
+
+1. **Use semantic headings** - Start with H1 and nest properly (H1 → H2 → H3)
+2. **Accessible content** - Use proper heading hierarchy for screen readers
+3. **Lists for organization** - Use lists instead of manual bullet points
+4. **Code formatting** - Use Code block for inline code, Preformatted for multi-line
+5. **Quote attribution** - Always include citations in Quote and Pullquote blocks

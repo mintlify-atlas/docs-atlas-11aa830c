@@ -1,0 +1,383 @@
+---
+title: Block registration
+description: API reference for registering blocks with JavaScript
+---
+
+Block registration combines a unique name with a configuration object that defines the block's behavior. While the recommended approach is to use `block.json` metadata, blocks can also be registered with JavaScript only.
+
+## registerBlockType
+
+The `registerBlockType` function registers a new block type and makes it available to the editor.
+
+### Signature
+
+```ts
+function registerBlockType(
+	blockNameOrMetadata: string | object,
+	settings?: object
+): WPBlockType | undefined
+```
+
+### Parameters
+
+- `blockNameOrMetadata` - Block name string or metadata object from `block.json`
+- `settings` - Block configuration object
+
+### Returns
+
+The registered block type, or `undefined` if registration failed.
+
+## Block name
+
+The name must be a unique string structured as `namespace/block-name`:
+
+```js
+registerBlockType( 'my-plugin/book', {} );
+```
+
+### Naming requirements
+
+- Only lowercase alphanumeric characters and dashes
+- Must begin with a letter
+- Must include exactly one forward slash for the namespace
+- Cannot be changed after publication
+
+### Namespace best practices
+
+```js
+// Good examples
+registerBlockType( 'my-company-blocks/hero', {} );
+registerBlockType( 'awesome-gallery-plugin/slideshow', {} );
+
+// Avoid these
+registerBlockType( 'create-block/example', {} ); // Too generic
+registerBlockType( 'block/content', {} ); // Too generic
+```
+
+<Note>
+The block name is stored in post content. Changing it requires updating all posts using the block.
+</Note>
+
+## Block configuration
+
+### title
+
+**Type:** `string` (required)
+
+The display title shown in the Inserter and throughout the editor. Can be translated.
+
+```js
+title: __( 'Book' )
+```
+
+### description
+
+**Type:** `string` (optional)
+
+Short description shown in the Block Inspector. Can be translated.
+
+```js
+description: __( 'Block showing a Book card.' )
+```
+
+### category
+
+**Type:** `string` (optional)
+
+Groups blocks in the Inserter. Core categories:
+
+- `text`
+- `media`
+- `design`
+- `widgets`
+- `theme`
+- `embed`
+
+```js
+category: 'widgets'
+```
+
+### icon
+
+**Type:** `string | object` (optional)
+
+Block icon displayed in the Inserter. Can be:
+
+- Dashicon slug
+- SVG element
+- Object with background/foreground colors
+
+```js
+// Dashicon
+icon: 'book-alt'
+
+// SVG
+icon: <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" /></svg>
+
+// With colors
+icon: {
+	background: '#7e70af',
+	foreground: '#fff',
+	src: <svg>...</svg>
+}
+```
+
+### keywords
+
+**Type:** `string[]` (optional)
+
+Search terms to help users discover the block. Can be translated.
+
+```js
+keywords: [ __( 'image' ), __( 'photo' ), __( 'pics' ) ]
+```
+
+### styles
+
+**Type:** `object[]` (optional)
+
+Alternative visual styles for the block.
+
+```js
+styles: [
+	{
+		name: 'default',
+		label: __( 'Rounded' ),
+		isDefault: true
+	},
+	{
+		name: 'outline',
+		label: __( 'Outline' )
+	}
+]
+```
+
+### attributes
+
+**Type:** `object` (optional)
+
+Defines the block's data structure. See [Attributes](/api/block-api/attributes).
+
+```js
+attributes: {
+	cover: {
+		type: 'string',
+		source: 'attribute',
+		selector: 'img',
+		attribute: 'src'
+	},
+	author: {
+		type: 'string',
+		source: 'html',
+		selector: '.book-author'
+	}
+}
+```
+
+### example
+
+**Type:** `object` (optional)
+
+Provides preview data for the block shown in the Inspector Help Panel.
+
+```js
+example: {
+	attributes: {
+		cover: 'https://example.com/image.jpg',
+		author: 'William Shakespeare',
+		pages: 500
+	},
+	innerBlocks: [
+		{
+			name: 'core/paragraph',
+			attributes: {
+				content: __( 'Lorem ipsum...' )
+			}
+		}
+	],
+	viewportWidth: 800
+}
+```
+
+Set `example: {}` to show a preview without specific attributes.
+
+### variations
+
+**Type:** `object[]` (optional)
+
+Block variations that share common functionality. Available since WordPress 5.9.
+
+```js
+variations: [
+	{
+		name: 'example',
+		title: __( 'Example' ),
+		attributes: { level: 2 },
+		scope: [ 'block' ],
+		isActive: [ 'level' ]
+	}
+]
+```
+
+### supports
+
+**Type:** `object` (optional)
+
+Enables block features. See [Supports](/api/block-api/supports).
+
+```js
+supports: {
+	align: true,
+	color: {
+		background: true,
+		text: true
+	}
+}
+```
+
+### transforms
+
+**Type:** `object` (optional)
+
+Defines how the block can be transformed to/from other blocks.
+
+### parent
+
+**Type:** `string[]` (optional)
+
+Restricts the block to only be available within specified parent blocks.
+
+```js
+parent: [ 'core/columns' ]
+```
+
+### ancestor
+
+**Type:** `string[]` (optional)
+
+Makes the block available anywhere within specified ancestor block subtrees. Available since WordPress 6.0.
+
+```js
+ancestor: [ 'core/columns' ]
+```
+
+### allowedBlocks
+
+**Type:** `string[]` (optional)
+
+Specifies which blocks can be direct children. Available since WordPress 6.5.
+
+```js
+allowedBlocks: [ 'core/columns' ]
+```
+
+### blockHooks
+
+**Type:** `object` (optional)
+
+Automatically inserts the block next to specified block types. Available since WordPress 6.4.
+
+Positions: `before`, `after`, `firstChild`, `lastChild`
+
+```js
+blockHooks: {
+	'core/verse': 'before',
+	'core/spacer': 'after',
+	'core/column': 'firstChild',
+	'core/group': 'lastChild'
+}
+```
+
+## Registration examples
+
+### Using block.json (recommended)
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import Edit from './edit';
+import save from './save';
+import metadata from './block.json';
+
+registerBlockType( metadata, {
+	edit: Edit,
+	save
+} );
+```
+
+### JavaScript-only registration
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+
+registerBlockType( 'my-plugin/book', {
+	title: __( 'Book' ),
+	description: __( 'Block showing a Book card.' ),
+	category: 'widgets',
+	icon: 'book-alt',
+	attributes: {
+		title: {
+			type: 'string',
+			source: 'html',
+			selector: 'h3'
+		}
+	},
+	edit: ( { attributes, setAttributes } ) => {
+		return (
+			<div>
+				<input
+					value={ attributes.title }
+					onChange={ ( e ) => setAttributes( { title: e.target.value } ) }
+				/>
+			</div>
+		);
+	},
+	save: ( { attributes } ) => {
+		return <h3>{ attributes.title }</h3>;
+	}
+} );
+```
+
+## Block collections
+
+Group multiple blocks from the same namespace in the Inserter.
+
+### registerBlockCollection
+
+```js
+import { registerBlockCollection } from '@wordpress/blocks';
+
+registerBlockCollection( 'my-plugin', {
+	title: __( 'My Plugin' ),
+	icon: <svg>...</svg>
+} );
+```
+
+### Parameters
+
+- `namespace` - Matches the block name namespace
+- `settings` - Object with `title` and optional `icon`
+
+## Client-side only properties
+
+These properties are only available in JavaScript registration:
+
+- `edit` - The Edit component
+- `save` - The save function
+- `transforms` - Block transformations
+- `deprecated` - Deprecated versions
+- `merge` - Block merging behavior
+- `getEditWrapperProps` - Additional wrapper props
+
+```js
+registerBlockType( 'my-plugin/block', {
+	edit: function( { attributes, setAttributes } ) {
+		// Edit implementation
+	},
+	save: function( { attributes } ) {
+		// Save implementation
+	},
+	getEditWrapperProps: function( attributes ) {
+		// Return additional props
+	}
+} );
+```

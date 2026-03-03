@@ -1,0 +1,148 @@
+---
+title: Core Blocks Overview
+description: Complete reference for all core blocks included in the Gutenberg Block Editor framework
+---
+
+# Core Blocks Overview
+
+The Gutenberg Block Editor framework includes a comprehensive collection of core blocks organized into functional categories. Each block is designed to help you create rich, dynamic content with minimal effort.
+
+## Block Categories
+
+Core blocks are organized into the following categories:
+
+### Text Blocks
+Blocks for creating and formatting textual content, including paragraphs, headings, lists, quotes, and code snippets.
+
+[View Text Blocks →](/api/blocks/text-blocks)
+
+### Media Blocks
+Blocks for embedding and displaying media content such as images, videos, audio files, galleries, and file downloads.
+
+[View Media Blocks →](/api/blocks/media-blocks)
+
+### Design Blocks
+Layout and structural blocks including columns, groups, buttons, separators, and spacers for organizing your content.
+
+[View Design Blocks →](/api/blocks/design-blocks)
+
+### Widget Blocks
+Utility blocks for common website features like search, RSS feeds, archives, tag clouds, and custom HTML.
+
+[View Widget Blocks →](/api/blocks/widget-blocks)
+
+### Theme Blocks
+Blocks specifically designed for theme development, including navigation, site identity, post templates, and comments.
+
+[View Theme Blocks →](/api/blocks/theme-blocks)
+
+### Embed Blocks
+Blocks for embedding content from external services like YouTube, Twitter, WordPress, and other oEmbed providers.
+
+[View Embed Blocks →](/api/blocks/embed-blocks)
+
+## Block Structure
+
+Every core block follows a consistent structure defined in its `block.json` file:
+
+```json
+{
+  "apiVersion": 3,
+  "name": "core/block-name",
+  "title": "Block Title",
+  "category": "text|media|design|widgets|theme|embed",
+  "description": "Brief description of the block",
+  "attributes": { /* Block-specific attributes */ },
+  "supports": { /* Feature support flags */ }
+}
+```
+
+## Block Attributes
+
+Attributes define the configurable properties of a block. Common attribute types include:
+
+- **`content`** - Rich text content
+- **`url`** - Media URLs or links
+- **`id`** - Media library IDs
+- **`align`** - Alignment options
+- **`className`** - Custom CSS classes
+
+## Block Supports
+
+Block supports define which features are available for a block:
+
+- **`align`** - Alignment options (left, center, right, wide, full)
+- **`anchor`** - Custom HTML anchor support
+- **`color`** - Text, background, and gradient color controls
+- **`spacing`** - Margin and padding controls
+- **`typography`** - Font size, line height, and text formatting
+- **`interactivity`** - Client-side navigation and dynamic features
+
+## Usage Patterns
+
+### Registering a Block
+
+```javascript
+import { registerBlockType } from '@wordpress/blocks';
+import metadata from './block.json';
+
+registerBlockType(metadata.name, {
+  edit: Edit,
+  save: Save,
+});
+```
+
+### Using Block Supports
+
+Block supports are automatically applied when defined in `block.json`. The editor will provide the appropriate controls in the block inspector.
+
+```json
+{
+  "supports": {
+    "align": ["wide", "full"],
+    "color": {
+      "gradients": true,
+      "link": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  }
+}
+```
+
+## Block Patterns
+
+Many blocks can be combined to create reusable patterns. Core blocks are designed to work together seamlessly:
+
+- Combine **Columns** with **Image** and **Paragraph** for feature sections
+- Use **Group** with **Cover** for hero sections
+- Nest **Button** inside **Buttons** for call-to-action groups
+
+## Experimental Blocks
+
+Some blocks are marked as experimental and are only available when specific conditions are met:
+
+- **Experimental: true** - Only available when Gutenberg plugin is active
+- **Experimental: fse** - Only available in the Site Editor
+
+Experimental blocks include:
+- Form blocks (Form, Form Input, Form Submit Button)
+- Playlist blocks
+- Tab blocks (Tabs, Tab Panel, Tab Menu)
+- Table of Contents
+
+## Deprecated Blocks
+
+Some blocks have been deprecated in favor of newer alternatives:
+
+- **Post Author** → Use Avatar, Author Name, and Author Biography blocks
+- **Comment Author Avatar** → Use Avatar block
+- **Text Columns** → Use Columns block
+
+## Resources
+
+- [Block Editor Handbook](https://developer.wordpress.org/block-editor/)
+- [Block API Reference](https://developer.wordpress.org/block-editor/reference-guides/block-api/)
+- [Core Blocks Source Code](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src)

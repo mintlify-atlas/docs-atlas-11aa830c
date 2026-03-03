@@ -1,0 +1,289 @@
+---
+title: Static and dynamic rendering
+description: Understanding how blocks generate their front-end output.
+---
+
+Blocks can generate front-end output in two ways: static rendering (fixed HTML saved to the database) or dynamic rendering (server-generated HTML on each request).
+
+<Tip>
+Read [Static vs. dynamic blocks: What's the difference?](https://developer.wordpress.org/news/2023/02/27/static-vs-dynamic-blocks-whats-the-difference/) for a great introduction to this topic.
+</Tip>
+
+## Static rendering
+
+Blocks with static rendering produce fixed HTML that is stored in the database when saved. This HTML remains unchanged unless manually edited in the Block Editor.
+
+### How static rendering works
+
+<Steps>
+  <Step title="User edits block">
+    Content is modified in the Block Editor
+  </Step>
+  <Step title="Save function executes">
+    The `save` function generates HTML markup
+  </Step>
+  <Step title="HTML stored in database">
+    Generated markup is saved within block delimiters
+  </Step>
+  <Step title="Front-end display">
+    Stored HTML is retrieved and displayed on page load
+  </Step>
+</Steps>
+
+### Defining static rendering
+
+The `save` function specifies the HTML structure saved to the database:
+
+```jsx
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+
+export default function save( { attributes } ) {
+    return (
+        <pre { ...useBlockProps.save() }>
+            <RichText.Content value={ attributes.content } />
+        </pre>
+    );
+}
+```
+
+### Saved markup format
+
+Blocks are stored with HTML comment delimiters:
+
+```html
+<!-- wp:preformatted -->
+<pre class="wp-block-preformatted">This is some preformatted text</pre>
+<!-- /wp:preformatted -->
+```
+
+On the front end, only the inner HTML is displayed:
+
+```html
+<pre class="wp-block-preformatted">This is some preformatted text</pre>
+```
+
+### When to use static rendering
+
+✅ Content that doesn't need to update automatically  
+✅ Simple blocks with fixed structure  
+✅ Blocks where performance is critical  
+✅ Content that should remain stable even if plugin is deactivated
+
+### Examples of static blocks
+
+- [Separator](https://github.com/WordPress/gutenberg/blob/trunk/packages/block-library/src/separator/save.js)
+- [Spacer](https://github.com/WordPress/gutenberg/blob/trunk/packages/block-library/src/spacer/save.js)
+- [Button](https://github.com/WordPress/gutenberg/blob/trunk/packages/block-library/src/button/save.js)
+- [Preformatted](https://github.com/WordPress/gutenberg/blob/trunk/packages/block-library/src/preformatted/save.js)
+
+## Dynamic rendering
+
+Blocks with dynamic rendering generate content server-side upon each request. The database stores block attributes but not the full HTML output.
+
+### How dynamic rendering works
+
+<Steps>
+  <Step title="User edits block">
+    Attributes are modified in the Block Editor
+  </Step>
+  <Step title="Attributes stored">
+    Only block attributes saved to database
+  </Step>
+  <Step title="Page requested">
+    Front-end page is loaded
+  </Step>
+  <Step title="Server renders block">
+    PHP render callback generates HTML dynamically
+  </Step>
+</Steps>
+
+### When to use dynamic rendering
+
+Use dynamic blocks when:
+
+1. **Content should update automatically**: Latest Posts block updates when new posts are published
+2. **Markup needs to change globally**: Updating block structure automatically applies to all instances
+3. **External data required**: Fetching data from APIs or database queries
+4. **User-specific content**: Displaying personalized content based on user state
+
+<Warning>
+Changing the `save` function of an existing static block can cause validation errors. Dynamic rendering avoids this issue.
+</Warning>
+
+### Defining dynamic rendering
+
+Dynamic blocks can use either:
+
+#### 1. Render callback in PHP
+
+```php
+register_block_type( 'my-plugin/dynamic-block', array(
+    'render_callback' => 'render_dynamic_block',
+    'attributes' => array(
+        'postId' => array(
+            'type' => 'number',
+        ),
+    ),
+) );
+
+function render_dynamic_block( $attributes, $content, $block ) {
+    $wrapper_attributes = get_block_wrapper_attributes();
+    $post = get_post( $attributes['postId'] ?? 0 );
+    
+    if ( ! $post ) {
+        return '';
+    }
+    
+    return sprintf(
+        '<div %1$s><h2>%2$s</h2><div>%3$s</div></div>',
+        $wrapper_attributes,
+        esc_html( $post->post_title ),
+        wp_kses_post( $post->post_excerpt )
+    );
+}
+```
+
+#### 2. Render template file (render.php)
+
+In `block.json`:
+
+```json
+{
+  "render": "file:./render.php"
+}
+```
+
+In `render.php`:
+
+```php
+<?php
+$wrapper_attributes = get_block_wrapper_attributes();
+$post = get_post( $attributes['postId'] ?? 0 );
+
+if ( ! $post ) {
+    return;
+}
+?>
+<div <?php echo $wrapper_attributes; ?>>
+    <h2><?php echo esc_html( $post->post_title ); ?></h2>
+    <div><?php echo wp_kses_post( $post->post_excerpt ); ?></div>
+</div>
+```
+
+### Render function parameters
+
+Both methods receive three parameters:
+
+<ParamField path="$attributes" type="array">
+  The array of block attributes
+</ParamField>
+
+<ParamField path="$content" type="string">
+  The markup saved in the database (from `save` function if defined)
+</ParamField>
+
+<ParamField path="$block" type="WP_Block">
+  The instance of the WP_Block class with block metadata
+</ParamField>
+
+### Dynamic block with null save
+
+For purely dynamic blocks, return `null` from the `save` function:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+// Edit component
+export function Edit( { attributes, setAttributes } ) {
+    return (
+        <div { ...useBlockProps() }>
+            {/* Editor UI */}
+        </div>
+    );
+}
+
+// Save function returns null for dynamic blocks
+export function save() {
+    return null;
+}
+```
+
+### Examples of dynamic blocks
+
+- [Latest Posts](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src/latest-posts)
+- [Site Title](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src/site-title)
+- [Post Content](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src/post-content)
+- [Query Loop](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src/query)
+
+## Hybrid approach
+
+Blocks can define both a `save` function and dynamic rendering. The dynamic rendering takes precedence, but the saved HTML serves as a fallback:
+
+```jsx
+// Save function provides fallback
+export function save( { attributes } ) {
+    return (
+        <div { ...useBlockProps.save() }>
+            Fallback content if render callback unavailable
+        </div>
+    );
+}
+```
+
+```php
+// Render callback used when available
+function render_block( $attributes, $content, $block ) {
+    // Dynamic rendering logic
+    return '<div>Dynamic content</div>';
+}
+```
+
+<Note>
+This approach is useful for maintaining content if the block's plugin is deactivated.
+</Note>
+
+## Server-side rendering in the editor
+
+For dynamic blocks, preview the server-rendered output in the editor using `<ServerSideRender>`:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+import ServerSideRender from '@wordpress/server-side-render';
+
+export default function Edit( { attributes } ) {
+    return (
+        <div { ...useBlockProps() }>
+            <ServerSideRender
+                block="my-plugin/dynamic-block"
+                attributes={ attributes }
+            />
+        </div>
+    );
+}
+```
+
+<Warning>
+`ServerSideRender` makes an API request on every attribute change. For better performance, build a custom Edit component that mirrors the server output.
+</Warning>
+
+## Comparison
+
+| Feature | Static Rendering | Dynamic Rendering |
+|---------|------------------|-------------------|
+| **HTML Storage** | Full HTML in database | Attributes only |
+| **Performance** | Faster (no server processing) | Slower (server execution) |
+| **Updates** | Manual editing required | Automatic updates |
+| **Markup Changes** | Can cause validation errors | No validation issues |
+| **Use Cases** | Simple, fixed content | Data-driven, updating content |
+| **Examples** | Paragraph, Image, Button | Latest Posts, Site Title |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Dynamic blocks" href="/blocks/dynamic-blocks">
+    Deep dive into creating dynamic blocks
+  </Card>
+  <Card title="JavaScript in editor" href="/fundamentals/javascript-in-editor">
+    Learn about the JavaScript build process
+  </Card>
+</CardGroup>

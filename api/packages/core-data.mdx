@@ -1,0 +1,505 @@
+---
+title: "@wordpress/core-data"
+description: WordPress entities and REST API integration for data management
+---
+
+The `@wordpress/core-data` package simplifies access to WordPress entities through the REST API. It provides selectors and actions for fetching, editing, and saving WordPress data like posts, pages, users, and more.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/core-data --save
+```
+
+```bash yarn
+yarn add @wordpress/core-data
+```
+</CodeGroup>
+
+## What is an Entity?
+
+An entity represents a data source (like posts, pages, or users). Each entity has:
+
+- **kind** - Entity group (e.g., `root`, `postType`)
+- **name** - Entity identifier (e.g., `post`, `page`, `user`)
+- **Records** - Individual items in the entity
+
+## Basic Usage
+
+### Fetch Entity Records
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+function PagesList() {
+	const pages = useSelect( ( select ) => {
+		return select( coreStore ).getEntityRecords( 'postType', 'page', {
+			per_page: 10,
+		} );
+	}, [] );
+
+	if ( ! pages ) {
+		return <div>Loading...</div>;
+	}
+
+	return (
+		<ul>
+			{ pages.map( ( page ) => (
+				<li key={ page.id }>{ page.title.rendered }</li>
+			) ) }
+		</ul>
+	);
+}
+```
+
+### Edit and Save Entity
+
+```js
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+function PostEditor( { postId } ) {
+	const { post, isLoading } = useSelect(
+		( select ) => ( {
+			post: select( coreStore ).getEditedEntityRecord(
+				'postType',
+				'post',
+				postId
+			),
+			isLoading: ! select( coreStore ).hasFinishedResolution(
+				'getEntityRecord',
+				[ 'postType', 'post', postId ]
+			),
+		} ),
+		[ postId ]
+	);
+
+	const { editEntityRecord, saveEditedEntityRecord } =
+		useDispatch( coreStore );
+
+	if ( isLoading ) {
+		return <div>Loading...</div>;
+	}
+
+	return (
+		<div>
+			<input
+				value={ post?.title }
+				onChange={ ( e ) =>
+					editEntityRecord( 'postType', 'post', postId, {
+						title: e.target.value,
+					} )
+				}
+			/>
+			<button onClick={ () => saveEditedEntityRecord( 'postType', 'post', postId ) }>
+				Save
+			</button>
+		</div>
+	);
+}
+```
+
+## Hooks
+
+### useEntityRecord
+
+Fetch a single entity record with mutation helpers.
+
+```js
+import { useEntityRecord } from '@wordpress/core-data';
+
+function PageEditor( { id } ) {
+	const { record, edit, save, isResolving } = useEntityRecord(
+		'postType',
+		'page',
+		id
+	);
+
+	if ( isResolving ) {
+		return <div>Loading...</div>;
+	}
+
+	function handleSave() {
+		save();
+	}
+
+	return (
+		<div>
+			<input
+				value={ record.title }
+				onChange={ ( e ) => edit( { title: e.target.value } ) }
+			/>
+			<button onClick={ handleSave }>Save</button>
+		</div>
+	);
+}
+```
+
+### useEntityRecords
+
+Fetch multiple entity records.
+
+```js
+import { useEntityRecords } from '@wordpress/core-data';
+
+function PostsList() {
+	const { records, isResolving } = useEntityRecords( 'postType', 'post', {
+		per_page: 10,
+		status: 'publish',
+	} );
+
+	if ( isResolving ) {
+		return <div>Loading...</div>;
+	}
+
+	return (
+		<ul>
+			{ records?.map( ( post ) => (
+				<li key={ post.id }>{ post.title.rendered }</li>
+			) ) }
+		</ul>
+	);
+}
+```
+
+### useResourcePermissions
+
+Check user permissions for a resource.
+
+```js
+import { useResourcePermissions } from '@wordpress/core-data';
+
+function CreateButton() {
+	const { canCreate, isResolving } = useResourcePermissions( {
+		kind: 'postType',
+		name: 'post',
+	} );
+
+	if ( isResolving ) {
+		return null;
+	}
+
+	return canCreate ? <button>Create Post</button> : null;
+}
+```
+
+### useEntityProp
+
+Access and edit a specific property.
+
+```js
+import { useEntityProp } from '@wordpress/core-data';
+
+function TitleEditor() {
+	const [ title, setTitle ] = useEntityProp( 'postType', 'post', 'title' );
+
+	return (
+		<input
+			value={ title }
+			onChange={ ( e ) => setTitle( e.target.value ) }
+		/>
+	);
+}
+```
+
+## Selectors
+
+### getEntityRecords
+
+Retrieve multiple records.
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+const posts = useSelect( ( select ) =>
+	select( coreStore ).getEntityRecords( 'postType', 'post', {
+		per_page: 5,
+		_embed: true,
+	} )
+);
+```
+
+### getEntityRecord
+
+Retrieve a single record.
+
+```js
+const post = useSelect(
+	( select ) =>
+		select( coreStore ).getEntityRecord( 'postType', 'post', postId ),
+	[ postId ]
+);
+```
+
+### getEditedEntityRecord
+
+Get record with pending edits.
+
+```js
+const editedPost = useSelect( ( select ) =>
+	select( coreStore ).getEditedEntityRecord( 'postType', 'post', postId )
+);
+```
+
+### hasEntityRecords
+
+Check if records exist.
+
+```js
+const hasPages = useSelect( ( select ) =>
+	select( coreStore ).hasEntityRecords( 'postType', 'page' )
+);
+```
+
+### canUser
+
+Check user capabilities.
+
+```js
+const canEdit = useSelect(
+	( select ) =>
+		select( coreStore ).canUser( 'update', {
+			kind: 'postType',
+			name: 'post',
+			id: postId,
+		} ),
+	[ postId ]
+);
+```
+
+## Actions
+
+### editEntityRecord
+
+Edit an entity record.
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+const { editEntityRecord } = useDispatch( coreStore );
+
+editEntityRecord( 'postType', 'post', postId, {
+	title: 'New Title',
+	content: 'New content',
+} );
+```
+
+### saveEditedEntityRecord
+
+Save pending edits.
+
+```js
+const { saveEditedEntityRecord } = useDispatch( coreStore );
+
+await saveEditedEntityRecord( 'postType', 'post', postId );
+```
+
+### saveEntityRecord
+
+Save a record directly.
+
+```js
+const { saveEntityRecord } = useDispatch( coreStore );
+
+await saveEntityRecord( 'postType', 'post', {
+	title: 'New Post',
+	status: 'publish',
+} );
+```
+
+### deleteEntityRecord
+
+Delete a record.
+
+```js
+const { deleteEntityRecord } = useDispatch( coreStore );
+
+await deleteEntityRecord( 'postType', 'post', postId );
+```
+
+## Common Entities
+
+### Posts and Pages
+
+```js
+// Fetch posts
+getEntityRecords( 'postType', 'post', { per_page: 10 } );
+
+// Fetch pages
+getEntityRecords( 'postType', 'page', { per_page: 10 } );
+
+// Fetch single post
+getEntityRecord( 'postType', 'post', 123 );
+```
+
+### Users
+
+```js
+// Fetch users
+getEntityRecords( 'root', 'user', { who: 'authors' } );
+
+// Current user
+getCurrentUser();
+```
+
+### Media
+
+```js
+// Fetch media
+getEntityRecords( 'root', 'media', { media_type: 'image' } );
+
+// Upload media
+const { saveEntityRecord } = useDispatch( coreStore );
+await saveEntityRecord( 'root', 'media', mediaFile );
+```
+
+### Taxonomies
+
+```js
+// Fetch categories
+getEntityRecords( 'taxonomy', 'category' );
+
+// Fetch tags
+getEntityRecords( 'taxonomy', 'post_tag' );
+```
+
+### Site Settings
+
+```js
+// Get site title
+getEntityRecord( 'root', 'site' );
+
+// Edit site settings
+editEntityRecord( 'root', 'site', undefined, {
+	title: 'New Site Title',
+} );
+```
+
+## Query Parameters
+
+### Common Parameters
+
+```js
+getEntityRecords( 'postType', 'post', {
+	per_page: 10, // Items per page
+	page: 1, // Page number
+	search: 'keyword', // Search term
+	order: 'asc', // Sort order
+	orderby: 'title', // Sort field
+	status: 'publish', // Post status
+	_embed: true, // Include embedded data
+} );
+```
+
+### Pagination
+
+```js
+function PaginatedPosts() {
+	const [ page, setPage ] = useState( 1 );
+
+	const { posts, totalPages } = useSelect(
+		( select ) => ( {
+			posts: select( coreStore ).getEntityRecords( 'postType', 'post', {
+				per_page: 10,
+				page,
+			} ),
+			totalPages: select( coreStore ).getEntityRecordsTotalPages(
+				'postType',
+				'post',
+				{ per_page: 10, page }
+			),
+		} ),
+		[ page ]
+	);
+
+	return (
+		<div>
+			<ul>
+				{ posts?.map( ( post ) => (
+					<li key={ post.id }>{ post.title.rendered }</li>
+				) ) }
+			</ul>
+			<button
+				disabled={ page === 1 }
+				onClick={ () => setPage( page - 1 ) }
+			>
+				Previous
+			</button>
+			<button
+				disabled={ page === totalPages }
+				onClick={ () => setPage( page + 1 ) }
+			>
+				Next
+			</button>
+		</div>
+	);
+}
+```
+
+## Error Handling
+
+```js
+function PostEditor( { postId } ) {
+	const { saveError } = useSelect(
+		( select ) => ( {
+			saveError: select( coreStore ).getLastEntitySaveError(
+				'postType',
+				'post',
+				postId
+			),
+		} ),
+		[ postId ]
+	);
+
+	if ( saveError ) {
+		return <div>Error: { saveError.message }</div>;
+	}
+
+	// Rest of component
+}
+```
+
+## Undo/Redo
+
+```js
+import { useDispatch, useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+function UndoRedo() {
+	const { undo, redo } = useDispatch( coreStore );
+	const { hasUndo, hasRedo } = useSelect( ( select ) => ( {
+		hasUndo: select( coreStore ).hasUndo(),
+		hasRedo: select( coreStore ).hasRedo(),
+	} ) );
+
+	return (
+		<div>
+			<button disabled={ ! hasUndo } onClick={ undo }>
+				Undo
+			</button>
+			<button disabled={ ! hasRedo } onClick={ redo }>
+				Redo
+			</button>
+		</div>
+	);
+}
+```
+
+## TypeScript Support
+
+The package includes TypeScript definitions for WordPress entity types:
+
+```typescript
+import type { Post, Page, User } from '@wordpress/core-data';
+
+const post: Post = {
+	id: 1,
+	title: { rendered: 'My Post' },
+	content: { rendered: 'Content' },
+	// ... other fields
+};
+```

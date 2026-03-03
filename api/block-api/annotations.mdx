@@ -1,0 +1,229 @@
+---
+title: Block annotations
+description: Highlight and annotate specific content within blocks
+---
+
+<Warning>
+This API is experimental and subject to breaking changes in future versions.
+</Warning>
+
+Block annotations provide a way to highlight specific pieces of content in the block editor. Common use cases include commenting on text and spellchecking.
+
+## Basic usage
+
+To annotate text within a block:
+
+```js
+wp.data.dispatch( 'core/annotations' ).addAnnotation( {
+	source: 'my-annotations-plugin',
+	blockClientId: wp.data.select( 'core/block-editor' ).getBlockOrder()[0],
+	richTextIdentifier: 'content',
+	range: {
+		start: 50,
+		end: 100
+	}
+} );
+```
+
+## Text annotations
+
+Text annotations highlight a range of characters within a RichText field.
+
+### Range positions
+
+The `start` and `end` positions are calculated based only on the text content, ignoring HTML formatting:
+
+```html
+<strong>Strong text</strong>
+```
+
+Position 0 refers to before the "S" in "Strong".
+
+### RichText identifier
+
+The `richTextIdentifier` specifies which RichText instance to annotate:
+
+- Paragraph block: `content`
+- Quote block citation: `citation`
+- Quote block content: `value`
+
+Check the block's source code to find the correct identifier.
+
+### Example: Annotating text
+
+```js
+wp.data.dispatch( 'core/annotations' ).addAnnotation( {
+	source: 'spellcheck-plugin',
+	blockClientId: 'block-client-id',
+	richTextIdentifier: 'content',
+	range: {
+		start: 10,
+		end: 25
+	}
+} );
+```
+
+## Block annotations
+
+Annotate an entire block by setting `selector` to `block`:
+
+```js
+wp.data.dispatch( 'core/annotations' ).addAnnotation( {
+	source: 'my-annotations-plugin',
+	blockClientId: wp.data.select( 'core/block-editor' ).getBlockOrder()[0],
+	selector: 'block'
+} );
+```
+
+### Styling block annotations
+
+Block annotations require custom CSS:
+
+```css
+.is-annotated-by-my-annotations-plugin {
+	outline: 1px solid black;
+}
+```
+
+The class name follows the pattern: `.is-annotated-by-{source}`
+
+## API reference
+
+### addAnnotation
+
+Adds a new annotation.
+
+**Parameters:**
+
+<ParamField path="source" type="string" required>
+  Unique identifier for the annotation source (e.g., your plugin name)
+</ParamField>
+
+<ParamField path="blockClientId" type="string" required>
+  Client ID of the block to annotate
+</ParamField>
+
+<ParamField path="richTextIdentifier" type="string">
+  Identifier of the RichText field (required for text annotations)
+</ParamField>
+
+<ParamField path="range" type="object">
+  Text range to annotate (required for text annotations)
+  
+  Properties:
+  - `start` (number): Start position
+  - `end` (number): End position
+</ParamField>
+
+<ParamField path="selector" type="string" default="range">
+  Annotation type: `range` for text or `block` for entire block
+</ParamField>
+
+## Working with positions
+
+Use `wp.richText.create` to help determine correct positions:
+
+```js
+const richText = wp.richText.create( {
+	html: '<strong>Bold text</strong> and plain text'
+} );
+
+// richText.text contains just the text content
+// Use this to calculate your start/end positions
+```
+
+## Complete example
+
+A spellcheck plugin that annotates misspelled words:
+
+```js
+// Register the annotation source
+const { dispatch, select } = wp.data;
+const ANNOTATION_SOURCE = 'spellcheck-plugin';
+
+// Find misspelled words in a block
+function checkSpelling( blockClientId ) {
+	const block = select( 'core/block-editor' ).getBlock( blockClientId );
+	const content = block.attributes.content;
+	
+	// Simple check for demonstration
+	const misspelledWord = 'teh';
+	const index = content.indexOf( misspelledWord );
+	
+	if ( index !== -1 ) {
+		dispatch( 'core/annotations' ).addAnnotation( {
+			source: ANNOTATION_SOURCE,
+			blockClientId,
+			richTextIdentifier: 'content',
+			range: {
+				start: index,
+				end: index + misspelledWord.length
+			}
+		} );
+	}
+}
+
+// Remove annotation
+function removeAnnotation( blockClientId ) {
+	dispatch( 'core/annotations' ).removeAnnotation( {
+		source: ANNOTATION_SOURCE,
+		blockClientId
+	} );
+}
+```
+
+With CSS:
+
+```css
+.is-annotated-by-spellcheck-plugin {
+	background-color: rgba(255, 0, 0, 0.2);
+	border-bottom: 2px wavy red;
+}
+```
+
+## Limitations
+
+- Text annotations only work with RichText fields
+- Positions must be calculated carefully based on text content only
+- Block annotations require custom CSS
+- The API is experimental and may change
+
+## Use cases
+
+### Commenting
+
+Highlight text that has comments:
+
+```js
+addAnnotation( {
+	source: 'comments-plugin',
+	blockClientId: blockId,
+	richTextIdentifier: 'content',
+	range: { start: 0, end: 50 }
+} );
+```
+
+### Spellchecking
+
+Mark spelling errors:
+
+```js
+addAnnotation( {
+	source: 'spellcheck',
+	blockClientId: blockId,
+	richTextIdentifier: 'content',
+	range: { start: errorStart, end: errorEnd }
+} );
+```
+
+### Content review
+
+Highlight blocks requiring review:
+
+```js
+addAnnotation( {
+	source: 'review-plugin',
+	blockClientId: blockId,
+	selector: 'block'
+} );
+```

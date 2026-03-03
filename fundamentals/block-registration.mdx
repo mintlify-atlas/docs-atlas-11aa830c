@@ -1,0 +1,260 @@
+---
+title: Block registration
+description: How blocks are registered on both server and client sides.
+---
+
+Blocks in WordPress are registered on both the server and client-side using `block.json` metadata. This dual registration is crucial for enabling server-side features like dynamic rendering, block supports, block hooks, and style variations.
+
+<Warning>
+Always register blocks on the server. Client-only registration prevents server-side features from working correctly, including `theme.json` styling.
+</Warning>
+
+## Server-side registration (PHP)
+
+Block registration on the server uses the `register_block_type()` function called on the `init` hook:
+
+```php
+function my_plugin_register_block() {
+    register_block_type( __DIR__ . '/build' );
+}
+add_action( 'init', 'my_plugin_register_block' );
+```
+
+### Function parameters
+
+The `register_block_type()` function accepts two parameters:
+
+<ParamField path="$block_type" type="string" required>
+  Path to the directory containing `block.json`, or the complete path to the metadata file if named differently.
+</ParamField>
+
+<ParamField path="$args" type="array">
+  Optional arguments for the block type. Can include `render_callback` for dynamic rendering.
+</ParamField>
+
+### With render callback
+
+For dynamic blocks, provide a render callback:
+
+```php
+register_block_type(
+    __DIR__ . '/build',
+    array(
+        'render_callback' => 'render_my_block',
+    )
+);
+
+function render_my_block( $attributes, $content, $block ) {
+    $wrapper_attributes = get_block_wrapper_attributes();
+    
+    return sprintf(
+        '<div %1$s><p>%2$s</p></div>',
+        $wrapper_attributes,
+        esc_html( $attributes['content'] ?? 'Default content' )
+    );
+}
+```
+
+### PHP-only blocks with auto-registration
+
+For blocks that only need server-side rendering, use the `autoRegister` flag:
+
+```php
+register_block_type( 'my-plugin/server-block', array(
+    'render_callback' => function( $attributes ) {
+        $wrapper_attributes = get_block_wrapper_attributes();
+        
+        return sprintf(
+            '<div %1$s>Server content</div>',
+            $wrapper_attributes
+        );
+    },
+    'supports' => array(
+        'autoRegister' => true,
+        'color' => array(
+            'background' => true,
+        ),
+    ),
+) );
+```
+
+<Note>
+PHP-only blocks with `autoRegister: true` automatically appear in the editor without requiring JavaScript registration.
+</Note>
+
+## Client-side registration (JavaScript)
+
+When the block is registered on the server, register client-side settings using `registerBlockType` from `@wordpress/blocks`:
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import Edit from './edit';
+import save from './save';
+import metadata from './block.json';
+
+registerBlockType( metadata.name, {
+    edit: Edit,
+    save,
+} );
+```
+
+### Function parameters
+
+The `registerBlockType()` function accepts two parameters:
+
+<ParamField path="blockNameOrMetadata" type="string|object" required>
+  Either the block type's name as a string, or an object containing the block's metadata (typically imported from `block.json`).
+</ParamField>
+
+<ParamField path="settings" type="object">
+  Object containing the block's client-side settings, including `edit` and `save`.
+</ParamField>
+
+### Edit component
+
+The `edit` property defines the React component used in the editor:
+
+```jsx
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+
+function Edit( { attributes, setAttributes } ) {
+    const blockProps = useBlockProps();
+    
+    return (
+        <RichText
+            { ...blockProps }
+            tagName="p"
+            value={ attributes.content }
+            onChange={ ( content ) => setAttributes( { content } ) }
+            placeholder="Enter text..."
+        />
+    );
+}
+
+export default Edit;
+```
+
+### Save function
+
+The `save` function returns static HTML saved to the database:
+
+```jsx
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+
+function save( { attributes } ) {
+    return (
+        <p { ...useBlockProps.save() }>
+            <RichText.Content value={ attributes.content } />
+        </p>
+    );
+}
+
+export default save;
+```
+
+<Tip>
+For dynamic blocks using a `render` callback or `render.php`, you can return `null` from the `save` function.
+</Tip>
+
+## Registration flow
+
+The complete registration process:
+
+<Steps>
+  <Step title="Define metadata">
+    Create `block.json` with block configuration
+  </Step>
+  <Step title="Build assets">
+    Run `npm run build` to compile JavaScript and CSS
+  </Step>
+  <Step title="Register on server">
+    Call `register_block_type()` on the `init` hook in PHP
+  </Step>
+  <Step title="Register on client">
+    Import and call `registerBlockType()` in JavaScript
+  </Step>
+</Steps>
+
+## Complete example
+
+### block.json
+
+```json
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "my-plugin/example",
+  "title": "Example Block",
+  "category": "widgets",
+  "icon": "smiley",
+  "attributes": {
+    "content": {
+      "type": "string",
+      "source": "html",
+      "selector": "p"
+    }
+  },
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}
+```
+
+### plugin.php
+
+```php
+<?php
+/**
+ * Plugin Name: My Plugin
+ */
+
+function my_plugin_register_blocks() {
+    register_block_type( __DIR__ . '/build' );
+}
+add_action( 'init', 'my_plugin_register_blocks' );
+```
+
+### src/index.js
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import Edit from './edit';
+import save from './save';
+import metadata from './block.json';
+
+registerBlockType( metadata.name, {
+    edit: Edit,
+    save,
+} );
+```
+
+## Importing block.json
+
+<Note>
+You can import `block.json` directly into JavaScript when using `@wordpress/scripts` build process:
+
+```js
+import metadata from './block.json';
+```
+</Note>
+
+## Benefits of dual registration
+
+Registering blocks on both server and client enables:
+
+- **Dynamic rendering**: Server-side HTML generation
+- **Block supports**: Features like color, typography, spacing
+- **Theme.json styling**: Global styles from theme configuration  
+- **Block patterns**: Reusable block compositions
+- **Block variations**: Pre-configured block versions
+- **Block hooks**: Programmatic block insertion
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Block wrapper" href="/fundamentals/block-wrapper">
+    Learn how to properly wrap your block markup
+  </Card>
+  <Card title="Dynamic blocks" href="/blocks/dynamic-blocks">
+    Understand server-side rendering
+  </Card>
+</CardGroup>

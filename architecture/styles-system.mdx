@@ -1,0 +1,422 @@
+---
+title: Styles System
+description: Understanding Block Supports API, Global Styles, and how the three-layer styles system works
+---
+
+The Block Editor's styles system enables rich styling capabilities while maintaining consistency and flexibility. It operates through two main mechanisms: Block Supports API and Global Styles.
+
+## Overview: HTML and CSS Generation
+
+When creating content in the block editor, users generate:
+- **HTML document** - Block structure and content
+- **CSS stylesheets** - Styling for the content (embedded or external)
+
+### Stylesheets Loaded on Frontend
+
+**1. Block Styles**
+Stylesheets that come with blocks:
+- Single stylesheet with all block styles (`wp-block-library-*`)
+- Or separate stylesheets per block (`wp-block-group-*`, `wp-block-columns-*`)
+
+**2. Global Styles**
+Generated on-the-fly from `theme.json` data:
+- Output as embedded stylesheet: `global-styles-inline-css`
+- Merges WordPress defaults, theme.json, and user preferences
+
+**3. Theme Styles**
+Enqueued by themes:
+- Traditional theme stylesheets (e.g., `twentytwentytwo-style-css`)
+- Plus styles from theme.json (merged into global styles)
+
+**4. User Styles**
+Generated from user actions:
+- Duotone filters
+- Layout styles
+- Link colors
+
+**5. Other**
+WordPress core and plugin stylesheets
+
+## Block Supports API
+
+Block Supports is an API that allows blocks to declare styling features they support.
+
+### How It Works
+
+By adding configuration to `block.json`, blocks automatically get:
+- UI controls for users
+- Data binding to block attributes
+- Serialization to HTML markup
+
+### Example Configuration
+
+```json
+{
+  "name": "core/paragraph",
+  "supports": {
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    },
+    "color": {
+      "text": true,
+      "background": true
+    }
+  }
+}
+```
+
+This automatically provides:
+- Font size picker in the block toolbar
+- Line height control in the inspector
+- Color pickers for text and background
+- Proper serialization to HTML classes and inline styles
+
+### From UI to HTML Markup
+
+The Block Supports API handles four essential pieces:
+
+**1. UI Control**
+Presents choices to users (e.g., font size picker)
+
+**2. Block Attribute**
+Stores the user's selection in block data
+
+**3. Style Data Access**
+Retrieves available presets (colors, font sizes) from theme.json
+
+**4. Serialization**
+Converts block data to HTML markup with appropriate classes/styles
+
+### Serialization Example
+
+User selects small font size → HTML output:
+```html
+<p class="has-small-font-size has-color has-green-color"
+   style="line-height: 1em">Content</p>
+```
+
+### Benefits
+
+**Less Code:**
+Achieve complex styling features with minimal configuration
+
+**Consistency:**
+Use the same UI controls across all blocks
+
+**Automatic Updates:**
+UI improvements apply to all blocks automatically
+
+**Cross-Platform:**
+Style information available in native mobile apps and on the server
+
+### Limitations
+
+#### 1. One Style Type Per Block
+
+Blocks can only have one instance of each style property.
+
+**Example Problem:**
+A table block can only have one font size—not separate sizes for header, body, and footer.
+
+#### 2. Styles Apply to Wrapper Only
+
+Block supports serialize styles to the outermost HTML node:
+
+```html
+<table class="has-small-font-size">
+  <!-- Styles apply to entire table -->
+</table>
+```
+
+Cannot target inner nodes like `<tbody>` directly.
+
+### Skip Serialization Escape Hatch
+
+For advanced use cases, use `__experimentalSkipSerialization`:
+
+```json
+{
+  "supports": {
+    "typography": {
+      "fontSize": true,
+      "__experimentalSkipSerialization": true
+    }
+  }
+}
+```
+
+This provides the UI control and attribute binding but lets you handle HTML serialization manually in `edit`, `save`, and `render_callback`.
+
+**Skip Specific Properties:**
+```json
+{
+  "supports": {
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "__experimentalSkipSerialization": ["fontSize"]
+    }
+  }
+}
+```
+
+Only `fontSize` skips serialization; `lineHeight` still auto-serializes.
+
+## Global Styles
+
+Global Styles generates site-wide styles from `theme.json` data. Unlike block styles, these are not serialized into post content.
+
+### The Three-Layer Merge
+
+**Architectural Decision:**
+> Styles system: Three-layer merge — WordPress defaults < `theme.json` < user preferences. Use Block Supports API and CSS custom properties (`--wp--preset--*`), not hardcoded values.
+
+### Data Flow
+
+```
+┌─────────────────────┐
+│ WordPress defaults  │
+│  (core theme.json)  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Theme theme.json   │  Merged into consolidated structure
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  User preferences   │
+│  (Global Styles UI) │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ global-styles-      │  Output: Single CSS stylesheet
+│ inline-css          │
+└─────────────────────┘
+```
+
+### Processing Steps
+
+#### 1. Gather Data
+
+**WordPress Defaults:**
+From bundled `theme.json` in WordPress core
+
+**Theme Data:**
+From active theme's `theme.json` file (if exists)
+
+**User Data:**
+From database (saved via Global Styles UI in Site Editor)
+
+#### 2. Consolidate Data
+
+**Normalize Versions:**
+Different sources may use different theme.json versions (v1, v2, etc.)
+
+**Merge Styles:**
+User styles override theme styles, which override WordPress defaults
+
+**Example:**
+```json
+// WordPress
+{ "styles": { "color": { "background": "white" } } }
+
+// Theme
+{ "styles": { "typography": { "fontSize": "16px" } } }
+
+// User
+{ "styles": { "typography": { "fontSize": "18px" } } }
+
+// Result
+{
+  "styles": {
+    "color": { "background": "white" },
+    "typography": { "fontSize": "18px" }
+  }
+}
+```
+
+**Merge Presets:**
+Unlike styles, presets from all sources are kept:
+
+```json
+{
+  "settings": {
+    "color": {
+      "palette": {
+        "default": [/* WordPress colors */],
+        "theme": [/* Theme colors */],
+        "user": [/* User colors */]
+      }
+    }
+  }
+}
+```
+
+#### 3. Convert to CSS
+
+**Styles to CSS Rules:**
+
+```json
+{
+  "styles": {
+    "typography": { "fontSize": "18px" },
+    "blocks": {
+      "core/paragraph": {
+        "color": { "text": "#333" }
+      }
+    }
+  }
+}
+```
+
+Becomes:
+
+```css
+body {
+  font-size: 18px;
+}
+
+p {
+  color: #333;
+}
+```
+
+**Settings to CSS Custom Properties:**
+
+```json
+{
+  "settings": {
+    "color": {
+      "palette": {
+        "theme": [
+          {
+            "slug": "foreground",
+            "value": "#000",
+            "name": "Foreground"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+Becomes:
+
+```css
+body {
+  --wp--preset--color--foreground: #000;
+}
+
+.has-foreground-color {
+  color: var(--wp--preset--color--foreground) !important;
+}
+
+.has-foreground-background-color {
+  background-color: var(--wp--preset--color--foreground) !important;
+}
+```
+
+### CSS Selector Generation
+
+**Top-level:** `body` selector
+**Elements:** ID selector matching HTML element (`h1`, `a`)
+**Blocks:** Default class name (`.wp-block-group`) or custom via `__experimentalSelector` in block.json
+**Elements in blocks:** Concatenated selector (`.wp-block-group h1`)
+
+### Limitations
+
+#### 1. Server Registration Required for Custom Selectors
+
+Blocks using `__experimentalSelector` must be registered on the server via `block.json`, or Global Styles will use the default selector.
+
+#### 2. Single Selector Per Block
+
+Each block chunk can only use one selector—cannot target different HTML nodes for different styles.
+
+#### 3. One Property Per Block
+
+Same limitation as Block Supports—only one instance of each style property.
+
+#### 4. Block Supports Required for UI
+
+Only blocks using Block Supports appear in the Global Styles UI panel.
+
+## Layout Styles
+
+Layout styles provide common styling for container blocks (Group, Row, Columns, Buttons, Social Icons).
+
+### Base Layout Styles
+
+Common styles for all blocks using a layout type:
+- `display: flex` for Flex layout blocks
+- Default max-width for constrained layouts
+- Output in global styles stylesheet
+- Always included for core block support
+
+### Individual Layout Styles
+
+Generated per block when rendered:
+
+**Semantic Class Names:**
+```html
+<div class="wp-block-group is-layout-flow is-content-justification-right">
+```
+
+**Container Classes:**
+```html
+<div class="wp-block-group wp-container-1">
+```
+
+Individual styles attached via unique container class.
+
+### Layout Types
+
+**Default/Flow:**
+Vertical stack with margin-based spacing
+
+**Constrained:**
+Vertical stack with max-width constraints
+
+**Flex:**
+Flexbox layout with gap-based spacing
+
+**Grid:**
+Grid layout with gap-based spacing
+
+### Semantic Class Names
+
+- `is-layout-flow`, `is-layout-constrained`, `is-layout-flex`, `is-layout-grid`
+- `is-horizontal`, `is-vertical`
+- `is-content-justification-left/center/right/space-between`
+- `is-nowrap`
+- `wp-container-$id` (avoid targeting directly)
+
+## Best Practices
+
+### Use Block Supports
+
+Prefer Block Supports API over manual implementation for standard styling needs.
+
+### Use CSS Custom Properties
+
+Reference preset values via CSS custom properties:
+```css
+color: var(--wp--preset--color--foreground);
+```
+
+### Avoid Hardcoded Values
+
+Don't hardcode colors, font sizes, etc.—use theme.json presets.
+
+### Target Blocks Correctly
+
+Use block class names (`.wp-block-group`) and semantic layout classes, not container IDs.
+
+### Test Multi-Origin Scenarios
+
+Ensure styles work correctly with WordPress defaults, theme styles, and user overrides.

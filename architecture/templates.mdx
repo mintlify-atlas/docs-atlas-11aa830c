@@ -1,0 +1,450 @@
+---
+title: Templates
+description: Deep dive into template storage, synchronization, and the technical implementation of the template system
+---
+
+This document explains the internals of how templates and template parts are stored, synchronized, and rendered in WordPress.
+
+## Template Storage System
+
+Block templates use a hybrid storage approach that combines theme files with database records.
+
+### Theme Files (Initial Storage)
+
+Templates initially exist as HTML files in the theme directory:
+
+```
+theme-directory/
+├── templates/
+│   ├── index.html
+│   ├── home.html
+│   ├── single.html
+│   ├── page.html
+│   ├── archive.html
+│   └── 404.html
+└── parts/
+    ├── header.html
+    ├── footer.html
+    └── sidebar.html
+```
+
+**Template File Format:**
+```html
+<!-- wp:template-part {"slug":"header"} /-->
+
+<!-- wp:group {"layout":{"type":"constrained"}} -->
+<div class="wp-block-group">
+    <!-- wp:post-title /-->
+    <!-- wp:post-content /-->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer"} /-->
+```
+
+Templates are pure block markup—HTML with block comment delimiters.
+
+### Database Storage (Custom Post Types)
+
+When users customize templates, forked versions are saved to the database:
+
+**Post Type: `wp_template`**
+- Stores customized templates
+- Each record represents a template
+- `post_content` contains block markup
+- `post_status` indicates edit state
+- `post_name` matches template slug
+
+**Post Type: `wp_template_part`**
+- Stores customized template parts
+- Same structure as `wp_template`
+- Represents semantic areas (header, footer, sidebar)
+
+### Post Meta Fields
+
+**`theme`**
+The theme identifier (slug) this template originated from.
+
+```php
+get_post_meta($template_id, 'theme', true);
+// Returns: 'twentytwentythree'
+```
+
+**`area`** (template parts only)
+Semantic area designation:
+- `header`
+- `footer`
+- `sidebar`
+- `uncategorized`
+
+## Template Synchronization
+
+Synchronization is the process of duplicating theme templates into the database to unify template querying and resolution.
+
+### The Synchronization Process
+
+**Step 1: Scan Theme Directory**
+Read all template files from the active theme's `templates/` and `parts/` directories.
+
+**Step 2: Check Database**
+For each theme template file, check if a corresponding CPT record exists.
+
+**Step 3: Create Auto-Drafts**
+For theme templates without database records:
+- Create new `wp_template` or `wp_template_part` post
+- Set `post_status` to `auto-draft`
+- Copy content from theme file to `post_content`
+- Set `theme` meta to current theme slug
+
+**Step 4: Update Existing**
+For existing auto-draft records:
+- Update `post_content` if theme file changed
+- Preserve records with `publish` status (user-edited)
+
+### Post Status Meanings
+
+**`auto-draft`**
+- Template exists in theme but hasn't been edited by user
+- Content matches theme file
+- Essentially a cached version of theme file
+
+**`publish`**
+- Template has been customized by user
+- Content differs from theme file (or theme file doesn't exist)
+- Takes precedence over theme file during rendering
+
+### When Synchronization Occurs
+
+**During REST API Requests**
+```php
+GET /wp/v2/templates
+GET /wp/v2/template-parts
+```
+Synchronization runs before returning results.
+
+**During Template Resolution**
+When WordPress determines which template to render for the current request.
+
+**During Theme Export**
+When exporting a block theme, ensuring all templates are available in the database.
+
+### Benefits of Synchronization
+
+**Unified Data Source:**
+Queries only need to check CPT—no need to read theme files directly.
+
+**Clear Edit State:**
+Post status immediately indicates if template has been customized.
+
+**Simplified Rendering:**
+Template resolution algorithm only needs to query the database.
+
+**Efficient Export:**
+Exporting themes simply queries CPT records and writes them as files.
+
+## Template Resolution Algorithm
+
+Template resolution is how WordPress selects which template to render for the current request.
+
+### Resolution Steps
+
+**1. Determine Template Hierarchy**
+Based on the current request, determine the template hierarchy.
+
+Example for single post (ID: 42, slug: hello-world, post type: post):
+```
+single-post-hello-world
+single-post
+single
+singular
+index
+```
+
+**2. Query for Templates**
+For each template in the hierarchy:
+
+```sql
+SELECT * FROM wp_posts
+WHERE post_type = 'wp_template'
+  AND post_name = 'single-post-hello-world'
+  AND meta_key = 'theme'
+  AND meta_value = 'current-theme-slug'
+ORDER BY post_status DESC
+```
+
+**3. Select Best Match**
+- Templates with `publish` status (user-edited) take precedence
+- If no `publish` found, use `auto-draft` (theme default)
+- Continue down hierarchy until a match is found
+
+**4. Render Template**
+Once selected:
+- Parse template content as blocks
+- Resolve any `core/template-part` blocks
+- Render block tree to HTML
+- Output to page
+
+### Template Hierarchy Examples
+
+**Homepage:**
+```
+home
+index
+```
+
+**Single Page (slug: about):**
+```
+page-about
+page-{id}
+page
+singular
+index
+```
+
+**Category Archive (slug: news):**
+```
+category-news
+category-{id}
+category
+archive
+index
+```
+
+**404 Error:**
+```
+404
+index
+```
+
+## Template Parts Resolution
+
+Template parts are resolved when rendering templates that contain `core/template-part` blocks.
+
+### Resolution Process
+
+**1. Template Parsing**
+Template content is parsed into blocks.
+
+**2. Detect Template Part Blocks**
+Identify `core/template-part` blocks:
+```html
+<!-- wp:template-part {"slug":"header","theme":"mytheme"} /-->
+```
+
+**3. Query Template Part**
+```sql
+SELECT * FROM wp_posts
+WHERE post_type = 'wp_template_part'
+  AND post_name = 'header'
+  AND meta_key = 'theme'
+  AND meta_value = 'mytheme'
+ORDER BY post_status DESC
+```
+
+**4. Inject Content**
+Replace template part block with the resolved content.
+
+**5. Recursive Resolution**
+If template part contains nested template parts, resolve recursively.
+
+## Theme Switching
+
+Template behavior when switching between themes:
+
+### Switching from Theme A to Theme B
+
+**1. Theme B Activation**
+WordPress activates Theme B.
+
+**2. Synchronization**
+Theme B templates are synchronized to database with `theme: theme-b` meta.
+
+**3. Template Resolution**
+Template queries now filter for `theme: theme-b`.
+
+**4. Theme A Templates**
+Theme A templates (with `theme: theme-a` meta) remain in database but are inactive.
+
+### Returning to Theme A
+
+**1. Theme A Reactivation**
+WordPress activates Theme A.
+
+**2. Templates Restored**
+Template queries now filter for `theme: theme-a`, restoring previous customizations.
+
+### Template Isolation
+
+The `theme` meta field ensures:
+- Each theme's templates are isolated
+- Customizations don't conflict between themes
+- Users can switch themes without losing customizations
+
+## Exporting Block Themes
+
+Exporting converts database templates back to theme files.
+
+### Export Process
+
+**1. Query Templates**
+```sql
+SELECT * FROM wp_posts
+WHERE post_type IN ('wp_template', 'wp_template_part')
+  AND meta_key = 'theme'
+  AND meta_value = 'theme-to-export'
+```
+
+**2. Create File Structure**
+```
+exported-theme/
+├── templates/
+└── parts/
+```
+
+**3. Write Files**
+For each template:
+- Extract `post_content`
+- Write to appropriate directory
+- Filename from `post_name`
+
+**4. Include Only Customized**
+Optionally include only `publish` status templates (user customizations).
+
+### Export Considerations
+
+**Preserve Originals:**
+Auto-draft templates can be omitted if they match theme originals.
+
+**User Customizations:**
+Publish status templates should always be included.
+
+**Template Parts:**
+Include all referenced template parts.
+
+## REST API Endpoints
+
+### Templates Endpoint
+
+**List Templates:**
+```
+GET /wp/v2/templates
+```
+
+Returns all templates for the current theme (triggers synchronization).
+
+**Get Single Template:**
+```
+GET /wp/v2/templates/{id}
+```
+
+**Update Template:**
+```
+POST /wp/v2/templates/{id}
+{
+  "content": "<!-- wp:paragraph -->..."
+}
+```
+
+Changes status from `auto-draft` to `publish`.
+
+**Delete Template:**
+```
+DELETE /wp/v2/templates/{id}
+```
+
+Deletes customized template, reverting to theme default.
+
+### Template Parts Endpoint
+
+**List Template Parts:**
+```
+GET /wp/v2/template-parts
+```
+
+**Update Template Part:**
+```
+POST /wp/v2/template-parts/{id}
+{
+  "content": "<!-- wp:site-title /-->..."
+}
+```
+
+## Best Practices
+
+### Theme Development
+
+**Provide Comprehensive Defaults:**
+Include all essential templates in the theme.
+
+**Use Descriptive Slugs:**
+Template slugs should be clear and follow WordPress conventions.
+
+**Document Template Structure:**
+Explain which template parts are used and where.
+
+### Plugin Development
+
+**Respect Synchronization:**
+Don't bypass the synchronization system.
+
+**Query Correctly:**
+Always filter by `theme` meta when querying templates.
+
+**Handle Both Sources:**
+Code should work with both theme file and database templates.
+
+### User Customization
+
+**Understand Auto-Draft:**
+Auto-draft templates are safe to modify—they represent theme defaults.
+
+**Revert by Deleting:**
+Delete customized templates to revert to theme defaults.
+
+**Export Customizations:**
+Export customized templates to preserve them.
+
+## Technical Implementation
+
+### PHP Functions
+
+**Get Template:**
+```php
+get_block_template( string $id, string $template_type = 'wp_template' )
+```
+
+**Get All Templates:**
+```php
+get_block_templates( array $query = array(), string $template_type = 'wp_template' )
+```
+
+**Resolve Template:**
+```php
+resolve_block_template( string $template_type, array $template_hierarchy, string $fallback_template )
+```
+
+### JavaScript Data
+
+**Select Templates:**
+```js
+wp.data.select('core').getEntityRecords('postType', 'wp_template');
+```
+
+**Edit Template:**
+```js
+wp.data.dispatch('core').editEntityRecord(
+  'postType',
+  'wp_template',
+  templateId,
+  { content: newContent }
+);
+```
+
+**Save Template:**
+```js
+wp.data.dispatch('core').saveEditedEntityRecord(
+  'postType',
+  'wp_template',
+  templateId
+);
+```

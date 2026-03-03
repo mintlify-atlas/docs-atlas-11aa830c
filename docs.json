@@ -1,122 +1,208 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Gutenberg",
+  "theme": "sequoia",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1e1e1e",
+    "light": "#007cba",
+    "dark": "#00a0d2"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/wordpress/gutenberg"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/wordpress/gutenberg"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Development Environment",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "dev-env/setup",
+              "dev-env/nodejs-environment",
+              "dev-env/wp-env",
+              "dev-env/create-block",
+              "dev-env/wp-scripts"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "fundamentals/blocks",
+              "fundamentals/block-structure",
+              "fundamentals/block-json",
+              "fundamentals/block-registration",
+              "fundamentals/block-wrapper",
+              "fundamentals/rendering",
+              "fundamentals/javascript-in-editor"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Block Development",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "blocks/creating-blocks",
+              "blocks/block-attributes",
+              "blocks/block-supports",
+              "blocks/block-styles",
+              "blocks/dynamic-blocks",
+              "blocks/nested-blocks",
+              "blocks/block-patterns",
+              "blocks/block-variations",
+              "blocks/block-transforms",
+              "blocks/block-templates"
+            ]
+          },
+          {
+            "group": "Data & State",
+            "pages": [
+              "data/data-layer-overview",
+              "data/working-with-data",
+              "data/entities-undo-redo",
+              "data/building-forms"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/accessibility",
+              "guides/custom-block-editor",
+              "guides/extending-query-loop",
+              "guides/curating-editor-experience",
+              "guides/internationalization",
+              "guides/performance"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Architecture",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "architecture/overview",
+              "architecture/key-concepts",
+              "architecture/data-flow"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Editor Structure",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "architecture/modularity",
+              "architecture/block-editor-layers",
+              "architecture/entities",
+              "architecture/styles-system"
+            ]
+          },
+          {
+            "group": "Site Editing",
+            "pages": [
+              "architecture/full-site-editing",
+              "architecture/templates",
+              "architecture/theme-json"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Block API",
+            "pages": [
+              "api/block-api/overview",
+              "api/block-api/metadata",
+              "api/block-api/registration",
+              "api/block-api/attributes",
+              "api/block-api/context",
+              "api/block-api/supports",
+              "api/block-api/annotations",
+              "api/block-api/deprecation",
+              "api/block-api/selectors"
+            ]
+          },
+          {
+            "group": "Core Packages",
+            "pages": [
+              "api/packages/overview",
+              "api/packages/blocks",
+              "api/packages/block-editor",
+              "api/packages/block-library",
+              "api/packages/components",
+              "api/packages/data",
+              "api/packages/core-data",
+              "api/packages/edit-post",
+              "api/packages/edit-site",
+              "api/packages/compose",
+              "api/packages/element",
+              "api/packages/hooks",
+              "api/packages/i18n",
+              "api/packages/scripts"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "api/components/overview",
+              "api/components/ui-controls",
+              "api/components/layout",
+              "api/components/data-display",
+              "api/components/feedback"
+            ]
+          },
+          {
+            "group": "Core Blocks",
+            "pages": [
+              "api/blocks/overview",
+              "api/blocks/text-blocks",
+              "api/blocks/media-blocks",
+              "api/blocks/design-blocks",
+              "api/blocks/widget-blocks",
+              "api/blocks/theme-blocks",
+              "api/blocks/embed-blocks"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Contributing",
+        "groups": [
+          {
+            "group": "Getting Involved",
+            "pages": [
+              "contributing/overview",
+              "contributing/code-contribution",
+              "contributing/testing",
+              "contributing/folder-structure"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "contributing/development-workflow",
+              "contributing/coding-guidelines",
+              "contributing/architectural-decisions",
+              "contributing/common-pitfalls"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

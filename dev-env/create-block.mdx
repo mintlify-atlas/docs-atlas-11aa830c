@@ -1,0 +1,258 @@
+---
+title: Get Started with create-block
+description: Scaffold WordPress blocks quickly using the official @wordpress/create-block tool
+---
+
+Custom blocks for the Block Editor in WordPress are typically registered using plugins and are defined through a specific set of files. The [`@wordpress/create-block`](https://www.npmjs.com/package/@wordpress/create-block) package is an officially supported tool to scaffold the structure of files needed to create and register a block.
+
+It generates all the necessary code to start a project and integrates a modern JavaScript build setup (using [`wp-scripts`](/dev-env/wp-scripts)) with no configuration required. The package is designed to help developers quickly set up a block development environment following WordPress best practices.
+
+<Note>
+**Blocks are the fundamental elements of modern WordPress sites**. Introduced in [WordPress 5.0](https://wordpress.org/news/2018/12/bebo/), they allow [page and post builder-like functionality](https://wordpress.org/gutenberg/) to every up-to-date WordPress website.
+</Note>
+
+## Quick Start
+
+<Steps>
+
+### Ensure Node.js is Installed
+
+Start by ensuring you have Node.js and `npm` installed on your computer. Review the [Node.js development environment](/dev-env/nodejs-environment) guide if not.
+
+**Requirements**: Node.js version `20.10.0` or above, and npm version `10.2.3` or above.
+
+### Scaffold a Block
+
+Run the following command to scaffold an example block plugin:
+
+<CodeGroup>
+
+```bash npm
+npx @wordpress/create-block@latest todo-list
+cd todo-list
+```
+
+```bash yarn
+yarn create @wordpress/block@latest todo-list
+cd todo-list
+```
+
+```bash pnpm
+pnpm create @wordpress/block@latest todo-list
+cd todo-list
+```
+
+</CodeGroup>
+
+The `slug` provided (`todo-list`) defines:
+- The folder name for the scaffolded plugin
+- The internal block name
+- The name of the WordPress plugin
+
+### Install the Plugin
+
+The WordPress plugin generated must be [installed manually](https://wordpress.org/documentation/article/manage-plugins/#manual-plugin-installation-1).
+
+You can use `wp-env` from inside the generated plugin folder to create a local WordPress development environment with your new block plugin installed and activated.
+
+If you have your own [local WordPress development environment](/dev-env/setup#local-wordpress-environment) already set up, copy the plugin folder to the `wp-content/plugins/` directory.
+
+### Activate the Plugin
+
+Navigate to the Plugins page of your local WordPress installation and activate the "Todo List" plugin. The example block will then be available in the Editor.
+
+</Steps>
+
+<Tip>
+Watch a [video introduction to create-block](https://learn.wordpress.org/tutorial/using-the-create-block-tool/) on Learn.wordpress.org
+</Tip>
+
+## Basic Usage
+
+The `create-block` package assumes you will use modern JavaScript (ESNext and JSX) to build your block. This requires a build step to compile the code into a format that browsers can understand. Luckily, the `wp-scripts` package handles this process for you.
+
+When `create-block` scaffolds the block, it installs `wp-scripts` and adds the most common scripts to the block's `package.json` file:
+
+```json
+{
+  "scripts": {
+    "build": "wp-scripts build",
+    "format": "wp-scripts format",
+    "lint:css": "wp-scripts lint-style",
+    "lint:js": "wp-scripts lint-js",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "wp-scripts plugin-zip",
+    "start": "wp-scripts start"
+  }
+}
+```
+
+### Development Workflow
+
+The two scripts you will use most often are `start` and `build`:
+
+<CodeGroup>
+
+```bash npm
+# Development with auto-rebuild
+npm start
+
+# Production build
+npm run build
+```
+
+```bash yarn
+# Development with auto-rebuild
+yarn start
+
+# Production build
+yarn build
+```
+
+```bash pnpm
+# Development with auto-rebuild
+pnpm start
+
+# Production build
+pnpm build
+```
+
+</CodeGroup>
+
+- **`npm start`** - Starts a development server and automatically rebuilds the block whenever any code change is detected
+- **`npm run build`** - Optimizes your code and makes it production-ready
+
+Refer to the [Get started with wp-scripts](/dev-env/wp-scripts) for an introduction to this package.
+
+## Command Options
+
+The `create-block` command provides several options for customization:
+
+```bash
+npx @wordpress/create-block@latest [options] [slug]
+```
+
+### Available Options
+
+- `-V, --version` - Output the version number
+- `-t, --template <name>` - Project template type name; allowed values: "static" (default), "es5", the name of an external npm package, or the path to a local directory
+- `--variant` - Choose a block variant as defined by the template
+- `--no-plugin` - Scaffold block files only
+- `--target-dir <directory>` - The directory where the files will be scaffolded, defaults to the slug
+- `--namespace <value>` - Internal namespace for the block name
+- `--title <value>` - Display title for the block and the WordPress plugin
+- `--short-description <value>` - Short description for the block and the WordPress plugin
+- `--category <name>` - Category name for the block
+- `--wp-scripts` - Enable integration with `@wordpress/scripts` package
+- `--no-wp-scripts` - Disable integration with `@wordpress/scripts` package
+- `--wp-env` - Enable integration with `@wordpress/env` package
+- `--textdomain <value>` - Text domain for internationalization
+- `-h, --help` - Output usage information
+
+### Interactive Mode
+
+For developers who prefer a more guided experience, the `create-block` package provides an interactive mode. Instead of manually specifying all options upfront, this mode will prompt you for inputs step-by-step.
+
+To use this mode, run the command:
+
+```bash
+npx @wordpress/create-block@latest
+```
+
+## Advanced Usage
+
+### Custom Namespace
+
+By default, blocks are created with the `create-block` namespace. You should specify your own unique namespace:
+
+```bash
+npx @wordpress/create-block@latest my-block --namespace=my-namespace
+```
+
+This creates `my-namespace/my-block` instead of `create-block/my-block`.
+
+If you've already created a block, update the namespace in `block.json` - the `name` property.
+
+### Dynamic Block Variant
+
+With this argument, `create-block` will generate a [dynamic block](https://developer.wordpress.org/block-editor/getting-started/glossary/#dynamic-block) based on the built-in template:
+
+```bash
+npx @wordpress/create-block@latest --variant dynamic
+```
+
+### No Plugin Mode
+
+With this argument, the `create-block` package runs in _No plugin mode_ which only scaffolds block files into the current directory:
+
+```bash
+npx @wordpress/create-block@latest --no-plugin
+```
+
+### With wp-env Integration
+
+With this argument, the `create-block` package will add to the generated plugin the configuration and the script to run `wp-env` within the plugin. This will allow you to easily set up a local WordPress environment (via Docker) for building and testing the generated plugin:
+
+```bash
+npx @wordpress/create-block@latest --wp-env
+```
+
+### Using External Templates
+
+The `create-block` package also supports the use of templates, enabling you to create blocks based on predefined configurations and structures.
+
+This argument specifies an _external npm package_ as a template:
+
+```bash
+npx @wordpress/create-block@latest --template my-template-package
+```
+
+This argument also allows to pick a _local directory_ as a template:
+
+```bash
+npx @wordpress/create-block@latest --template ./path/to/template-directory
+```
+
+Templates must be set up in advance so the `create-block` package knows where to find them. Learn more in the [External Project Templates](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-create-block/packages-create-block-external-template/) guide.
+
+### Quick Start with Options
+
+If you're already familiar with the `create-block` options and want a more streamlined setup, you can use quick start mode. This allows you to pass specific options directly in the command line:
+
+```bash
+npx @wordpress/create-block@latest \
+  --namespace="my-plugin" \
+  --slug="my-block" \
+  --variant="dynamic" \
+  --title="My Custom Block" \
+  --short-description="A custom block for my site"
+```
+
+## Block Name Structure
+
+The name for a block is a unique string that identifies a block. Block Names are structured as `namespace/slug`, where namespace is the name of your plugin or theme.
+
+In most cases, we recommend pairing blocks with WordPress plugins rather than themes, because only using plugin ensures that all blocks still work when your theme changes.
+
+## Available Commands in Scaffolded Project
+
+The plugin folder created when executing this command is a node package with a modern build setup that requires no configuration. A set of scripts is available from inside that folder (provided by the `scripts` package) to make your work easier:
+
+- `npm start` - Starts the build for development
+- `npm run build` - Builds the code for production
+- `npm run format` - Formats files
+- `npm run lint:css` - Lints CSS files
+- `npm run lint:js` - Lints JavaScript files
+- `npm run packages-update` - Updates WordPress packages to the latest version
+- `npm run plugin-zip` - Creates a zip file for a WordPress plugin
+
+<Note>
+You don't need to install or configure tools like [webpack](https://webpack.js.org), [Babel](https://babeljs.io) or [ESLint](https://eslint.org) yourself. They are preconfigured and hidden so that you can focus on coding.
+</Note>
+
+## Additional Resources
+
+- [Using the create-block tool](https://learn.wordpress.org/tutorial/using-the-create-block-tool/) (Learn WordPress tutorial)
+- [@wordpress/create-block Package Documentation](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-create-block/)
+- [@wordpress/scripts Package Documentation](/dev-env/wp-scripts)
+- [Block API Reference](https://developer.wordpress.org/block-editor/developers/block-api/block-registration/)

@@ -1,0 +1,493 @@
+---
+title: "@wordpress/i18n"
+description: Internationalization utilities for translating WordPress JavaScript applications
+---
+
+The `@wordpress/i18n` package provides internationalization utilities for client-side JavaScript localization, enabling multilingual WordPress applications.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/i18n --save
+```
+
+```bash yarn
+yarn add @wordpress/i18n
+```
+</CodeGroup>
+
+## Basic Usage
+
+```js
+import { __ } from '@wordpress/i18n';
+
+const greeting = __( 'Hello World', 'my-text-domain' );
+```
+
+## Translation Functions
+
+### __()
+
+Translates a string.
+
+```js
+import { __ } from '@wordpress/i18n';
+
+const text = __( 'Save', 'my-plugin' );
+```
+
+**Parameters:**
+- `text` (string) - Text to translate
+- `domain` (string) - Text domain (optional)
+
+**Returns:** Translated string
+
+### _x()
+
+Translates a string with context.
+
+```js
+import { _x } from '@wordpress/i18n';
+
+const noun = _x( 'Post', 'noun', 'my-plugin' );
+const verb = _x( 'Post', 'verb', 'my-plugin' );
+```
+
+Context helps translators understand the meaning when the same English word has different translations.
+
+**Parameters:**
+- `text` (string) - Text to translate
+- `context` (string) - Context information
+- `domain` (string) - Text domain (optional)
+
+### _n()
+
+Translates singular or plural form based on a number.
+
+```js
+import { _n } from '@wordpress/i18n';
+
+const count = 5;
+const message = _n(
+	'%d item',
+	'%d items',
+	count,
+	'my-plugin'
+);
+// Returns: "%d items"
+```
+
+**Parameters:**
+- `single` (string) - Singular form
+- `plural` (string) - Plural form
+- `number` (number) - Number to compare
+- `domain` (string) - Text domain (optional)
+
+### _nx()
+
+Translates singular/plural form with context.
+
+```js
+import { _nx } from '@wordpress/i18n';
+
+const message = _nx(
+	'%d post',
+	'%d posts',
+	5,
+	'noun',
+	'my-plugin'
+);
+```
+
+**Parameters:**
+- `single` (string) - Singular form
+- `plural` (string) - Plural form
+- `number` (number) - Number to compare
+- `context` (string) - Context information
+- `domain` (string) - Text domain (optional)
+
+## String Formatting
+
+### sprintf()
+
+Formats strings with placeholders.
+
+```js
+import { sprintf, __ } from '@wordpress/i18n';
+
+const name = 'John';
+const age = 30;
+
+const message = sprintf(
+	__( 'Hello %s, you are %d years old.', 'my-plugin' ),
+	name,
+	age
+);
+// Returns: "Hello John, you are 30 years old."
+```
+
+### Common Format Specifiers
+
+```js
+import { sprintf } from '@wordpress/i18n';
+
+// String
+sprintf( '%s', 'text' ); // "text"
+
+// Integer
+sprintf( '%d', 42 ); // "42"
+
+// Float
+sprintf( '%.2f', 3.14159 ); // "3.14"
+
+// Position
+sprintf( '%2$s %1$s', 'World', 'Hello' ); // "Hello World"
+```
+
+## Practical Examples
+
+### Simple Translation
+
+```jsx
+import { __ } from '@wordpress/i18n';
+
+function SaveButton() {
+	return (
+		<button>{ __( 'Save Changes', 'my-plugin' ) }</button>
+	);
+}
+```
+
+### With Context
+
+```jsx
+import { _x } from '@wordpress/i18n';
+
+function StatusDisplay( { status } ) {
+	return (
+		<span>
+			{ _x( 'Draft', 'post status', 'my-plugin' ) }
+		</span>
+	);
+}
+```
+
+### Plural Forms
+
+```jsx
+import { sprintf, _n } from '@wordpress/i18n';
+
+function CommentCount( { count } ) {
+	return (
+		<div>
+			{ sprintf(
+				_n( '%d comment', '%d comments', count, 'my-plugin' ),
+				count
+			) }
+		</div>
+	);
+}
+```
+
+### Formatted Messages
+
+```jsx
+import { sprintf, __ } from '@wordpress/i18n';
+
+function WelcomeMessage( { username } ) {
+	return (
+		<h1>
+			{ sprintf(
+				__( 'Welcome back, %s!', 'my-plugin' ),
+				username
+			) }
+		</h1>
+	);
+}
+```
+
+### Complex Example
+
+```jsx
+import { sprintf, _n, _x } from '@wordpress/i18n';
+
+function OrderSummary( { items, total } ) {
+	const itemCount = items.length;
+	
+	return (
+		<div>
+			<p>
+				{ sprintf(
+					_n(
+						'You have %d item',
+						'You have %d items',
+						itemCount,
+						'my-plugin'
+					),
+					itemCount
+				) }
+			</p>
+			<p>
+				{ sprintf(
+					__( 'Total: %s', 'my-plugin' ),
+					_x( '$', 'currency symbol', 'my-plugin' ) + total
+				) }
+			</p>
+		</div>
+	);
+}
+```
+
+## Locale Data Management
+
+### setLocaleData()
+
+Sets translation data for a text domain.
+
+```js
+import { setLocaleData } from '@wordpress/i18n';
+
+setLocaleData(
+	{
+		'': {
+			domain: 'my-plugin',
+			lang: 'es',
+		},
+		'Hello World': [ 'Hola Mundo' ],
+	},
+	'my-plugin'
+);
+```
+
+### getLocaleData()
+
+Retrieves locale data for a domain.
+
+```js
+import { getLocaleData } from '@wordpress/i18n';
+
+const localeData = getLocaleData( 'my-plugin' );
+```
+
+### resetLocaleData()
+
+Resets all locale data for a domain.
+
+```js
+import { resetLocaleData } from '@wordpress/i18n';
+
+resetLocaleData( localeData, 'my-plugin' );
+```
+
+## Text Direction
+
+### isRTL()
+
+Checks if the current locale uses right-to-left text direction.
+
+```js
+import { isRTL } from '@wordpress/i18n';
+
+if ( isRTL() ) {
+	console.log( 'Using RTL layout' );
+}
+```
+
+RTL languages include:
+- Arabic (ar)
+- Hebrew (he)
+- Persian (fa)
+- Urdu (ur)
+
+### RTL Layout Example
+
+```jsx
+import { isRTL } from '@wordpress/i18n';
+
+function MyComponent() {
+	const direction = isRTL() ? 'rtl' : 'ltr';
+	
+	return (
+		<div dir={ direction } style={ { textAlign: isRTL() ? 'right' : 'left' } }>
+			Content
+		</div>
+	);
+}
+```
+
+## Translation Checking
+
+### hasTranslation()
+
+Checks if a translation exists.
+
+```js
+import { hasTranslation } from '@wordpress/i18n';
+
+if ( hasTranslation( 'Hello World', undefined, 'my-plugin' ) ) {
+	console.log( 'Translation available' );
+}
+```
+
+**Parameters:**
+- `single` (string) - Text to check
+- `context` (string) - Context (optional)
+- `domain` (string) - Text domain (optional)
+
+## Custom i18n Instance
+
+### createI18n()
+
+Creates an isolated i18n instance.
+
+```js
+import { createI18n } from '@wordpress/i18n';
+
+const i18n = createI18n( localeData, 'my-plugin' );
+
+const translated = i18n.__( 'Hello', 'my-plugin' );
+```
+
+## WordPress Integration
+
+### Loading Translations
+
+In WordPress, load translations in PHP:
+
+```php
+function my_plugin_load_translations() {
+	wp_set_script_translations(
+		'my-plugin-script',
+		'my-plugin',
+		plugin_dir_path( __FILE__ ) . 'languages'
+	);
+}
+add_action( 'init', 'my_plugin_load_translations' );
+```
+
+### Translation Files
+
+WordPress expects translation files in JSON format:
+
+```
+languages/
+├── my-plugin-es_ES-{hash}.json
+├── my-plugin-fr_FR-{hash}.json
+└── my-plugin-de_DE-{hash}.json
+```
+
+## Best Practices
+
+### 1. Always Use Text Domain
+
+```js
+// Good
+__( 'Save', 'my-plugin' );
+
+// Bad - will use default domain
+__( 'Save' );
+```
+
+### 2. Use Context for Ambiguous Terms
+
+```js
+// Good - clear meaning
+_x( 'Post', 'noun', 'my-plugin' );
+_x( 'Post', 'verb', 'my-plugin' );
+
+// Bad - translators may guess wrong
+__( 'Post', 'my-plugin' );
+```
+
+### 3. Don't Concatenate Translations
+
+```js
+// Bad - word order varies by language
+const message = __( 'You have', 'my-plugin' ) + ' ' + count + ' ' + __( 'items', 'my-plugin' );
+
+// Good - complete phrase
+const message = sprintf(
+	__( 'You have %d items', 'my-plugin' ),
+	count
+);
+```
+
+### 4. Handle Plural Forms Correctly
+
+```js
+// Bad - not all languages have simple singular/plural
+const text = count === 1 ? __( 'item', 'my-plugin' ) : __( 'items', 'my-plugin' );
+
+// Good - uses proper plural rules
+const text = _n( 'item', 'items', count, 'my-plugin' );
+```
+
+### 5. Make Strings Descriptive
+
+```js
+// Bad - unclear context
+__( 'OK', 'my-plugin' );
+
+// Good - clear purpose
+__( 'Confirm and save changes', 'my-plugin' );
+```
+
+### 6. Avoid Variables in Translations
+
+```js
+// Bad - translators can't see full context
+const action = 'delete';
+__( `Click to ${ action }`, 'my-plugin' );
+
+// Good - complete translatable string
+sprintf(
+	__( 'Click to delete %s', 'my-plugin' ),
+	itemName
+);
+```
+
+## Generating Translation Files
+
+Use WP-CLI to extract translatable strings:
+
+```bash
+wp i18n make-json languages/my-plugin-es_ES.po \
+  --no-purge
+```
+
+## Testing Translations
+
+Test with placeholder translations:
+
+```js
+import { setLocaleData } from '@wordpress/i18n';
+
+// Set test translations
+setLocaleData(
+	{
+		'': { domain: 'my-plugin' },
+		'Save': [ '[TRANSLATED] Save' ],
+	},
+	'my-plugin'
+);
+```
+
+## TypeScript Support
+
+```typescript
+import { __, sprintf } from '@wordpress/i18n';
+
+function greet( name: string ): string {
+	return sprintf(
+		__( 'Hello, %s!', 'my-plugin' ),
+		name
+	);
+}
+```
+
+## Learn More
+
+- [WordPress I18n Handbook](https://developer.wordpress.org/plugins/internationalization/)
+- [Translator Handbook](https://make.wordpress.org/polyglots/handbook/)
+- [Translation Best Practices](https://developer.wordpress.org/apis/internationalization/internationalization-guidelines/)

@@ -1,0 +1,556 @@
+---
+title: "@wordpress/compose"
+description: React hooks and higher-order components for WordPress development
+---
+
+The `@wordpress/compose` package provides a collection of useful React hooks and higher-order components (HOCs) for building WordPress components with enhanced functionality.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/compose --save
+```
+
+```bash yarn
+yarn add @wordpress/compose
+```
+</CodeGroup>
+
+## Function Composition
+
+### compose
+
+Composes multiple HOCs into a single HOC (right-to-left).
+
+```js
+import { compose } from '@wordpress/compose';
+import { withSelect, withDispatch } from '@wordpress/data';
+
+const enhance = compose(
+	withSelect( ( select ) => ( {
+		post: select( 'core' ).getCurrentPost(),
+	} ) ),
+	withDispatch( ( dispatch ) => ( {
+		savePost: dispatch( 'core' ).savePost,
+	} ) )
+);
+
+export default enhance( MyComponent );
+```
+
+### pipe
+
+Composes functions left-to-right.
+
+```js
+import { pipe } from '@wordpress/compose';
+
+const transform = pipe(
+	( x ) => x * 2,
+	( x ) => x + 1,
+	( x ) => x / 2
+);
+
+transform( 5 ); // (5 * 2 + 1) / 2 = 5.5
+```
+
+## Common Hooks
+
+### useInstanceId
+
+Generates unique instance IDs for components.
+
+```js
+import { useInstanceId } from '@wordpress/compose';
+
+function MyComponent( { id } ) {
+	const instanceId = useInstanceId( MyComponent, 'input', id );
+
+	return <input id={ instanceId } />;
+}
+```
+
+### usePrevious
+
+Retrieves the previous value of a prop or state.
+
+```js
+import { usePrevious } from '@wordpress/compose';
+import { useEffect } from '@wordpress/element';
+
+function MyComponent( { value } ) {
+	const prevValue = usePrevious( value );
+
+	useEffect( () => {
+		if ( prevValue !== value ) {
+			console.log( `Changed from ${ prevValue } to ${ value }` );
+		}
+	}, [ value, prevValue ] );
+
+	return <div>{ value }</div>;
+}
+```
+
+### useMediaQuery
+
+Responds to media query changes.
+
+```js
+import { useMediaQuery } from '@wordpress/compose';
+
+function MyComponent() {
+	const isMobile = useMediaQuery( '(max-width: 600px)' );
+
+	return (
+		<div>
+			{ isMobile ? 'Mobile View' : 'Desktop View' }
+		</div>
+	);
+}
+```
+
+### useViewportMatch
+
+Checks if viewport matches WordPress breakpoints.
+
+```js
+import { useViewportMatch } from '@wordpress/compose';
+
+function MyComponent() {
+	const isLargeViewport = useViewportMatch( 'large' );
+	const isMediumOrSmaller = useViewportMatch( 'medium', '<' );
+
+	return (
+		<div>
+			{ isLargeViewport && <p>Large screen</p> }
+			{ isMediumOrSmaller && <p>Medium or smaller</p> }
+		</div>
+	);
+}
+```
+
+## Debounce and Throttle
+
+### useDebounce
+
+Debounces a function call.
+
+```js
+import { useDebounce } from '@wordpress/compose';
+import { useState } from '@wordpress/element';
+
+function SearchInput() {
+	const [ search, setSearch ] = useState( '' );
+
+	const debouncedSearch = useDebounce( ( value ) => {
+		console.log( 'Searching for:', value );
+	}, 500 );
+
+	return (
+		<input
+			value={ search }
+			onChange={ ( e ) => {
+				setSearch( e.target.value );
+				debouncedSearch( e.target.value );
+			} }
+		/>
+	);
+}
+```
+
+### useThrottle
+
+Throttles a function call.
+
+```js
+import { useThrottle } from '@wordpress/compose';
+
+function ScrollTracker() {
+	const throttledScroll = useThrottle( () => {
+		console.log( 'Scroll position:', window.scrollY );
+	}, 200 );
+
+	useEffect( () => {
+		window.addEventListener( 'scroll', throttledScroll );
+		return () => window.removeEventListener( 'scroll', throttledScroll );
+	}, [ throttledScroll ] );
+
+	return <div>Scroll to see throttled logging</div>;
+}
+```
+
+### useDebouncedInput
+
+Helper hook for debounced input fields.
+
+```js
+import { useDebouncedInput } from '@wordpress/compose';
+
+function MyComponent() {
+	const [ value, setValue, debouncedValue ] = useDebouncedInput( '' );
+
+	return (
+		<div>
+			<input value={ value } onChange={ ( e ) => setValue( e.target.value ) } />
+			<p>Debounced: { debouncedValue }</p>
+		</div>
+	);
+}
+```
+
+## Focus Management
+
+### useFocusOnMount
+
+Focuses an element when component mounts.
+
+```js
+import { useFocusOnMount } from '@wordpress/compose';
+
+function Modal() {
+	const ref = useFocusOnMount();
+
+	return (
+		<div ref={ ref }>
+			<button>First Button</button>
+			<button>Second Button</button>
+		</div>
+	);
+}
+```
+
+### useFocusReturn
+
+Returns focus to previous element on unmount.
+
+```js
+import { useFocusReturn } from '@wordpress/compose';
+
+function Dialog() {
+	const ref = useFocusReturn();
+
+	return (
+		<div ref={ ref }>
+			<h2>Dialog</h2>
+			<button>Close</button>
+		</div>
+	);
+}
+```
+
+### useConstrainedTabbing
+
+Constrains tab navigation within an element.
+
+```js
+import { useConstrainedTabbing } from '@wordpress/compose';
+
+function Modal() {
+	const ref = useConstrainedTabbing();
+
+	return (
+		<div ref={ ref }>
+			<button>Button 1</button>
+			<button>Button 2</button>
+		</div>
+	);
+}
+```
+
+## Refs and Effects
+
+### useMergeRefs
+
+Merges multiple refs into one.
+
+```js
+import { useMergeRefs } from '@wordpress/compose';
+import { useRef } from '@wordpress/element';
+
+function MyComponent( { forwardedRef } ) {
+	const localRef = useRef();
+	const mergedRef = useMergeRefs( [ localRef, forwardedRef ] );
+
+	return <div ref={ mergedRef }>Content</div>;
+}
+```
+
+### useRefEffect
+
+Effect-like ref callback with cleanup.
+
+```js
+import { useRefEffect } from '@wordpress/compose';
+
+function MyComponent() {
+	const ref = useRefEffect( ( node ) => {
+		node.addEventListener( 'click', handleClick );
+		return () => {
+			node.removeEventListener( 'click', handleClick );
+		};
+	}, [] );
+
+	return <div ref={ ref }>Click me</div>;
+}
+```
+
+### useEvent
+
+Creates stable callback with latest values.
+
+```js
+import { useEvent } from '@wordpress/compose';
+import { useState } from '@wordpress/element';
+
+function MyComponent() {
+	const [ count, setCount ] = useState( 0 );
+
+	const handleClick = useEvent( () => {
+		console.log( 'Current count:', count );
+	} );
+
+	return <button onClick={ handleClick }>Log Count</button>;
+}
+```
+
+## Resize Observer
+
+### useResizeObserver
+
+Observes element size changes.
+
+```js
+import { useResizeObserver } from '@wordpress/compose';
+
+function MyComponent() {
+	const [ resizeListener, sizes ] = useResizeObserver();
+
+	return (
+		<div>
+			{ resizeListener }
+			<div>Width: { sizes.width }px</div>
+			<div>Height: { sizes.height }px</div>
+		</div>
+	);
+}
+```
+
+## Keyboard Shortcuts
+
+### useKeyboardShortcut
+
+Attaches keyboard shortcut handlers.
+
+```js
+import { useKeyboardShortcut } from '@wordpress/compose';
+
+function MyComponent() {
+	useKeyboardShortcut(
+		'mod+s',
+		( event ) => {
+			event.preventDefault();
+			console.log( 'Save shortcut pressed' );
+		},
+		{ bindGlobal: true }
+	);
+
+	return <div>Press Ctrl+S (or Cmd+S) to save</div>;
+}
+```
+
+## Copy to Clipboard
+
+### useCopyToClipboard
+
+Copies text to clipboard on click.
+
+```js
+import { useCopyToClipboard } from '@wordpress/compose';
+
+function CopyButton() {
+	const ref = useCopyToClipboard( 'Text to copy' );
+
+	return <button ref={ ref }>Copy to Clipboard</button>;
+}
+```
+
+## Async Operations
+
+### useAsyncList
+
+Asynchronously appends items to a list.
+
+```js
+import { useAsyncList } from '@wordpress/compose';
+
+function LongList( { items } ) {
+	const shownItems = useAsyncList( items );
+
+	return (
+		<ul>
+			{ shownItems.map( ( item ) => (
+				<li key={ item.id }>{ item.name }</li>
+			) ) }
+		</ul>
+	);
+}
+```
+
+## Accessibility
+
+### useDisabled
+
+Disables all focusable elements within a container.
+
+```js
+import { useDisabled } from '@wordpress/compose';
+
+function Preview() {
+	const disabledRef = useDisabled();
+
+	return (
+		<div ref={ disabledRef }>
+			<button>This will be disabled</button>
+			<input placeholder="This will be disabled" />
+		</div>
+	);
+}
+```
+
+### useReducedMotion
+
+Detects user's reduced motion preference.
+
+```js
+import { useReducedMotion } from '@wordpress/compose';
+
+function AnimatedComponent() {
+	const prefersReducedMotion = useReducedMotion();
+
+	return (
+		<div
+			style={ {
+				transition: prefersReducedMotion ? 'none' : 'all 0.3s',
+			} }
+		>
+			Content
+		</div>
+	);
+}
+```
+
+## State Management
+
+### useStateWithHistory
+
+State with undo/redo functionality.
+
+```js
+import { useStateWithHistory } from '@wordpress/compose';
+
+function TextEditor() {
+	const { value, setValue, hasUndo, hasRedo, undo, redo } =
+		useStateWithHistory( '' );
+
+	return (
+		<div>
+			<textarea
+				value={ value }
+				onChange={ ( e ) => setValue( e.target.value ) }
+			/>
+			<button disabled={ ! hasUndo } onClick={ undo }>
+				Undo
+			</button>
+			<button disabled={ ! hasRedo } onClick={ redo }>
+				Redo
+			</button>
+		</div>
+	);
+}
+```
+
+## Higher-Order Components
+
+### withInstanceId
+
+Provides unique instance ID as prop.
+
+```js
+import { withInstanceId } from '@wordpress/compose';
+
+function Input( { instanceId } ) {
+	return <input id={ `input-${ instanceId }` } />;
+}
+
+export default withInstanceId( Input );
+```
+
+### withSafeTimeout
+
+Provides timeout functions that auto-cleanup.
+
+```js
+import { withSafeTimeout } from '@wordpress/compose';
+import { Component } from '@wordpress/element';
+
+class MyComponent extends Component {
+	componentDidMount() {
+		this.props.setTimeout( () => {
+			console.log( 'Delayed action' );
+		}, 1000 );
+	}
+
+	render() {
+		return <div>Component</div>;
+	}
+}
+
+export default withSafeTimeout( MyComponent );
+```
+
+## Utilities
+
+### createHigherOrderComponent
+
+Helper for creating HOCs with proper display names.
+
+```js
+import { createHigherOrderComponent } from '@wordpress/compose';
+
+const withCustomProp = createHigherOrderComponent(
+	( WrappedComponent ) => ( props ) => (
+		<WrappedComponent { ...props } customProp="value" />
+	),
+	'withCustomProp'
+);
+```
+
+## Observable Map
+
+### observableMap
+
+Creates an observable key-value store.
+
+```js
+import { observableMap, useObservableValue } from '@wordpress/compose';
+
+const store = observableMap();
+
+function Component() {
+	const value = useObservableValue( store, 'key' );
+
+	return <div>{ value }</div>;
+}
+
+// Update the store
+store.set( 'key', 'new value' );
+```
+
+## Best Practices
+
+1. **Memoize Dependencies** - Always provide dependency arrays to hooks
+2. **Cleanup Effects** - Use `useRefEffect` for effects needing cleanup
+3. **Stable Callbacks** - Use `useEvent` for callbacks used in effects
+4. **Compose Wisely** - Order HOCs carefully for proper prop flow
+5. **Test Accessibility** - Always test focus management features

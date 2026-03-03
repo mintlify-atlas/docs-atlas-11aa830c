@@ -1,0 +1,180 @@
+---
+title: Node.js Development Environment
+description: Install and configure Node.js for Gutenberg Block Editor development
+---
+
+When developing for the Block Editor, you will need [Node.js](https://nodejs.org/en) development tools along with a code editor and a local WordPress environment. Node.js (`node`) is an open-source runtime environment that allows you to execute JavaScript code from the terminal (also known as a command-line interface, CLI, or shell).
+
+Installing `node` will automatically include the Node Package Manager (`npm`) and the Node Package eXecute (`npx`), two tools you will frequently use in block and plugin development.
+
+## Node.js Tools
+
+### npm - Node Package Manager
+
+Node Package Manager ([`npm`](https://docs.npmjs.com/cli/v10/commands/npm)) serves multiple purposes, including dependency management and script execution. It's the recommended package manager and is extensively featured in all documentation.
+
+Common npm commands:
+- `npm install` - Install dependencies from package.json
+- `npm install <package>` - Install a specific package
+- `npm run <script>` - Run a script defined in package.json
+
+### npx - Node Package Execute
+
+The Node Package eXecute ([`npx`](https://docs.npmjs.com/cli/v10/commands/npx)) tool is used to run commands from packages without installing them globally and is commonly used when scaffolding blocks with the `create-block` package.
+
+Example:
+```bash
+npx @wordpress/create-block@latest my-block
+```
+
+## Installation on Mac and Linux
+
+It's recommended that you use [Node Version Manager](https://github.com/nvm-sh/nvm) (`nvm`) to install Node.js. This allows you to install and manage specific versions of `node`, which are installed locally in your home directory, avoiding any global permission issues.
+
+<Steps>
+
+### Install nvm
+
+Open the terminal and run the following to install `nvm`. On macOS, the required developer tools are not installed by default. Install them if prompted.
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+```
+
+### Restart Terminal
+
+Quit and restart the terminal to ensure nvm is loaded.
+
+### Install Node.js LTS
+
+Run the following command to install the latest [LTS](https://nodejs.org/en/about/previous-releases) (Long Term Support) version of Node.js:
+
+```bash
+nvm install --lts
+```
+
+### Verify Installation
+
+Run the following commands to verify the installed `node` and `npm` versions:
+
+```bash
+node -v
+npm -v
+```
+
+</Steps>
+
+### Managing Node Versions with nvm
+
+If needed, you can install specific versions of `node`. For example, install version 18 by running:
+
+```bash
+nvm install 18
+```
+
+Switch between different versions by running:
+
+```bash
+nvm use [version-number]
+```
+
+Some projects, like Gutenberg, include an [`.nvmrc`](https://github.com/WordPress/gutenberg/blob/trunk/.nvmrc) file which specifies the version of `node` that should be used. In this case, running `nvm use` will automatically select the correct version.
+
+If the version is not yet installed, you will get an error that tells you what version needs to be added. Run:
+
+```bash
+nvm install [version-number]
+nvm use
+```
+
+## Installation on Windows
+
+You can [download a Node.js installer](https://nodejs.org/en/download/) directly from the main Node.js website. The latest version is recommended. Installers are available for Windows and Mac, and binaries are available for Linux.
+
+<Steps>
+
+### Download Node.js Installer
+
+Visit the [Node.js download page](https://nodejs.org/en/download/) and download the Windows installer.
+
+### Run the Installer
+
+Double-click the downloaded file and follow the installation wizard. Accept the default settings unless you have specific requirements.
+
+### Verify Installation
+
+Open Command Prompt or PowerShell and run:
+
+```bash
+node -v
+npm -v
+```
+
+</Steps>
+
+<Note>
+Microsoft also provides a [detailed guide](https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows#install-nvm-windows-nodejs-and-npm) on how to install `nvm` and Node.js on Windows and WSL.
+</Note>
+
+## Package Managers
+
+While `npm` is the default and recommended package manager, you may encounter projects using alternatives:
+
+<CodeGroup>
+
+```bash npm
+npm install
+npm run build
+npm run start
+```
+
+```bash yarn
+yarn install
+yarn build
+yarn start
+```
+
+```bash pnpm
+pnpm install
+pnpm build
+pnpm start
+```
+
+</CodeGroup>
+
+## Troubleshooting
+
+### Command Not Found: nvm
+
+If you encounter the error `zsh: command not found: nvm` when attempting to install `node`, you might need to create the default profile file.
+
+The default shell is `zsh` on macOS, so create the profile file by running:
+
+```bash
+touch ~/.zshrc
+```
+
+The default profile is `bash` for Ubuntu, including WSL, so use:
+
+```bash
+touch ~/.bashrc
+```
+
+It's fine to run if the file already exists. Then repeat the installation steps.
+
+### Version Compatibility Issues
+
+The latest `node` version should work for most development projects, but be aware that some packages and tools have specific requirements. If you encounter issues, you might need to install and use a previous `node` version.
+
+Always check if the project has an `.nvmrc` file and use the `node` version indicated.
+
+### Required Node.js Versions
+
+- **@wordpress/create-block**: Requires `node` version `20.10.0` or above, and `npm` version `10.2.3` or above
+- **@wordpress/scripts**: Requires Node.js version with [Active LTS or Maintenance LTS](https://nodejs.org/en/about/previous-releases) status
+
+## Additional Resources
+
+- [Node.js Official Documentation](https://nodejs.org/en)
+- [Node Version Manager (nvm) Documentation](https://github.com/nvm-sh/nvm)
+- [Installing Node.js and npm for local WordPress development](https://learn.wordpress.org/tutorial/installing-node-js-and-npm-for-local-wordpress-development/) (Learn WordPress tutorial)

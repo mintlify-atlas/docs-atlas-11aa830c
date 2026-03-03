@@ -1,0 +1,361 @@
+---
+title: Internationalization (i18n)
+description: Learn how to internationalize your blocks and editor components using the @wordpress/i18n package.
+---
+
+Internationalization (i18n) is essential for making your blocks and editor components accessible to users worldwide. The `@wordpress/i18n` package provides client-side localization utilities.
+
+## Installation
+
+Install the package:
+
+```bash
+npm install @wordpress/i18n --save
+```
+
+## Basic Usage
+
+Import and use translation functions:
+
+```js
+import { __, _n, _x, sprintf } from '@wordpress/i18n';
+
+// Simple translation
+const message = __( 'Hello World', 'my-text-domain' );
+
+// Plural forms
+const count = 4;
+const hats = sprintf(
+  _n( '%d hat', '%d hats', count, 'my-text-domain' ),
+  count
+);
+// Returns: "4 hats"
+```
+
+<Tip>
+Always include a text domain as the last parameter to ensure your translations don't conflict with other plugins or themes.
+</Tip>
+
+## Translation Functions
+
+### __()
+
+Translate a string:
+
+```js
+import { __ } from '@wordpress/i18n';
+
+const buttonText = __( 'Save Changes', 'my-plugin' );
+const helpText = __( 'Click to save your work', 'my-plugin' );
+```
+
+### _x()
+
+Translate with context for disambiguation:
+
+```js
+import { _x } from '@wordpress/i18n';
+
+// "Post" as in a blog post
+const postNoun = _x( 'Post', 'noun', 'my-plugin' );
+
+// "Post" as in the submit action
+const postVerb = _x( 'Post', 'verb', 'my-plugin' );
+```
+
+<Tip>
+Use `_x()` when the same English word has different meanings. The context helps translators provide accurate translations.
+</Tip>
+
+### _n()
+
+Handle singular and plural forms:
+
+```js
+import { _n, sprintf } from '@wordpress/i18n';
+
+function getItemCount( count ) {
+  return sprintf(
+    _n(
+      '%d item',
+      '%d items',
+      count,
+      'my-plugin'
+    ),
+    count
+  );
+}
+
+getItemCount( 1 );  // "1 item"
+getItemCount( 5 );  // "5 items"
+```
+
+### _nx()
+
+Combine plural forms with context:
+
+```js
+import { _nx, sprintf } from '@wordpress/i18n';
+
+const commentCount = sprintf(
+  _nx(
+    '%d comment',
+    '%d comments',
+    count,
+    'noun',
+    'my-plugin'
+  ),
+  count
+);
+```
+
+## Using sprintf()
+
+Format strings with placeholders:
+
+```js
+import { sprintf, __ } from '@wordpress/i18n';
+
+// String placeholder
+const greeting = sprintf(
+  __( 'Hello %s!', 'my-plugin' ),
+  userName
+);
+
+// Number placeholder
+const progress = sprintf(
+  __( 'Step %d of %d', 'my-plugin' ),
+  currentStep,
+  totalSteps
+);
+
+// Multiple placeholders
+const message = sprintf(
+  __( '%s published %d posts', 'my-plugin' ),
+  authorName,
+  postCount
+);
+```
+
+## Block Editor Examples
+
+### Block Registration
+
+```jsx
+import { registerBlockType } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+registerBlockType( 'my-plugin/custom-block', {
+  title: __( 'Custom Block', 'my-plugin' ),
+  description: __( 'A custom block for special content', 'my-plugin' ),
+  category: 'widgets',
+  
+  edit: ( { attributes, setAttributes } ) => {
+    return (
+      <div>
+        <h3>{ __( 'Block Settings', 'my-plugin' ) }</h3>
+        <p>{ __( 'Configure your block below', 'my-plugin' ) }</p>
+      </div>
+    );
+  },
+} );
+```
+
+### Inspector Controls
+
+```jsx
+import { InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
+
+function BlockEdit( { attributes, setAttributes } ) {
+  return (
+    <>
+      <InspectorControls>
+        <PanelBody
+          title={ __( 'Block Settings', 'my-plugin' ) }
+          initialOpen={ true }
+        >
+          <TextControl
+            label={ __( 'Title', 'my-plugin' ) }
+            value={ attributes.title }
+            onChange={ ( title ) => setAttributes( { title } ) }
+            help={ __( 'Enter a title for this block', 'my-plugin' ) }
+          />
+          
+          <ToggleControl
+            label={ __( 'Show Border', 'my-plugin' ) }
+            checked={ attributes.showBorder }
+            onChange={ ( showBorder ) => setAttributes( { showBorder } ) }
+          />
+        </PanelBody>
+      </InspectorControls>
+      
+      {/* Block content */}
+    </>
+  );
+}
+```
+
+### Notices and Messages
+
+```jsx
+import { useDispatch } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
+import { __ } from '@wordpress/i18n';
+
+function MyComponent() {
+  const { createNotice } = useDispatch( noticesStore );
+  
+  const handleSave = () => {
+    // Show success message
+    createNotice(
+      'success',
+      __( 'Settings saved successfully', 'my-plugin' ),
+      { type: 'snackbar', isDismissible: true }
+    );
+  };
+  
+  const handleError = () => {
+    // Show error message
+    createNotice(
+      'error',
+      __( 'Failed to save settings', 'my-plugin' ),
+      { isDismissible: true }
+    );
+  };
+}
+```
+
+## RTL Language Support
+
+Check if the current locale uses right-to-left text:
+
+```js
+import { isRTL } from '@wordpress/i18n';
+
+function MyComponent() {
+  const textAlign = isRTL() ? 'right' : 'left';
+  
+  return (
+    <div style={ { textAlign } }>
+      { __( 'Content here', 'my-plugin' ) }
+    </div>
+  );
+}
+```
+
+<Tip>
+Use `isRTL()` to adjust layouts and styles for right-to-left languages like Arabic and Hebrew.
+</Tip>
+
+## Advanced Usage
+
+### Checking for Translations
+
+```js
+import { hasTranslation } from '@wordpress/i18n';
+
+if ( hasTranslation( 'Hello World', null, 'my-plugin' ) ) {
+  // Translation exists
+}
+```
+
+### Custom I18n Instance
+
+```js
+import { createI18n } from '@wordpress/i18n';
+
+const i18n = createI18n();
+
+// Use custom instance
+const message = i18n.__( 'Hello', 'my-domain' );
+```
+
+### Setting Locale Data
+
+```js
+import { setLocaleData } from '@wordpress/i18n';
+
+setLocaleData(
+  {
+    '': {
+      domain: 'my-plugin',
+      lang: 'fr',
+      plural_forms: 'nplurals=2; plural=(n > 1);',
+    },
+    'Hello World': [ 'Bonjour le monde' ],
+  },
+  'my-plugin'
+);
+```
+
+## Best Practices
+
+<Tip>
+- Always use a unique text domain for your plugin or theme
+- Keep translatable strings simple and avoid complex concatenation
+- Provide context with `_x()` for ambiguous terms
+- Use placeholders with `sprintf()` instead of string concatenation
+- Never split sentences across multiple translation calls
+- Include translator comments for complex strings
+</Tip>
+
+### Good Examples
+
+```js
+// Good: Simple, complete sentence
+__( 'Save your changes before leaving', 'my-plugin' )
+
+// Good: Using sprintf for dynamic content
+sprintf(
+  __( 'Welcome back, %s!', 'my-plugin' ),
+  userName
+)
+
+// Good: Context for disambiguation
+_x( 'Draft', 'post status', 'my-plugin' )
+```
+
+### Bad Examples
+
+```js
+// Bad: String concatenation
+__( 'Hello', 'my-plugin' ) + ' ' + userName
+
+// Bad: Split sentences
+__( 'Click', 'my-plugin' ) + ' ' + __( 'here', 'my-plugin' )
+
+// Bad: Missing text domain
+__( 'Save' )
+```
+
+## PHP Integration
+
+Load JavaScript translations in PHP:
+
+```php
+function my_plugin_enqueue_scripts() {
+  wp_enqueue_script(
+    'my-plugin-script',
+    plugins_url( 'build/index.js', __FILE__ ),
+    [ 'wp-blocks', 'wp-i18n' ],
+    '1.0.0',
+    true
+  );
+  
+  // Load translations
+  wp_set_script_translations(
+    'my-plugin-script',
+    'my-plugin',
+    plugin_dir_path( __FILE__ ) . 'languages'
+  );
+}
+add_action( 'enqueue_block_editor_assets', 'my_plugin_enqueue_scripts' );
+```
+
+## Resources
+
+- [WordPress Plugin i18n Guide](https://developer.wordpress.org/plugins/internationalization/)
+- [@wordpress/i18n Package Documentation](/packages/i18n)
+- [WordPress Polyglots Team](https://make.wordpress.org/polyglots/)

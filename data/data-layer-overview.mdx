@@ -1,0 +1,266 @@
+---
+title: Data Layer Overview
+description: Understanding the WordPress data module architecture and how it manages application state across the Block Editor
+---
+
+The WordPress data module serves as a centralized hub to manage application state for both plugins and WordPress itself. It provides tools to manage data within and between distinct modules, designed as a modular pattern that scales from simple plugins to complex single-page applications.
+
+## Architecture
+
+The data module is built upon and shares many core principles with [Redux](https://redux.js.org/), but includes several distinguishing characteristics specific to WordPress:
+
+- **Modular stores**: Separate but interdependent stores with standardized patterns
+- **Selector-based access**: Selectors as the primary entry point for data access
+- **Built-in async handling**: Resolvers and thunks for side effects
+- **Entity-based system**: Standardized approach to working with WordPress data
+
+<Note>
+The data module follows Redux principles but is NOT just "Redux for WordPress". It includes custom features like resolvers, entity management, and automatic cache invalidation.
+</Note>
+
+## Core Concepts
+
+### Stores
+
+Stores are created using `createReduxStore` and registered with `register`. Each store contains:
+
+```js
+import { createReduxStore, register } from '@wordpress/data';
+
+const store = createReduxStore( 'my-shop', {
+  reducer( state = DEFAULT_STATE, action ) {
+    // Handle state updates
+    switch ( action.type ) {
+      case 'SET_PRICE':
+        return {
+          ...state,
+          prices: {
+            ...state.prices,
+            [ action.item ]: action.price,
+          },
+        };
+    }
+    return state;
+  },
+  actions: {
+    setPrice( item, price ) {
+      return {
+        type: 'SET_PRICE',
+        item,
+        price,
+      };
+    },
+  },
+  selectors: {
+    getPrice( state, item ) {
+      const { prices, discountPercent } = state;
+      const price = prices[ item ];
+      return price * ( 1 - 0.01 * discountPercent );
+    },
+  },
+} );
+
+register( store );
+```
+
+### Selectors
+
+Selectors retrieve and derive values from state. They accept state as the first argument, followed by any additional parameters:
+
+```js
+selectors: {
+  getPrice( state, item ) {
+    const { prices, discountPercent } = state;
+    return prices[ item ] * ( 1 - 0.01 * discountPercent );
+  },
+}
+```
+
+Access selectors using the `select` function:
+
+```js
+import { select } from '@wordpress/data';
+import { store as myCustomStore } from 'my-custom-store';
+
+select( myCustomStore ).getPrice( 'hammer' );
+```
+
+### Actions
+
+Actions are functions that return action objects to dispatch to the reducer. They describe state changes:
+
+```js
+actions: {
+  setPrice( item, price ) {
+    return {
+      type: 'SET_PRICE',
+      item,
+      price,
+    };
+  },
+}
+```
+
+Dispatch actions using the `dispatch` function:
+
+```js
+import { dispatch } from '@wordpress/data';
+import { store as myCustomStore } from 'my-custom-store';
+
+dispatch( myCustomStore ).setPrice( 'hammer', 9.75 );
+```
+
+<Note>
+Action creators returned by dispatch return promises when called, allowing you to await their completion.
+</Note>
+
+### Resolvers
+
+Resolvers are side effects for selectors. They fulfill data requirements the first time a selector is called:
+
+```js
+import apiFetch from '@wordpress/api-fetch';
+
+resolvers: {
+  getPrice: ( item ) => async ( { dispatch } ) => {
+    const path = '/wp/v2/prices/' + item;
+    const price = await apiFetch( { path } );
+    dispatch.setPrice( item, price );
+  },
+}
+```
+
+When you call `select( store ).getPrice( 'hammer' )` for the first time:
+
+1. The selector returns `null` (no data yet)
+2. The resolver triggers, fetching data from the API
+3. The resolver dispatches actions to store the data
+4. The selector now returns the fetched data on subsequent calls
+
+## Key Differences from Redux
+
+### Subscriptions
+
+In `@wordpress/data`, subscribers are only called when state has actually changed, unlike Redux where subscribers are called on every dispatch.
+
+### Modular Pattern
+
+Stores are registered with unique names and accessed through a central registry, enabling:
+
+- Cross-store selectors using `createRegistrySelector`
+- Store-specific subscriptions
+- Dynamic store registration
+
+### Split HOCs
+
+`withSelect` and `withDispatch` are separate (unlike React Redux's combined `connect`), reflecting that dispatch doesn't depend on state subscriptions.
+
+## Core Data Entities
+
+The `@wordpress/core-data` package provides a standardized interface for WordPress entities (posts, pages, users, etc.):
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+const pages = useSelect( ( select ) => {
+  return select( coreDataStore ).getEntityRecords( 'postType', 'page' );
+}, [] );
+```
+
+Entity records automatically:
+
+- Cache API responses
+- Handle resolution status
+- Track edits separately from persisted data
+- Support undo/redo operations
+
+## React Integration
+
+### useSelect Hook
+
+Retrieve data in React components:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+function PagesList() {
+  const pages = useSelect( ( select ) => {
+    return select( coreDataStore ).getEntityRecords( 'postType', 'page' );
+  }, [] );
+
+  return (
+    <ul>
+      { pages?.map( ( page ) => (
+        <li key={ page.id }>{ page.title.rendered }</li>
+      ) ) }
+    </ul>
+  );
+}
+```
+
+### useDispatch Hook
+
+Dispatch actions from React components:
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+function DeleteButton( { pageId } ) {
+  const { deleteEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleDelete = () => {
+    deleteEntityRecord( 'postType', 'page', pageId );
+  };
+
+  return <button onClick={ handleDelete }>Delete</button>;
+}
+```
+
+## Performance Optimization
+
+### Batching Updates
+
+Use `registry.batch()` to group multiple updates and trigger listeners only once:
+
+```js
+import { useRegistry } from '@wordpress/data';
+
+function Component() {
+  const registry = useRegistry();
+
+  function handleComplexUpdate() {
+    registry.batch( () => {
+      registry.dispatch( 'someStore' ).someAction();
+      registry.dispatch( 'someStore' ).someOtherAction();
+      registry.dispatch( 'someStore' ).thirdAction();
+    } );
+  }
+
+  return <button onClick={ handleComplexUpdate }>Update</button>;
+}
+```
+
+### Memoized Selectors
+
+Use `createSelector` for expensive computations:
+
+```js
+import { createSelector } from '@wordpress/data';
+
+const getExpensiveValue = createSelector(
+  ( state ) => {
+    // Expensive computation here
+    return computeValue( state );
+  },
+  ( state ) => [ state.dependency ] // Recompute only when this changes
+);
+```
+
+## Next Steps
+
+- [Working with Data](/data/working-with-data) - Learn useSelect and useDispatch patterns
+- [Entities & Undo/Redo](/data/entities-undo-redo) - Understand entity operations
+- [Building Forms](/data/building-forms) - Create data-driven forms

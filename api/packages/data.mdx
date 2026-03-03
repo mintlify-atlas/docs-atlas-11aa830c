@@ -1,0 +1,456 @@
+---
+title: "@wordpress/data"
+description: State management and data stores for WordPress applications
+---
+
+The `@wordpress/data` package provides a centralized data layer for managing application state. It's built on Redux principles with additional features like selectors, resolvers, and action creators.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/data --save
+```
+
+```bash yarn
+yarn add @wordpress/data
+```
+</CodeGroup>
+
+## Core Concepts
+
+The data module organizes state into separate stores. Each store contains:
+
+- **Reducer** - Manages state changes
+- **Actions** - Trigger state updates
+- **Selectors** - Retrieve data from state
+- **Resolvers** - Fetch async data
+
+## Creating a Store
+
+### Basic Store
+
+```js
+import { createReduxStore, register } from '@wordpress/data';
+
+const DEFAULT_STATE = {
+	prices: {},
+	discountPercent: 0,
+};
+
+const store = createReduxStore( 'my-shop', {
+	reducer( state = DEFAULT_STATE, action ) {
+		switch ( action.type ) {
+			case 'SET_PRICE':
+				return {
+					...state,
+					prices: {
+						...state.prices,
+						[ action.item ]: action.price,
+					},
+				};
+		}
+		return state;
+	},
+
+	actions: {
+		setPrice( item, price ) {
+			return { type: 'SET_PRICE', item, price };
+		},
+	},
+
+	selectors: {
+		getPrice( state, item ) {
+			return state.prices[ item ];
+		},
+	},
+} );
+
+register( store );
+```
+
+### With Async Resolvers
+
+```js
+import apiFetch from '@wordpress/api-fetch';
+import { createReduxStore, register } from '@wordpress/data';
+
+const store = createReduxStore( 'my-shop', {
+	reducer( state = {}, action ) {
+		if ( action.type === 'SET_PRICE' ) {
+			return {
+				...state,
+				[ action.item ]: action.price,
+			};
+		}
+		return state;
+	},
+
+	actions: {
+		setPrice( item, price ) {
+			return { type: 'SET_PRICE', item, price };
+		},
+	},
+
+	selectors: {
+		getPrice( state, item ) {
+			return state[ item ];
+		},
+	},
+
+	resolvers: {
+		*getPrice( item ) {
+			const path = `/wp/v2/prices/${ item }`;
+			const price = yield apiFetch( { path } );
+			return { type: 'SET_PRICE', item, price };
+		},
+	},
+} );
+
+register( store );
+```
+
+## Using Stores
+
+### select - Read Data
+
+```js
+import { select } from '@wordpress/data';
+
+const price = select( 'my-shop' ).getPrice( 'hammer' );
+```
+
+### dispatch - Update Data
+
+```js
+import { dispatch } from '@wordpress/data';
+
+dispatch( 'my-shop' ).setPrice( 'hammer', 9.75 );
+```
+
+### subscribe - Watch Changes
+
+```js
+import { subscribe } from '@wordpress/data';
+
+const unsubscribe = subscribe( () => {
+	console.log( 'State changed' );
+} );
+
+// Later
+unsubscribe();
+```
+
+## React Hooks
+
+### useSelect
+
+Retrieve data from stores.
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function PriceDisplay() {
+	const price = useSelect( ( select ) => {
+		return select( myStore ).getPrice( 'hammer' );
+	}, [] );
+
+	return <div>Price: ${ price }</div>;
+}
+```
+
+### useDispatch
+
+Access action creators.
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function PriceControl() {
+	const { setPrice } = useDispatch( myStore );
+
+	return (
+		<button onClick={ () => setPrice( 'hammer', 12.99 ) }>
+			Update Price
+		</button>
+	);
+}
+```
+
+### Combined Pattern
+
+```js
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function PriceEditor() {
+	const price = useSelect(
+		( select ) => select( myStore ).getPrice( 'hammer' ),
+		[]
+	);
+
+	const { setPrice } = useDispatch( myStore );
+
+	return (
+		<input
+			type="number"
+			value={ price }
+			onChange={ ( e ) => setPrice( 'hammer', e.target.value ) }
+		/>
+	);
+}
+```
+
+## Advanced Selectors
+
+### Registry Selectors
+
+Access other stores from selectors.
+
+```js
+import { createRegistrySelector } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+const selectors = {
+	getCurrentPost: createRegistrySelector( ( select ) => () => {
+		const postType = select( coreStore ).getCurrentPostType();
+		const postId = select( coreStore ).getCurrentPostId();
+		return select( coreStore ).getEntityRecord(
+			'postType',
+			postType,
+			postId
+		);
+	} ),
+};
+```
+
+### Memoized Selectors
+
+```js
+import { createSelector } from '@wordpress/data';
+
+const getExpensiveComputation = createSelector(
+	( state ) => {
+		// Expensive computation here
+		return state.items.map( /* ... */ );
+	},
+	( state ) => [ state.items ]
+);
+```
+
+## Async Operations
+
+### Using Resolvers
+
+Resolvers automatically fetch data when selectors are called:
+
+```js
+const selectors = {
+	getItem( state, id ) {
+		return state.items[ id ];
+	},
+};
+
+const resolvers = {
+	*getItem( id ) {
+		const path = `/wp/v2/items/${ id }`;
+		const item = yield apiFetch( { path } );
+		return {
+			type: 'RECEIVE_ITEM',
+			id,
+			item,
+		};
+	},
+};
+```
+
+### Check Resolution Status
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function ItemDisplay( { id } ) {
+	const { item, isResolving } = useSelect(
+		( select ) => ( {
+			item: select( myStore ).getItem( id ),
+			isResolving: select( myStore ).isResolving( 'getItem', [ id ] ),
+		} ),
+		[ id ]
+	);
+
+	if ( isResolving ) {
+		return <div>Loading...</div>;
+	}
+
+	return <div>{ item?.name }</div>;
+}
+```
+
+### resolveSelect
+
+Wait for resolution to complete:
+
+```js
+import { resolveSelect } from '@wordpress/data';
+import { store as myStore } from './store';
+
+async function loadItem( id ) {
+	const item = await resolveSelect( myStore ).getItem( id );
+	console.log( 'Item loaded:', item );
+}
+```
+
+## Batching Updates
+
+Batch multiple actions to reduce re-renders:
+
+```js
+import { useRegistry } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function MyComponent() {
+	const registry = useRegistry();
+
+	function handleBulkUpdate() {
+		registry.batch( () => {
+			registry.dispatch( myStore ).setPrice( 'item1', 10 );
+			registry.dispatch( myStore ).setPrice( 'item2', 20 );
+			registry.dispatch( myStore ).setPrice( 'item3', 30 );
+		} );
+	}
+
+	return <button onClick={ handleBulkUpdate }>Update All</button>;
+}
+```
+
+## Higher-Order Components
+
+### withSelect
+
+Inject store data as props.
+
+```js
+import { withSelect } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function PriceDisplay( { price } ) {
+	return <div>Price: ${ price }</div>;
+}
+
+export default withSelect( ( select ) => ( {
+	price: select( myStore ).getPrice( 'hammer' ),
+} ) )( PriceDisplay );
+```
+
+### withDispatch
+
+Inject action creators as props.
+
+```js
+import { withDispatch } from '@wordpress/data';
+import { store as myStore } from './store';
+
+function SaveButton( { savePrice } ) {
+	return <button onClick={ savePrice }>Save</button>;
+}
+
+export default withDispatch( ( dispatch ) => ( {
+	savePrice: () => dispatch( myStore ).setPrice( 'hammer', 15 ),
+} ) )( SaveButton );
+```
+
+## Custom Registries
+
+Create isolated registries for testing or specific contexts:
+
+```js
+import { createRegistry } from '@wordpress/data';
+
+const registry = createRegistry();
+registry.register( myStore );
+
+// Use with components
+import { RegistryProvider } from '@wordpress/data';
+
+function App() {
+	return (
+		<RegistryProvider value={ registry }>
+			<MyComponent />
+		</RegistryProvider>
+	);
+}
+```
+
+## Persistence
+
+### Local Storage Persistence
+
+```js
+import { use } from '@wordpress/data';
+import { plugins } from '@wordpress/data';
+
+use( plugins.persistence, {
+	storageKey: 'my-app-state',
+} );
+```
+
+## Debugging
+
+### DevTools
+
+Enable Redux DevTools:
+
+```js
+// In development
+if ( window.__REDUX_DEVTOOLS_EXTENSION__ ) {
+	window.__REDUX_DEVTOOLS_EXTENSION__();
+}
+```
+
+### Log State Changes
+
+```js
+import { subscribe, select } from '@wordpress/data';
+import { store as myStore } from './store';
+
+subscribe( () => {
+	console.log( 'Current state:', select( myStore ).getState() );
+} );
+```
+
+## TypeScript Support
+
+The package includes TypeScript definitions:
+
+```typescript
+import { createReduxStore } from '@wordpress/data';
+
+interface State {
+	prices: Record< string, number >;
+}
+
+const store = createReduxStore< State >( 'my-shop', {
+	// Type-safe configuration
+} );
+```
+
+## Best Practices
+
+1. **Normalize State** - Store entities in flat objects by ID
+2. **Use Selectors** - Never access state directly
+3. **Memoize Expensive Selectors** - Use `createSelector` for computed values
+4. **Batch Related Updates** - Use `registry.batch()` for multiple actions
+5. **Handle Loading States** - Check resolution status in components
+
+## Core WordPress Stores
+
+WordPress provides several built-in stores:
+
+- `core` - Settings and entities
+- `core/blocks` - Block types
+- `core/block-editor` - Block editor state
+- `core/editor` - Post editor state
+- `core/edit-post` - Edit post UI state

@@ -1,0 +1,117 @@
+---
+title: Key Concepts
+description: Fundamental concepts of the Block Editor including blocks, patterns, templates, and reusable blocks
+---
+
+## Blocks
+
+Blocks are an abstract unit for structuring and interacting with content. When composed together they create the content for a webpage. Everything from a paragraph, to a video, to the site title is represented as a block.
+
+Blocks come in many different forms but also provide a consistent interface. They can be inserted, moved, reordered, copied, duplicated, transformed, deleted, dragged, and combined. Blocks can also be reused, allowing them to be shared across posts and post types and/or used multiple times in the same post.
+
+The settings and content of a block can be customized in three main places:
+- The block canvas
+- The block toolbar
+- The block inspector
+
+### Composability
+
+Blocks are meant to be combined in different ways. Blocks are hierarchical in that a block can be nested within another block. Nested blocks and their container are also called _children_ and _parent_ respectively.
+
+For example, a _Columns_ block can be the parent block to multiple child blocks in each of its columns. The API that governs child block usage is named `InnerBlocks`.
+
+### Data and Attributes
+
+Blocks understand content as attributes and are serializable to HTML. The block grammar uses HTML comments, either self-closing or with beginning and ending tags. The main tag can contain a JSON object with block configuration. This raw form is the serialized representation:
+
+```html
+<!-- wp:paragraph {"key": "value"} -->
+<p>Welcome to the world of blocks.</p>
+<!-- /wp:paragraph -->
+```
+
+**Static vs Dynamic Blocks:**
+- **Static blocks** contain rendered content and attributes used to re-render based on changes
+- **Dynamic blocks** require server-side data and rendering during post content generation
+
+Each block contains attributes or configuration settings, which can be sourced from:
+- Raw HTML in the content
+- Post meta
+- Other customizable origins
+
+### Block Transforms
+
+Blocks have the ability to be transformed into other block types. This allows operations like:
+- Converting a paragraph into a heading
+- Transforming multiple images into a gallery
+- Multi-block selections to compound blocks
+
+Internal block variations are also possible transformation targets.
+
+### Block Variations
+
+Given a block type, a block variation is a predefined set of its initial attributes. This API allows creating a single block from which multiple configurations are possible.
+
+Variations provide different possible interfaces, including:
+- Showing up as entirely new blocks in the library
+- Appearing as presets when inserting a new block
+
+## Reusable Blocks
+
+A reusable block is an instance of a block (or multiple blocks) that can be inserted and edited in multiple places, remaining in sync everywhere. Any edits to a reusable block appear on every other use of that block.
+
+**Technical Implementation:**
+- Stored as a hidden post type (`wp_block`)
+- Implemented as dynamic blocks that reference the `post_id`
+- Return the `post_content` for that block
+
+Examples include:
+- Headings with custom colors appearing on multiple pages
+- Sidebar widgets appearing on every page
+
+## Patterns
+
+A block pattern is a group of blocks combined together to create a design pattern. These provide starting points for building advanced pages and layouts quickly.
+
+**Key Characteristics:**
+- Can be as small as a single block or as large as a full page
+- Once inserted, don't remain in sync with the original
+- Blocks contained are meant to be edited and customized
+- Themes can register patterns to offer design language consistent with theme aesthetics
+
+Unlike reusable blocks, patterns are just regular blocks composed together—they're templates, not synchronized content.
+
+## Templates
+
+While the post editor concentrates on post content, the template editor allows declaring and editing an entire site using blocks, from header to footer.
+
+**Template Structure:**
+- **Templates** - Describe a full page (home, singular, archive, 404, etc.)
+- **Template Parts** - Reusable areas within templates (header, sidebar, footer)
+
+**Template Management:**
+- Templates and parts can be composed together and registered by a theme
+- Fully editable by users in the block editor
+- Customized templates are saved in `wp_template` post type
+- Include both static pages and dynamic ones (archives, singular, home, 404)
+
+**Special Blocks for Templates:**
+Blocks that interact with site properties (site title, description, logo, navigation) are especially useful when editing templates and template parts.
+
+**Note:** Custom post types can be initialized with a starting `post_content` template—this is different from the theme template system described here.
+
+## Styles
+
+Styles (formerly known as Global Styles) is both an interface and a configuration system:
+
+**User Interface:**
+Users access styling controls through the editor's global styles panel.
+
+**Configuration System:**
+A `theme.json` file absorbs configuration aspects usually scattered through `add_theme_support` calls, providing:
+- What settings should be enabled
+- Specific tools a theme offers (custom color palettes)
+- Available design tools
+- Infrastructure to coordinate styles from WordPress, the theme, and the user
+
+The system aims to simplify communication with the editor and provide a unified approach to theme configuration.

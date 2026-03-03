@@ -1,0 +1,365 @@
+---
+title: Embed Blocks
+description: Blocks for embedding content from external services in the Gutenberg Block Editor
+---
+
+# Embed Blocks
+
+Embed blocks allow you to seamlessly integrate content from external platforms and services using oEmbed technology.
+
+## Core Embed Block
+
+**Name:** `core/embed`
+
+**Description:** Add a block that displays content pulled from other sites, like Twitter or YouTube.
+
+### Attributes
+
+- `url` (string) - URL to embed
+- `caption` (string) - Embed caption
+- `type` (string) - Embed type (video, rich, etc.)
+- `providerNameSlug` (string) - Provider identifier (youtube, twitter, etc.)
+- `allowResponsive` (boolean) - Allow responsive sizing, default: true
+- `responsive` (boolean) - Use responsive sizing
+- `previewable` (boolean) - Can preview the embed
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Spacing:** margin
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Generic embed
+wp.blocks.createBlock('core/embed', {
+  url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+});
+
+// Embed with caption
+wp.blocks.createBlock('core/embed', {
+  url: 'https://twitter.com/username/status/123456',
+  caption: 'Check out this tweet!',
+});
+```
+
+## Supported Embed Providers
+
+The core embed block supports content from numerous platforms through oEmbed:
+
+### Video Platforms
+
+#### YouTube
+- **URL Pattern:** `https://www.youtube.com/watch?v=VIDEO_ID`
+- **Short URL:** `https://youtu.be/VIDEO_ID`
+- **Features:** Responsive, video controls, playlists
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  providerNameSlug: 'youtube',
+});
+```
+
+#### Vimeo
+- **URL Pattern:** `https://vimeo.com/VIDEO_ID`
+- **Features:** High-quality video, privacy controls
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://vimeo.com/123456789',
+  providerNameSlug: 'vimeo',
+});
+```
+
+#### Dailymotion
+- **URL Pattern:** `https://www.dailymotion.com/video/VIDEO_ID`
+
+#### VideoPress
+- **URL Pattern:** `https://videopress.com/v/VIDEO_ID`
+- **Features:** WordPress.com integrated video hosting
+
+### Social Media
+
+#### Twitter / X
+- **URL Pattern:** `https://twitter.com/username/status/TWEET_ID`
+- **Features:** Embedded tweets with media, replies, likes
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://twitter.com/WordPress/status/123456789',
+  providerNameSlug: 'twitter',
+});
+```
+
+#### Facebook
+- **URL Pattern:** `https://www.facebook.com/username/posts/POST_ID`
+- **Features:** Posts, videos, live streams
+
+#### Instagram
+- **URL Pattern:** `https://www.instagram.com/p/POST_ID/`
+- **Features:** Photos, videos, reels
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://www.instagram.com/p/ABC123/',
+  providerNameSlug: 'instagram',
+});
+```
+
+#### TikTok
+- **URL Pattern:** `https://www.tiktok.com/@username/video/VIDEO_ID`
+- **Features:** Short-form videos
+
+### Publishing Platforms
+
+#### WordPress
+- **URL Pattern:** `https://example.wordpress.com/POST_SLUG/`
+- **Features:** Embed posts from WordPress.com and other WordPress sites
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://wordpress.com/blog/2024/01/post-title',
+  providerNameSlug: 'wordpress',
+});
+```
+
+#### Medium
+- **URL Pattern:** `https://medium.com/@username/post-slug`
+
+#### Reddit
+- **URL Pattern:** `https://www.reddit.com/r/subreddit/comments/POST_ID/`
+
+#### Tumblr
+- **URL Pattern:** `https://username.tumblr.com/post/POST_ID`
+
+### Music & Audio
+
+#### Spotify
+- **URL Pattern:** 
+  - Track: `https://open.spotify.com/track/TRACK_ID`
+  - Album: `https://open.spotify.com/album/ALBUM_ID`
+  - Playlist: `https://open.spotify.com/playlist/PLAYLIST_ID`
+  - Artist: `https://open.spotify.com/artist/ARTIST_ID`
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://open.spotify.com/track/ABC123',
+  providerNameSlug: 'spotify',
+});
+```
+
+#### SoundCloud
+- **URL Pattern:** `https://soundcloud.com/artist/track-name`
+- **Features:** Audio player with waveform
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://soundcloud.com/artist/track',
+  providerNameSlug: 'soundcloud',
+});
+```
+
+#### Mixcloud
+- **URL Pattern:** `https://www.mixcloud.com/username/show-name/`
+
+### Creative Platforms
+
+#### Flickr
+- **URL Pattern:** `https://www.flickr.com/photos/username/PHOTO_ID`
+- **Features:** Photo embedding with metadata
+
+#### SmugMug
+- **URL Pattern:** `https://username.smugmug.com/PATH/`
+
+#### Speaker Deck
+- **URL Pattern:** `https://speakerdeck.com/username/presentation-slug`
+- **Features:** Presentation slides
+
+#### SlideShare
+- **URL Pattern:** `https://www.slideshare.net/username/presentation-title`
+
+### Developer Platforms
+
+#### GitHub Gist
+- **URL Pattern:** `https://gist.github.com/username/GIST_ID`
+- **Features:** Embedded code snippets
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://gist.github.com/username/abc123',
+  providerNameSlug: 'github',
+});
+```
+
+#### CodePen
+- **URL Pattern:** `https://codepen.io/username/pen/PEN_ID`
+- **Features:** Interactive code examples
+
+### Other Services
+
+#### Amazon Kindle
+- **URL Pattern:** Book preview URLs
+
+#### Animoto
+- **URL Pattern:** Video URLs
+
+#### Cloudup
+- **URL Pattern:** File sharing URLs
+
+#### Crowdsignal (Polldaddy)
+- **URL Pattern:** `https://poll.fm/POLL_ID`
+- **Features:** Polls and surveys
+
+#### Imgur
+- **URL Pattern:** `https://imgur.com/IMAGE_ID`
+
+#### Issuu
+- **URL Pattern:** Publication URLs
+- **Features:** Digital publications
+
+#### Kickstarter
+- **URL Pattern:** `https://www.kickstarter.com/projects/USERNAME/PROJECT`
+
+#### Meetup
+- **URL Pattern:** Meetup group and event URLs
+
+#### Pocket Casts
+- **URL Pattern:** Podcast episode URLs
+
+#### ReverbNation
+- **URL Pattern:** Artist and song URLs
+
+#### Scribd
+- **URL Pattern:** `https://www.scribd.com/document/DOC_ID`
+
+#### TED
+- **URL Pattern:** `https://www.ted.com/talks/TALK_SLUG`
+
+#### Pinterest
+- **URL Pattern:** `https://www.pinterest.com/pin/PIN_ID/`
+
+#### Wolfram Cloud
+- **URL Pattern:** Notebook URLs
+
+## Advanced Embed Usage
+
+### Responsive Embeds
+
+By default, embeds are responsive and adjust to container width:
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://www.youtube.com/watch?v=VIDEO_ID',
+  responsive: true,
+  allowResponsive: true,
+});
+```
+
+### Embed Alignment
+
+```javascript
+// Full-width embed
+wp.blocks.createBlock('core/embed', {
+  url: 'https://vimeo.com/123456',
+  align: 'wide',
+});
+
+// Centered embed
+wp.blocks.createBlock('core/embed', {
+  url: 'https://twitter.com/user/status/123',
+  align: 'center',
+});
+```
+
+### Embed with Caption
+
+```javascript
+wp.blocks.createBlock('core/embed', {
+  url: 'https://www.youtube.com/watch?v=VIDEO_ID',
+  caption: '<em>Watch our latest tutorial</em>',
+});
+```
+
+## Custom oEmbed Providers
+
+You can register custom oEmbed providers in WordPress:
+
+```php
+// Register custom provider
+wp_oembed_add_provider(
+  'https://example.com/video/*',
+  'https://example.com/oembed',
+  true
+);
+```
+
+## Troubleshooting Embeds
+
+### Common Issues
+
+1. **Embed not working** - Check if URL is publicly accessible
+2. **Preview not loading** - Verify oEmbed endpoint is responding
+3. **HTTPS required** - Many providers require HTTPS URLs
+4. **Privacy restrictions** - Some embeds may be blocked by privacy settings
+5. **Rate limiting** - Too many embed requests may be throttled
+
+### Debug Embed Data
+
+Test oEmbed endpoint directly:
+
+```bash
+curl "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=VIDEO_ID&format=json"
+```
+
+## Security Considerations
+
+1. **Content Security Policy** - Embeds may require CSP adjustments
+2. **Privacy** - External embeds may track users
+3. **Performance** - Multiple embeds can slow page load
+4. **Validation** - WordPress validates oEmbed responses
+5. **Sanitization** - Embed HTML is sanitized before display
+
+## Performance Best Practices
+
+1. **Lazy loading** - Enable lazy loading for below-fold embeds
+2. **Limit embeds** - Too many embeds impact page speed
+3. **Cache responses** - WordPress caches oEmbed responses
+4. **Fallback content** - Provide fallback for failed embeds
+5. **Local alternatives** - Consider self-hosting video when possible
+
+## Accessibility
+
+1. **Captions** - Always provide descriptive captions
+2. **Transcripts** - Include transcripts for video/audio content
+3. **Alt text** - Use caption field for context
+4. **Keyboard navigation** - Ensure embedded players are keyboard accessible
+5. **Screen readers** - Test embedded content with screen readers
+
+## Block Variations
+
+Embed blocks can be registered as variations for specific providers:
+
+```javascript
+wp.blocks.registerBlockVariation('core/embed', {
+  name: 'youtube',
+  title: 'YouTube',
+  icon: youtubeIcon,
+  keywords: ['video', 'youtube'],
+  description: 'Embed a YouTube video',
+  patterns: [/^https?:\/\/(www\.)?youtube\.com\/.+/i],
+  attributes: { providerNameSlug: 'youtube' },
+});
+```
+
+## Best Practices
+
+1. **Test embeds** - Preview embeds before publishing
+2. **Use captions** - Provide context for embedded content
+3. **Check licenses** - Ensure you have rights to embed content
+4. **Mobile testing** - Verify embeds work on mobile devices
+5. **Fallback plans** - Have alternatives if embed service is down
+6. **Privacy compliance** - Consider GDPR/privacy implications
+7. **Performance monitoring** - Track impact on page load times
+8. **Update regularly** - Keep WordPress updated for latest provider support

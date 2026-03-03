@@ -1,0 +1,352 @@
+---
+title: Extending the Query Loop Block
+description: Create custom variations of the Query Loop block with preset configurations and custom controls for your post types.
+---
+
+The Query Loop block is a powerful tool for displaying lists of posts. By creating custom variations, you can provide users with preset configurations tailored to specific post types or use cases.
+
+## Why Create Variations?
+
+Most users don't need to understand technical query concepts. A pre-configured variation provides:
+
+- Clear, branded block names and descriptions
+- Sensible defaults for your post type
+- Focused settings without irrelevant options
+- Better discoverability in the block inserter
+
+<Tip>
+Use block variations to create user-friendly versions of the Query Loop block without exposing complex technical concepts.
+</Tip>
+
+## Creating a Basic Variation
+
+Here's a complete example for a "Books List" variation:
+
+```js
+import { registerBlockVariation } from '@wordpress/blocks';
+
+const MY_VARIATION_NAME = 'my-plugin/books-list';
+
+registerBlockVariation( 'core/query', {
+  name: MY_VARIATION_NAME,
+  title: 'Books List',
+  description: 'Displays a list of books',
+  icon: 'book',
+  isActive: ( { namespace, query } ) => {
+    return (
+      namespace === MY_VARIATION_NAME &&
+      query.postType === 'book'
+    );
+  },
+  attributes: {
+    namespace: MY_VARIATION_NAME,
+    query: {
+      perPage: 6,
+      postType: 'book',
+      order: 'desc',
+      orderBy: 'date',
+      inherit: false,
+    },
+  },
+  scope: [ 'inserter' ],
+} );
+```
+
+## Key Properties
+
+### namespace Attribute
+
+The `namespace` attribute identifies your variation:
+
+```js
+attributes: {
+  namespace: 'my-plugin/books-list',
+  query: {
+    postType: 'book',
+  },
+}
+```
+
+<Tip>
+Always use a unique namespace to prevent conflicts with other plugins. The namespace helps Gutenberg recognize your specific variation.
+</Tip>
+
+### isActive Property
+
+Define when your variation is considered active:
+
+```js
+isActive: ( { namespace, query } ) => {
+  return (
+    namespace === MY_VARIATION_NAME &&
+    query.postType === 'book'
+  );
+}
+```
+
+Or use the shorthand for simple namespace matching:
+
+```js
+isActive: [ 'namespace' ]
+```
+
+### scope Property
+
+Set `scope: [ 'inserter' ]` to make your variation appear in the block inserter:
+
+```js
+scope: [ 'inserter' ]
+```
+
+## Defining the Layout
+
+### Using innerBlocks
+
+Provide default inner blocks to skip the setup phase:
+
+```js
+innerBlocks: [
+  [
+    'core/post-template',
+    {},
+    [
+      [ 'core/post-title' ],
+      [ 'core/post-excerpt' ],
+      [ 'core/post-date' ],
+    ],
+  ],
+  [ 'core/query-pagination' ],
+  [ 'core/query-no-results' ],
+]
+```
+
+### Using Patterns
+
+Alternatively, register patterns connected to your variation:
+
+```php
+register_block_pattern(
+  'my-plugin/book-list-pattern',
+  [
+    'title' => 'Book Grid',
+    'blockTypes' => [ 'core/query/my-plugin/books-list' ],
+    'content' => '<!-- wp:query {"namespace":"my-plugin/books-list"} -->',
+  ]
+);
+```
+
+<Tip>
+Connect patterns to your variation by adding `core/query/$variation_name` to the pattern's `blockTypes` property.
+</Tip>
+
+## Controlling Available Settings
+
+### allowedControls Property
+
+Limit which settings users can modify:
+
+```js
+allowedControls: [ 'inherit', 'order', 'taxQuery', 'search' ]
+```
+
+Available controls:
+
+- `inherit` - Allow inheriting query from template
+- `postType` - Post type selector
+- `order` - Sort order (asc/desc)
+- `sticky` - Sticky posts handling
+- `taxQuery` - Taxonomy filters (inclusion and exclusion)
+- `author` - Filter by author
+- `search` - Keyword search
+- `format` - Post format filter
+- `parents` - Parent entity filter
+
+<Tip>
+Remove the `postType` control when users should only see your custom post type. This prevents confusion and potential errors.
+</Tip>
+
+## Adding Custom Controls
+
+Use a block filter to add custom inspector controls:
+
+```jsx
+import { addFilter } from '@wordpress/hooks';
+import { InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, SelectControl } from '@wordpress/components';
+
+const withBookControls = ( BlockEdit ) => ( props ) => {
+  const { attributes, setAttributes } = props;
+  
+  // Only show for our variation
+  if ( attributes.namespace !== 'my-plugin/books-list' ) {
+    return <BlockEdit { ...props } />;
+  }
+
+  return (
+    <>
+      <BlockEdit { ...props } />
+      <InspectorControls>
+        <PanelBody title="Book Settings">
+          <SelectControl
+            label="Book Author"
+            value={ attributes.query.bookAuthor }
+            options={ [
+              { label: 'All Authors', value: '' },
+              { label: 'Tolkien', value: 'tolkien' },
+              { label: 'Asimov', value: 'asimov' },
+            ] }
+            onChange={ ( bookAuthor ) => {
+              setAttributes( {
+                query: {
+                  ...attributes.query,
+                  bookAuthor,
+                },
+              } );
+            } }
+          />
+        </PanelBody>
+      </InspectorControls>
+    </>
+  );
+};
+
+addFilter(
+  'editor.BlockEdit',
+  'my-plugin/with-book-controls',
+  withBookControls
+);
+```
+
+## Custom Query Parameters
+
+Add custom parameters to the query object:
+
+```js
+attributes: {
+  query: {
+    postType: 'book',
+    bookAuthor: 'J. R. R. Tolkien',
+    genre: 'fantasy',
+  },
+}
+```
+
+### Front-End Implementation
+
+Handle custom parameters with the `query_loop_block_query_vars` filter:
+
+```php
+add_filter(
+  'query_loop_block_query_vars',
+  function( $query, $block ) {
+    // Only modify our variation
+    if ( 'my-plugin/books-list' !== $block['attrs']['namespace'] ) {
+      return $query;
+    }
+
+    // Add custom meta query
+    if ( ! empty( $block['attrs']['query']['bookAuthor'] ) ) {
+      $query['meta_query'] = [
+        [
+          'key' => 'book_author',
+          'value' => $block['attrs']['query']['bookAuthor'],
+        ],
+      ];
+    }
+
+    return $query;
+  },
+  10,
+  2
+);
+```
+
+### Editor Preview
+
+Handle custom parameters in the REST API for editor previews:
+
+```php
+add_filter(
+  'rest_book_query',
+  function( $args, $request ) {
+    $book_author = $request->get_param( 'bookAuthor' );
+    
+    if ( ! empty( $book_author ) ) {
+      $args['meta_query'] = [
+        [
+          'key' => 'book_author',
+          'value' => $book_author,
+        ],
+      ];
+    }
+
+    return $args;
+  },
+  10,
+  2
+);
+```
+
+<Tip>
+Custom query parameters are automatically passed to the REST API. Use the `rest_{post_type}_query` filter to handle them in editor previews.
+</Tip>
+
+## Understanding taxQuery
+
+The `taxQuery` attribute supports both inclusion and exclusion:
+
+```js
+query: {
+  taxQuery: {
+    include: {
+      category: [ 1, 2, 3 ],
+      post_tag: [ 10, 20 ],
+    },
+    exclude: {
+      category: [ 5, 6 ],
+      post_tag: [ 15 ],
+    },
+  },
+}
+```
+
+Users will see both "[Taxonomy]" (inclusion) and "Exclude: [Taxonomy]" controls when `taxQuery` is in `allowedControls`.
+
+## Complete Example
+
+Here's a full implementation:
+
+```js
+registerBlockVariation( 'core/query', {
+  name: 'my-plugin/books-list',
+  title: 'Books List',
+  description: 'Display a curated list of books',
+  icon: 'book',
+  attributes: {
+    namespace: 'my-plugin/books-list',
+    query: {
+      perPage: 6,
+      postType: 'book',
+      order: 'desc',
+      orderBy: 'date',
+    },
+  },
+  innerBlocks: [
+    [
+      'core/post-template',
+      {},
+      [
+        [ 'core/post-featured-image' ],
+        [ 'core/post-title' ],
+        [ 'core/post-excerpt' ],
+      ],
+    ],
+    [ 'core/query-pagination' ],
+  ],
+  allowedControls: [ 'order', 'search' ],
+  isActive: [ 'namespace' ],
+  scope: [ 'inserter' ],
+} );
+```
+
+With this variation, users get a fully functional books list without needing to understand query parameters or post types.

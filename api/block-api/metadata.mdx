@@ -1,0 +1,382 @@
+---
+title: Block metadata
+description: Complete reference for block.json metadata properties
+---
+
+Starting with WordPress 5.8, the recommended way to register block types is using the `block.json` metadata file. This file serves as the canonical definition for both PHP (server-side) and JavaScript (client-side) registration.
+
+## Basic example
+
+```json
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "my-plugin/notice",
+	"title": "Notice",
+	"category": "text",
+	"icon": "star",
+	"description": "Shows warning, error or success notices",
+	"keywords": ["alert", "message"],
+	"attributes": {
+		"message": {
+			"type": "string",
+			"source": "html",
+			"selector": ".message"
+		}
+	},
+	"supports": {
+		"align": true
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style.css"
+}
+```
+
+## Block properties
+
+### Required properties
+
+<ParamField path="name" type="string" required>
+  The unique identifier for the block. Must be structured as `namespace/block-name` where namespace is your plugin or theme name. Can only contain lowercase alphanumeric characters, dashes, and one forward slash.
+
+  ```json
+  { "name": "core/heading" }
+  ```
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  The display title for your block shown in the Inserter and other areas. Can be translated.
+
+  ```json
+  { "title": "Heading" }
+  ```
+</ParamField>
+
+### Optional properties
+
+<ParamField path="apiVersion" type="number" default="1">
+  The version of the Block API used by the block. The most recent version is `3`, introduced in WordPress 6.3.
+
+  ```json
+  { "apiVersion": 3 }
+  ```
+</ParamField>
+
+<ParamField path="category" type="string">
+  Blocks are grouped into categories in the Inserter. Core categories include: `text`, `media`, `design`, `widgets`, `theme`, and `embed`.
+
+  ```json
+  { "category": "text" }
+  ```
+</ParamField>
+
+<ParamField path="icon" type="string">
+  An icon to identify the block. Can be any WordPress Dashicon slug or custom SVG.
+
+  ```json
+  { "icon": "star" }
+  ```
+</ParamField>
+
+<ParamField path="description" type="string">
+  A short description shown in the block inspector. Can be translated.
+
+  ```json
+  { "description": "Introduce new sections and organize content" }
+  ```
+</ParamField>
+
+<ParamField path="keywords" type="string[]" default="[]">
+  Search terms to help users discover the block. Can be translated.
+
+  ```json
+  { "keywords": ["alert", "message"] }
+  ```
+</ParamField>
+
+<ParamField path="version" type="string">
+  The current version of the block, used for cache invalidation.
+
+  ```json
+  { "version": "1.0.3" }
+  ```
+</ParamField>
+
+<ParamField path="textdomain" type="string">
+  The gettext text domain for internationalization.
+
+  ```json
+  { "textdomain": "my-plugin" }
+  ```
+</ParamField>
+
+<ParamField path="attributes" type="object" default="{}">
+  Defines the structured data needs of the block. See [Attributes](/api/block-api/attributes) for details.
+
+  ```json
+  {
+    "attributes": {
+      "cover": {
+        "type": "string",
+        "source": "attribute",
+        "selector": "img",
+        "attribute": "src"
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="providesContext" type="object" default="{}">
+  Context provided for descendent blocks. Maps context name to attribute.
+
+  ```json
+  {
+    "providesContext": {
+      "my-plugin/recordId": "recordId"
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="usesContext" type="string[]" default="[]">
+  Array of context names to inherit from ancestor blocks.
+
+  ```json
+  { "usesContext": ["message"] }
+  ```
+</ParamField>
+
+<ParamField path="selectors" type="object" default="{}">
+  Custom CSS selectors for theme.json styles. Available since WordPress 6.3.
+
+  ```json
+  {
+    "selectors": {
+      "root": ".my-custom-block-selector",
+      "typography": {
+        "root": ".my-custom-block-selector > h2"
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="supports" type="object" default="{}">
+  Features enabled for the block. See [Supports](/api/block-api/supports) for details.
+
+  ```json
+  {
+    "supports": {
+      "align": true,
+      "color": {
+        "background": true,
+        "text": true
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="styles" type="array" default="[]">
+  Alternative block styles. The `label` property can be translated.
+
+  ```json
+  {
+    "styles": [
+      { "name": "default", "label": "Default", "isDefault": true },
+      { "name": "outline", "label": "Outline" }
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="example" type="object">
+  Structured data for the block preview in the Inspector.
+
+  ```json
+  {
+    "example": {
+      "attributes": {
+        "message": "This is a notice!"
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="variations" type="object[]">
+  Block variations that share common functionality. Available since WordPress 5.9.
+
+  ```json
+  {
+    "variations": [
+      {
+        "name": "example",
+        "title": "Example",
+        "attributes": { "level": 2 },
+        "scope": ["block"]
+      }
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="parent" type="string[]">
+  Restricts block to only be available nested within specified blocks.
+
+  ```json
+  { "parent": ["my-block/product"] }
+  ```
+</ParamField>
+
+<ParamField path="ancestor" type="string[]">
+  Makes block available anywhere within specified block subtrees. Available since WordPress 6.0.
+
+  ```json
+  { "ancestor": ["my-block/product"] }
+  ```
+</ParamField>
+
+<ParamField path="allowedBlocks" type="string[]">
+  Specifies which blocks can be direct children. Available since WordPress 6.5.
+
+  ```json
+  { "allowedBlocks": ["core/list-item"] }
+  ```
+</ParamField>
+
+## Asset properties
+
+<ParamField path="editorScript" type="string | string[]">
+  Scripts enqueued only in the editor context. Can be a registered handle or file path.
+
+  ```json
+  { "editorScript": "file:./index.js" }
+  ```
+</ParamField>
+
+<ParamField path="script" type="string | string[]">
+  Scripts enqueued in both editor and frontend.
+
+  ```json
+  { "script": "file:./script.js" }
+  ```
+</ParamField>
+
+<ParamField path="viewScript" type="string | string[]">
+  Scripts enqueued only on the frontend. Available since WordPress 5.9.
+
+  ```json
+  { "viewScript": ["file:./view.js", "shared-script"] }
+  ```
+</ParamField>
+
+<ParamField path="viewScriptModule" type="string | string[]">
+  Script modules enqueued only on the frontend. Available since WordPress 6.5.
+
+  ```json
+  { "viewScriptModule": "file:./view.js" }
+  ```
+</ParamField>
+
+<ParamField path="editorStyle" type="string | string[]">
+  Styles enqueued only in the editor.
+
+  ```json
+  { "editorStyle": "file:./index.css" }
+  ```
+</ParamField>
+
+<ParamField path="style" type="string | string[]">
+  Styles enqueued in both editor and frontend.
+
+  ```json
+  { "style": ["file:./style.css", "shared-style"] }
+  ```
+</ParamField>
+
+<ParamField path="viewStyle" type="string | string[]">
+  Styles enqueued only on the frontend. Available since WordPress 6.5.
+
+  ```json
+  { "viewStyle": "file:./view.css" }
+  ```
+</ParamField>
+
+<ParamField path="render" type="string">
+  PHP file for server-side rendering. Available since WordPress 6.1.
+
+  ```json
+  { "render": "file:./render.php" }
+  ```
+
+  The file receives three variables:
+  - `$attributes` (array) - Block attributes
+  - `$content` (string) - Block default content
+  - `$block` (WP_Block) - Block instance
+</ParamField>
+
+## Asset file paths
+
+File paths must be prefixed with `file:` and are relative to the `block.json` location.
+
+### Dependency files
+
+For script and style assets, WordPress automatically detects `.asset.php` files:
+
+```
+build/
+├─ block.json
+├─ index.js
+└─ index.asset.php
+```
+
+The `.asset.php` file should return:
+
+```php
+<?php
+return array(
+	'dependencies' => array('react', 'wp-blocks'),
+	'version' => '3be55b05',
+);
+```
+
+## Internationalization
+
+WordPress can automatically translate fields marked as translatable when the `textdomain` property is set. Translatable fields include:
+
+- `title`
+- `description`
+- `keywords`
+- `styles[].label`
+- `variations[].title`
+- `variations[].description`
+- `variations[].keywords`
+
+### PHP translation
+
+In PHP, properties are wrapped in `_x()` function calls:
+
+```php
+$metadata = array(
+	'title' => _x('My block', 'block title', 'my-plugin'),
+	'description' => _x('My block is fantastic', 'block description', 'my-plugin'),
+);
+```
+
+### JavaScript translation
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import metadata from './block.json';
+
+registerBlockType( metadata, {
+	edit: Edit,
+	// Properties are automatically wrapped with _x()
+} );
+```
+
+## Frontend asset enqueueing
+
+Assets specified in `script`, `viewScript`, `style`, and `viewStyle` are only enqueued when the block is present on the page, optimizing performance.

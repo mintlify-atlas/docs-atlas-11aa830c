@@ -1,0 +1,239 @@
+---
+title: Get Started with wp-env
+description: Set up a local WordPress development environment using the @wordpress/env package
+---
+
+The [@wordpress/env](https://www.npmjs.com/package/@wordpress/env) package (`wp-env`) lets you set up a local WordPress environment (site) for building and testing plugins and themes, without any additional configuration.
+
+Before following this guide, install [Node.js development tools](/dev-env/nodejs-environment) if you have not already done so.
+
+## Quick Start
+
+<Steps>
+
+### Install Docker Desktop
+
+Download, install, and start [Docker Desktop](https://www.docker.com/products/docker-desktop) following the instructions for your operating system.
+
+### Install wp-env Globally
+
+Run the following command in the terminal to install `wp-env` globally:
+
+```bash
+npm -g install @wordpress/env
+```
+
+### Navigate to Your Project Directory
+
+In the terminal, navigate to an existing plugin directory, theme directory, or a new working directory.
+
+```bash
+cd /path/to/your-plugin
+```
+
+### Start the Local Environment
+
+Run the following command to start the local WordPress environment:
+
+```bash
+wp-env start
+```
+
+### Access WordPress
+
+After the script runs, navigate to `http://localhost:8888/wp-admin` and log into the WordPress dashboard using:
+
+- **Username**: `admin`
+- **Password**: `password`
+
+</Steps>
+
+## Docker Desktop Setup
+
+The `wp-env` tool uses [Docker](https://www.docker.com/) to create a virtual machine that runs the local WordPress site. The Docker Desktop application is free for small businesses, personal use, education, and non-commercial open-source projects. See their [FAQ](https://docs.docker.com/desktop/faqs/general/#do-i-need-to-pay-to-use-docker-desktop) for more information.
+
+Use the links below to download and install Docker Desktop for your operating system:
+
+- [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/)
+- [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+- [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
+
+After successful installation, start the Docker Desktop application and follow the prompts to get set up. You should generally use the recommended (default) settings, and creating a Docker account is optional.
+
+## Configuration
+
+### Where to Run wp-env
+
+The `wp-env` tool can run from practically anywhere. When using the script while developing a single plugin, `wp-env start` can mount and activate the plugin automatically when run from the directory containing the plugin. This also works for themes when run from the directory in which you are developing the theme.
+
+A generic WordPress environment will be created if you run `wp-env start` from a directory that is not a plugin or theme. The script will display the following warning, but ignore if this is your intention:
+
+```
+!! Warning: could not find a .wp-env.json configuration file and could not determine if 'DIR' is a WordPress installation, a plugin, or a theme.
+```
+
+### Using .wp-env.json
+
+You can use the `.wp-env.json` configuration file to create an environment that works with multiple plugins and/or themes.
+
+Example configuration from the Gutenberg project:
+
+```json
+{
+  "$schema": "./schemas/json/wp-env.json",
+  "testsEnvironment": false,
+  "core": "WordPress/WordPress",
+  "plugins": [ "." ],
+  "themes": [ "./test/emptytheme" ],
+  "phpmyadminPort": 9000
+}
+```
+
+<Note>
+Some projects, like Gutenberg, include their own specific `wp-env` configurations, and the documentation might prompt you to run `npm run wp-env start` instead.
+</Note>
+
+## Common Commands
+
+### Development Workflow
+
+<CodeGroup>
+
+```bash npm
+npm run wp-env status   # Check status
+npm run wp-env start    # Start environment
+npm run wp-env stop     # Stop environment
+```
+
+```bash global
+wp-env status          # Check status
+wp-env start           # Start environment
+wp-env stop            # Stop environment
+```
+
+</CodeGroup>
+
+### Managing the Environment
+
+```bash
+# Clean the WordPress database
+wp-env clean all
+
+# Remove the local environment completely
+wp-env destroy
+
+# Check wp-env version
+wp-env --version
+```
+
+### Example Gutenberg Workflow
+
+```bash
+# Setup
+npm install && composer install
+npm run wp-env status   # Always check status first
+npm run wp-env start    # Only start if not already running
+
+# Development
+npm start               # Development with watch
+npm run build          # Production build
+```
+
+## Uninstall or Reset
+
+Here are a few instructions if you need to start over or want to remove what was installed:
+
+- **Reset database**: Run `wp-env clean all` to clean the WordPress database
+- **Remove environment**: Run `wp-env destroy` to remove the local environment completely for a specific project
+- **Uninstall wp-env**: Run `npm -g uninstall @wordpress/env` to globally uninstall the `wp-env` tool
+
+## Troubleshooting
+
+### Docker Command Error
+
+When using `wp-env`, it's common to get the error: `Error while running docker-compose command`
+
+- Check that Docker Desktop is started and running
+- Check Docker Desktop dashboard for logs, restart, or remove existing virtual machines
+- Then try rerunning `wp-env start`
+
+### Host Already in Use
+
+If you see the error: `Host is already in use by another container`
+
+- The container you are attempting to start is already running, or another container is
+- You can stop an existing container by running `wp-env stop` from the directory that you started it in
+- If you do not remember the directory, you can stop all containers by running `docker stop $(docker ps -q)` (use with caution)
+- Then try rerunning `wp-env start`
+
+### Ubuntu Docker Setup (Pre-20.04.1)
+
+If you are using a version of Ubuntu prior to 20.04.1, you may encounter errors when setting up a local WordPress environment with `wp-env`.
+
+<Steps>
+
+### Install Docker
+
+Follow the [installation guide](https://docs.docker.com/install/linux/docker-ce/ubuntu/) from Docker. `docker-compose` is also required, which you may need to install separately. Refer to the [Docker compose documentation](https://docs.docker.com/compose/install/).
+
+### Check if Docker is Running
+
+Run the following command:
+
+```bash
+ps -ef | grep docker
+```
+
+You should see something like:
+
+```
+/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+```
+
+### Start Docker Service
+
+If Docker is not running, try starting the service:
+
+```bash
+sudo systemctl start docker.service
+```
+
+### Configure Docker Remote Access
+
+If Docker is running but not listening correctly, add the following service override file:
+
+```bash
+# /etc/systemd/system/docker.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2376
+```
+
+### Restart Docker Service
+
+Restart the service from the command-line:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart docker.service
+```
+
+### Set Environment Variable and Start
+
+After restarting the services, set the environment variable `DOCKER_HOST` and start `wp-env`:
+
+```bash
+export DOCKER_HOST=tcp://127.0.0.1:2376
+wp-env start
+```
+
+</Steps>
+
+Your environment should now be set up at `http://localhost:8888`.
+
+## Additional Resources
+
+- [@wordpress/env Package Documentation](https://www.npmjs.com/package/@wordpress/env)
+- [Docker Desktop Documentation](https://docs.docker.com/desktop)
+- [Quick and easy local WordPress development with wp-env](https://developer.wordpress.org/news/2023/03/quick-and-easy-local-wordpress-development-with-wp-env/) (WordPress Developer Blog)
+- [wp-env: Simple Local Environments for WordPress](https://make.wordpress.org/core/2020/03/03/wp-env-simple-local-environments-for-wordpress/) (Make WordPress Core Blog)

@@ -1,0 +1,382 @@
+---
+title: "@wordpress/block-editor"
+description: Standalone block editor components and React hooks for building custom editors
+---
+
+The `@wordpress/block-editor` package provides React components and hooks for creating standalone block editors. It's WordPress-agnostic and can be used to build custom editing experiences.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/block-editor --save
+```
+
+```bash yarn
+yarn add @wordpress/block-editor
+```
+</CodeGroup>
+
+## Basic Usage
+
+```js
+import { useState } from 'react';
+import {
+	BlockCanvas,
+	BlockEditorProvider,
+} from '@wordpress/block-editor';
+
+function MyEditor() {
+	const [ blocks, updateBlocks ] = useState( [] );
+
+	return (
+		<BlockEditorProvider
+			value={ blocks }
+			onInput={ updateBlocks }
+			onChange={ updateBlocks }
+		>
+			<BlockCanvas height="400px" />
+		</BlockEditorProvider>
+	);
+}
+```
+
+## Core Components
+
+### BlockEditorProvider
+
+Provides block editor context to child components.
+
+```js
+import { BlockEditorProvider } from '@wordpress/block-editor';
+
+<BlockEditorProvider
+	value={ blocks }
+	onInput={ onInput }
+	onChange={ onChange }
+	settings={ settings }
+>
+	{ /* Editor components */ }
+</BlockEditorProvider>
+```
+
+### BlockCanvas
+
+Renders the block editor canvas in an iframe.
+
+```js
+import { BlockCanvas } from '@wordpress/block-editor';
+
+<BlockCanvas
+	height="600px"
+	styles={ customStyles }
+/>
+```
+
+**Props:**
+- `height` (string) - Canvas height (default: "300px")
+- `styles` (Array) - Content styles to inject
+- `children` (Element) - Custom canvas content
+
+### BlockList
+
+Renders the list of blocks.
+
+```js
+import { BlockList } from '@wordpress/block-editor';
+
+<BlockList />
+```
+
+### BlockInspector
+
+Displays block settings sidebar.
+
+```js
+import { BlockInspector } from '@wordpress/block-editor';
+
+<BlockInspector />
+```
+
+### BlockToolbar
+
+Renders the block toolbar with formatting controls.
+
+```js
+import { BlockToolbar } from '@wordpress/block-editor';
+
+<BlockToolbar hideDragHandle={ false } />
+```
+
+## Block Controls
+
+### BlockControls
+
+Adds controls to the block toolbar.
+
+```js
+import { BlockControls } from '@wordpress/block-editor';
+import { ToolbarButton } from '@wordpress/components';
+
+function Edit() {
+	return (
+		<>
+			<BlockControls>
+				<ToolbarButton
+					icon="admin-links"
+					label="Custom Control"
+					onClick={ handleClick }
+				/>
+			</BlockControls>
+			{ /* Block content */ }
+		</>
+	);
+}
+```
+
+### InspectorControls
+
+Adds controls to the block settings sidebar.
+
+```js
+import { InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, TextControl } from '@wordpress/components';
+
+function Edit( { attributes, setAttributes } ) {
+	return (
+		<>
+			<InspectorControls>
+				<PanelBody title="Settings">
+					<TextControl
+						label="Title"
+						value={ attributes.title }
+						onChange={ ( title ) => setAttributes( { title } ) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			{ /* Block content */ }
+		</>
+	);
+}
+```
+
+## Rich Text
+
+### RichText
+
+Editable rich text component.
+
+```js
+import { RichText, useBlockProps } from '@wordpress/block-editor';
+
+function Edit( { attributes, setAttributes } ) {
+	return (
+		<RichText
+			{ ...useBlockProps() }
+			tagName="p"
+			value={ attributes.content }
+			onChange={ ( content ) => setAttributes( { content } ) }
+			placeholder="Enter text..."
+		/>
+	);
+}
+```
+
+### PlainText
+
+Plain text area for code or simple text.
+
+```js
+import { PlainText } from '@wordpress/block-editor';
+
+<PlainText
+	value={ attributes.content }
+	onChange={ ( content ) => setAttributes( { content } ) }
+	placeholder="Enter code..."
+/>
+```
+
+## Hooks
+
+### useBlockProps
+
+Marks an element as a block. Required for API v2+.
+
+```js
+import { useBlockProps } from '@wordpress/block-editor';
+
+function Edit() {
+	const blockProps = useBlockProps( {
+		className: 'my-custom-class',
+		style: { color: '#222222' },
+	} );
+
+	return <div { ...blockProps }>Block content</div>;
+}
+```
+
+### useInnerBlocksProps
+
+Marks an element as an inner blocks container.
+
+```js
+import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+
+function Edit() {
+	const blockProps = useBlockProps();
+	const innerBlocksProps = useInnerBlocksProps( blockProps, {
+		allowedBlocks: [ 'core/paragraph', 'core/image' ],
+		template: [ [ 'core/paragraph' ] ],
+	} );
+
+	return <div { ...innerBlocksProps } />;
+}
+```
+
+### useBlockEditContext
+
+Retrieves information about the current block.
+
+```js
+import { useBlockEditContext } from '@wordpress/block-editor';
+
+function MyComponent() {
+	const { name, clientId, isSelected } = useBlockEditContext();
+
+	return isSelected ? <div>This block is selected</div> : null;
+}
+```
+
+## Color and Typography
+
+### ColorPalette
+
+Color picker with theme colors.
+
+```js
+import { ColorPalette } from '@wordpress/block-editor';
+
+<ColorPalette
+	value={ color }
+	onChange={ ( newColor ) => setAttributes( { color: newColor } ) }
+/>
+```
+
+### FontSizePicker
+
+Font size selector.
+
+```js
+import { FontSizePicker } from '@wordpress/block-editor';
+
+<FontSizePicker
+	value={ fontSize }
+	onChange={ ( newSize ) => setAttributes( { fontSize: newSize } ) }
+/>
+```
+
+## Media
+
+### MediaPlaceholder
+
+Media upload placeholder.
+
+```js
+import { MediaPlaceholder } from '@wordpress/block-editor';
+
+<MediaPlaceholder
+	icon="format-image"
+	labels={ { title: 'Image' } }
+	onSelect={ ( media ) => setAttributes( { mediaId: media.id } ) }
+	accept="image/*"
+	allowedTypes={ [ 'image' ] }
+/>
+```
+
+### MediaReplaceFlow
+
+Media replacement controls.
+
+```js
+import { MediaReplaceFlow } from '@wordpress/block-editor';
+
+<MediaReplaceFlow
+	mediaId={ attributes.mediaId }
+	mediaURL={ attributes.mediaURL }
+	allowedTypes={ [ 'image' ] }
+	accept="image/*"
+	onSelect={ ( media ) => setAttributes( { mediaId: media.id } ) }
+/>
+```
+
+## Layout and Alignment
+
+### AlignmentControl
+
+Text alignment toolbar.
+
+```js
+import { AlignmentControl } from '@wordpress/block-editor';
+
+<AlignmentControl
+	value={ attributes.align }
+	onChange={ ( align ) => setAttributes( { align } ) }
+/>
+```
+
+### BlockAlignmentControl
+
+Block alignment toolbar.
+
+```js
+import { BlockAlignmentControl } from '@wordpress/block-editor';
+
+<BlockAlignmentControl
+	value={ attributes.align }
+	onChange={ ( align ) => setAttributes( { align } ) }
+/>
+```
+
+## Utilities
+
+### getColorObjectByColorValue
+
+Finds a color object by value.
+
+```js
+import { getColorObjectByColorValue } from '@wordpress/block-editor';
+
+const colorObject = getColorObjectByColorValue( colors, '#ff0000' );
+```
+
+### getFontSize
+
+Retrieves font size information.
+
+```js
+import { getFontSize } from '@wordpress/block-editor';
+
+const fontSize = getFontSize( fontSizes, 'large', 24 );
+```
+
+## Store
+
+Access the block editor store:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
+
+function MyComponent() {
+	const { selectedBlock } = useSelect( ( select ) => ( {
+		selectedBlock: select( blockEditorStore ).getSelectedBlock(),
+	} ), [] );
+}
+```
+
+## Important Notes
+
+- This package is WordPress-agnostic - avoid adding WordPress-specific dependencies
+- Always use `useBlockProps` for the outermost element in block edit functions
+- Load required stylesheets: `@wordpress/block-editor/build-style/style.css`
+- Register block types before using the editor

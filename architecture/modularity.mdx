@@ -1,0 +1,196 @@
+---
+title: Modularity
+description: Understanding the modular package architecture of the Block Editor and how packages work together
+---
+
+The WordPress Block Editor embraces modularity not just in its behavior and output, but in its fundamental architecture. The Gutenberg repository is built from the ground up as several reusable and independent modules or packages.
+
+## Why Modularity?
+
+Using a modular architecture benefits all actors involved:
+
+### For Core Contributors
+
+- Each package is an independent unit with a well-defined public API
+- Easier to reason about the codebase by focusing on one package at a time
+- Clear understanding of how changes impact other parts relying on the package
+
+### For End Users
+
+- Selective script loading on different WordPress Admin pages
+- Contained bundle sizes
+- Only load what's needed (e.g., components without block-editor on settings pages)
+
+### For Third-Party Developers
+
+- Reuse packages inside and outside WordPress context
+- Use as npm or WordPress script dependencies
+- Build custom implementations with editor components
+
+## Types of Packages
+
+Almost everything in Gutenberg is built into a package. Packages fall into two categories:
+
+### Production Packages
+
+These packages ship in WordPress as JavaScript scripts—the actual production code that runs in browsers.
+
+**Examples:**
+- `@wordpress/components` - Reusable React components for building interfaces
+- `@wordpress/api-fetch` - WordPress REST API utilities
+- `@wordpress/data` - State management system
+
+#### Using Production Packages
+
+**Outside WordPress (as npm packages):**
+```bash
+npm install @wordpress/components
+```
+
+```js
+import { Button } from '@wordpress/components';
+
+function MyApp() {
+  return <Button>Nice looking button</Button>;
+}
+```
+
+**Inside WordPress (as script handles):**
+```php
+// Script registration depending on packages
+wp_register_script(
+  'myscript',
+  'pathtomyscript.js',
+  array('wp-components', 'wp-element')
+);
+```
+
+```js
+// Using the package in your scripts
+const { Button } = wp.components;
+
+function MyApp() {
+  return <Button>Nice looking button</Button>;
+}
+```
+
+**Automation:**
+Script dependency definition can be automated using:
+- `@wordpress/scripts`
+- `@wordpress/dependency-extraction-webpack-plugin`
+
+#### Packages with Stylesheets
+
+Some packages require stylesheets:
+
+**As npm dependency:**
+- Stylesheets available in `build-style` folder
+- Load the style file in your application
+
+**In WordPress:**
+- Enqueue stylesheets or add to stylesheet dependencies
+- Stylesheet handles match script handles
+
+**Important:** Always define dependencies exhaustively to avoid breakage in future versions, even if scripts/styles are already loaded by WordPress or other plugins.
+
+#### Packages with Data Stores
+
+Some packages define data stores for state management. Store names follow the format `core/package-name`.
+
+**Example:**
+- `@wordpress/block-editor` package → `core/block-editor` store
+
+**Using stores:**
+Add the corresponding WordPress script to your dependencies:
+```php
+// To use core/block-editor store
+array('wp-block-editor')
+```
+
+### Development Packages
+
+Packages used in development to help with daily tasks:
+- Building JavaScript applications
+- Developing WordPress plugins and themes
+- Linting, testing, and shipping code
+
+**Examples:**
+- `@wordpress/scripts` - Build and development tools
+- `@wordpress/env` - Local WordPress environment
+- `@wordpress/e2e-test-utils` - End-to-end testing utilities
+
+## Editor Package Architecture
+
+The post editor is constructed as a layered abstraction of three separate packages. Understanding the distinction is crucial for contributors.
+
+### The Three Layers
+
+#### 1. `@wordpress/block-editor`
+
+**Purpose:** Generic, WordPress-agnostic block editor
+
+**Characteristics:**
+- Provides components for implementing a block editor
+- Operates on primitive value of an array of block objects
+- Makes no assumptions about how value is saved
+- Has no awareness or requirement of a WordPress site
+
+**Architectural Constraint:**
+> `block-editor` is WordPress-agnostic. NEVER add `core-data` dependencies or direct REST API calls to it.
+
+#### 2. `@wordpress/editor`
+
+**Purpose:** WordPress post-type-aware editing
+
+**Characteristics:**
+- Enhanced version of block editor for WordPress posts
+- Utilizes components from `@wordpress/block-editor`
+- Aware of WordPress post concept
+- Associates block loading/saving with posts and their content
+- Provides post-related components (post title input, etc.)
+- Supports editing posts of any post type
+- No assumptions about rendering location or layout
+
+#### 3. `@wordpress/edit-post` / `@wordpress/edit-site`
+
+**Purpose:** Full screen implementations
+
+**Characteristics:**
+- `@wordpress/edit-post` - Implementation of "Edit Post" screen
+- `@wordpress/edit-site` - Implementation of Site Editor
+- Responsible for layout of components from lower layers
+- Full awareness of WordPress admin dashboard presentation
+
+### Layering Rules
+
+**Architectural Decision:**
+> Package layering: Three editor layers — `block-editor` (generic, WP-agnostic) → `editor` (WordPress post-type-aware) → `edit-post`/`edit-site` (full screens). Lower layers MUST NOT depend on higher ones.
+
+## Use Cases for Different Layers
+
+This structure enables various combinations:
+
+### Using `@wordpress/edit-site` or `@wordpress/edit-widgets`
+Similar implementations to `@wordpress/edit-post` for different editing contexts.
+
+### Using `@wordpress/editor`
+Perfect for:
+- Reusable Block editor (nested block editor for `wp_block` post type)
+- Custom post type editors
+- Any WordPress post editing context
+
+### Using `@wordpress/block-editor`
+Ideal for:
+- Non-WordPress block editor implementations
+- Different save mechanisms
+- Comments editor for posts
+- Any block-based interface outside WordPress
+
+## Package Distribution
+
+Packages are available both as:
+- **npm packages** - For any JavaScript application
+- **WordPress scripts** - With `wp-*` handles for WordPress context
+
+**Architectural Decision:**
+> Modularity: Packages are available both as npm packages and WordPress scripts (`wp-*` handles). Production packages must work in both contexts.

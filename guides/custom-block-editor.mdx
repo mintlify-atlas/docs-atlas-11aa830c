@@ -1,0 +1,243 @@
+---
+title: Building a Custom Block Editor
+description: Learn how to create standalone block editor instances using @wordpress/block-editor for custom applications.
+---
+
+The WordPress block editor can be used to create custom block editors for virtually any web application. The `@wordpress/block-editor` package provides the core functionality you need to build standalone editors outside of traditional WordPress contexts.
+
+## What You'll Build
+
+This guide walks you through creating a fully functioning custom block editor with:
+
+- Ability to add and edit all Core blocks
+- Familiar visual styles and main/sidebar layout
+- Basic block persistence between page reloads
+
+## Core Concepts
+
+### The BlockEditorProvider
+
+`<BlockEditorProvider>` is the foundation of any block editor instance. It establishes a new block editing context:
+
+```jsx
+import { BlockEditorProvider } from '@wordpress/block-editor';
+
+function Editor() {
+  const [ blocks, updateBlocks ] = useState( [] );
+
+  return (
+    <BlockEditorProvider
+      value={ blocks }
+      onInput={ updateBlocks }
+      onChange={ persistBlocks }
+      settings={ settings }
+    >
+      {/* Editor UI components */}
+    </BlockEditorProvider>
+  );
+}
+```
+
+<Tip>
+The `value` prop accepts an array of parsed block objects. Use `onInput` for in-memory updates and `onChange` for committed changes that should be persisted.
+</Tip>
+
+### BlockList Component
+
+`<BlockList>` renders the list of blocks in your editor:
+
+```jsx
+import { BlockList } from '@wordpress/block-editor';
+
+<BlockEditorProvider value={ blocks } settings={ settings }>
+  <BlockList />
+</BlockEditorProvider>
+```
+
+The component hierarchy works as follows:
+
+- `<BlockList>` loops over all block clientIds
+- `<BlockListBlock>` renders each individual block
+- `<BlockEdit>` renders the editable area
+- The block's `edit()` implementation renders the actual UI
+
+## Setting Up Your Editor
+
+### Register Core Blocks
+
+Before rendering your editor, register the blocks you want to support:
+
+```jsx
+import { registerCoreBlocks } from '@wordpress/block-library';
+import { createRoot } from 'react-dom';
+import domReady from '@wordpress/dom-ready';
+
+domReady( function () {
+  const root = createRoot( document.getElementById( 'editor' ) );
+  const settings = window.editorSettings || {};
+  
+  registerCoreBlocks();
+  
+  root.render(
+    <Editor settings={ settings } />
+  );
+} );
+```
+
+### Editor Layout
+
+Create a complete editor layout with regions:
+
+```jsx
+import { navigateRegions } from '@wordpress/components';
+import { DropZoneProvider } from '@wordpress/components';
+
+function Editor( { settings } ) {
+  return (
+    <DropZoneProvider>
+      <div className="block-editor-layout">
+        <Header />
+        <Sidebar />
+        <BlockEditor settings={ settings } />
+      </div>
+    </DropZoneProvider>
+  );
+}
+
+export default navigateRegions( Editor );
+```
+
+<Tip>
+Wrap your editor in `navigateRegions` HOC to enable keyboard navigation between different regions like header, sidebar, and main content area.
+</Tip>
+
+## Block Persistence
+
+### Storing Blocks
+
+Use the `onChange` handler to persist blocks:
+
+```jsx
+import { serialize, parse } from '@wordpress/blocks';
+
+function persistBlocks( newBlocks ) {
+  updateBlocks( newBlocks );
+  // Store serialized blocks
+  window.localStorage.setItem(
+    'editorBlocks',
+    serialize( newBlocks )
+  );
+}
+```
+
+### Restoring Blocks
+
+Load blocks when the editor initializes:
+
+```jsx
+import { useEffect } from 'react';
+import { useDispatch } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
+
+useEffect( () => {
+  const storedBlocks = window.localStorage.getItem( 'editorBlocks' );
+  
+  if ( storedBlocks && storedBlocks.length ) {
+    updateBlocks( () => parse( storedBlocks ) );
+    createInfoNotice( 'Blocks loaded', {
+      type: 'snackbar',
+      isDismissible: true,
+    } );
+  }
+}, [] );
+```
+
+## Inspector Controls
+
+Add a sidebar with block settings using `<BlockInspector>`:
+
+```jsx
+import { BlockInspector } from '@wordpress/block-editor';
+import { Slot, Fill } from '@wordpress/components';
+
+// In your Sidebar component
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <Slot name="InspectorFill" />
+    </div>
+  );
+}
+
+// In your BlockEditor component
+<BlockEditorProvider value={ blocks } settings={ settings }>
+  <Fill name="InspectorFill">
+    <BlockInspector />
+  </Fill>
+  <BlockList />
+</BlockEditorProvider>
+```
+
+<Tip>
+Use Slot/Fill to render `<BlockInspector>` in your sidebar while keeping it within the React context of `<BlockEditorProvider>`.
+</Tip>
+
+## Editor Settings
+
+Configure your editor with settings:
+
+```php
+// In PHP - inline settings for JavaScript
+$settings = [
+  'colors' => [
+    [ 'name' => 'Primary', 'slug' => 'primary', 'color' => '#0073aa' ],
+    [ 'name' => 'Secondary', 'slug' => 'secondary', 'color' => '#23282d' ],
+  ],
+  'fontSizes' => [
+    [ 'name' => 'Small', 'size' => 14, 'slug' => 'small' ],
+    [ 'name' => 'Medium', 'size' => 18, 'slug' => 'medium' ],
+  ],
+];
+
+wp_add_inline_script(
+  'my-editor-script',
+  'window.editorSettings = ' . wp_json_encode( $settings ) . ';'
+);
+```
+
+## Complete Example
+
+Here's a minimal custom block editor:
+
+```jsx
+import { useState } from 'react';
+import { BlockEditorProvider, BlockList } from '@wordpress/block-editor';
+import { serialize, parse } from '@wordpress/blocks';
+
+function CustomBlockEditor() {
+  const [ blocks, updateBlocks ] = useState( [] );
+
+  const persistBlocks = ( newBlocks ) => {
+    updateBlocks( newBlocks );
+    localStorage.setItem( 'blocks', serialize( newBlocks ) );
+  };
+
+  return (
+    <BlockEditorProvider
+      value={ blocks }
+      onInput={ updateBlocks }
+      onChange={ persistBlocks }
+    >
+      <div className="editor-canvas">
+        <BlockList />
+      </div>
+    </BlockEditorProvider>
+  );
+}
+```
+
+## Resources
+
+- [Standalone Block Editor Demo Plugin](https://github.com/getdave/standalone-block-editor)
+- [@wordpress/block-editor Package Documentation](/packages/block-editor)
+- [Block Editor Architecture](/explanations/architecture)

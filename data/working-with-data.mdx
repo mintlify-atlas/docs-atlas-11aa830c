@@ -1,0 +1,473 @@
+---
+title: Working with Data
+description: Learn how to use useSelect and useDispatch hooks to read and write data in the WordPress Block Editor
+---
+
+The WordPress data module provides React hooks that enable components to interact with stores. This guide covers the essential patterns for reading data with `useSelect` and modifying data with `useDispatch`.
+
+## Reading Data with useSelect
+
+The `useSelect` hook subscribes to store data and re-renders your component when that data changes.
+
+### Basic Usage
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+function PagesList() {
+  const pages = useSelect( ( select ) => {
+    return select( coreDataStore ).getEntityRecords( 'postType', 'page' );
+  }, [] );
+
+  return (
+    <ul>
+      { pages?.map( ( page ) => (
+        <li key={ page.id }>{ page.title.rendered }</li>
+      ) ) }
+    </ul>
+  );
+}
+```
+
+The `useSelect` hook takes two arguments:
+
+1. **Callback function**: Receives `select` as first argument, returns derived data
+2. **Dependencies array**: Triggers recalculation when values change
+
+### With Query Parameters
+
+Pass query parameters to filter and control API requests:
+
+```js
+function SearchablePages() {
+  const [ searchTerm, setSearchTerm ] = useState( '' );
+  
+  const pages = useSelect( ( select ) => {
+    const query = {};
+    if ( searchTerm ) {
+      query.search = searchTerm;
+    }
+    return select( coreDataStore ).getEntityRecords( 'postType', 'page', query );
+  }, [ searchTerm ] );
+
+  return (
+    <div>
+      <SearchControl onChange={ setSearchTerm } value={ searchTerm } />
+      <PagesList pages={ pages } />
+    </div>
+  );
+}
+```
+
+<Note>
+Always include values used inside the callback in the dependencies array. This ensures the selector re-runs when those values change.
+</Note>
+
+### Multiple Selectors
+
+Return an object to use multiple selectors:
+
+```js
+const { pages, hasResolved } = useSelect( ( select ) => {
+  const query = {};
+  if ( searchTerm ) {
+    query.search = searchTerm;
+  }
+  const selectorArgs = [ 'postType', 'page', query ];
+  
+  return {
+    pages: select( coreDataStore ).getEntityRecords( ...selectorArgs ),
+    hasResolved: select( coreDataStore ).hasFinishedResolution(
+      'getEntityRecords',
+      selectorArgs
+    ),
+  };
+}, [ searchTerm ] );
+
+if ( ! hasResolved ) {
+  return <Spinner />;
+}
+```
+
+### Resolution Status
+
+Track whether data is still loading using resolution selectors:
+
+```js
+const { pages, hasResolved, isResolving } = useSelect( ( select ) => {
+  const selectorArgs = [ 'postType', 'page', query ];
+  
+  return {
+    pages: select( coreDataStore ).getEntityRecords( ...selectorArgs ),
+    hasResolved: select( coreDataStore ).hasFinishedResolution(
+      'getEntityRecords',
+      selectorArgs
+    ),
+    isResolving: select( coreDataStore ).isResolving(
+      'getEntityRecords',
+      selectorArgs
+    ),
+  };
+}, [ query ] );
+```
+
+- `hasStartedResolution`: Returns `true` if resolution has been triggered
+- `isResolving`: Returns `true` if resolution is in progress
+- `hasFinishedResolution`: Returns `true` if resolution completed
+
+<Note>
+Always pass the exact same arguments to `hasFinishedResolution` as you pass to the selector. Store them in a variable to avoid typos.
+</Note>
+
+### Getting Selectors Directly
+
+For event callbacks where you don't need reactivity, get the selectors function:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as myCustomStore } from 'my-custom-store';
+
+function Paste( { children } ) {
+  const { getSettings } = useSelect( myCustomStore );
+  
+  function onPaste() {
+    // Get settings at the time of the event
+    const settings = getSettings();
+  }
+  
+  return <div onPaste={ onPaste }>{ children }</div>;
+}
+```
+
+**Warning**: Don't use this pattern in render - your component won't re-render on data changes.
+
+## Writing Data with useDispatch
+
+The `useDispatch` hook provides access to action creators for modifying state.
+
+### Basic Usage
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+function DeleteButton( { pageId } ) {
+  const { deleteEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleDelete = async () => {
+    await deleteEntityRecord( 'postType', 'page', pageId );
+  };
+
+  return <button onClick={ handleDelete }>Delete</button>;
+}
+```
+
+### With Dynamic Data
+
+Combine `useSelect` and `useDispatch` for actions based on current state:
+
+```js
+import { useCallback } from 'react';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { store as myCustomStore } from 'my-custom-store';
+
+function SaleButton( { children } ) {
+  const { stockNumber } = useSelect(
+    ( select ) => select( myCustomStore ).getStockNumber(),
+    []
+  );
+  
+  const { startSale } = useDispatch( myCustomStore );
+  
+  const onClick = useCallback( () => {
+    const discountPercent = stockNumber > 50 ? 10 : 20;
+    startSale( discountPercent );
+  }, [ stockNumber, startSale ] );
+  
+  return <button onClick={ onClick }>{ children }</button>;
+}
+```
+
+### Using Registry Select in Dispatch
+
+Access dynamic data at dispatch time using the registry:
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as myCustomStore } from 'my-custom-store';
+
+const SaleButton = withDispatch( ( dispatch, ownProps, { select } ) => {
+  const { getStockNumber } = select( myCustomStore );
+  const { startSale } = dispatch( myCustomStore );
+  
+  return {
+    onClick() {
+      // Get fresh value at click time
+      const discountPercent = getStockNumber() > 50 ? 10 : 20;
+      startSale( discountPercent );
+    },
+  };
+} )( Button );
+```
+
+## Working with Entity Records
+
+### Fetching Entity Records
+
+Use `getEntityRecords` for collections:
+
+```js
+const pages = useSelect( ( select ) => {
+  return select( coreDataStore ).getEntityRecords( 'postType', 'page', {
+    per_page: 10,
+    status: 'publish',
+  } );
+}, [] );
+```
+
+Use `getEntityRecord` for single records:
+
+```js
+const page = useSelect( ( select ) => {
+  return select( coreDataStore ).getEntityRecord( 'postType', 'page', pageId );
+}, [ pageId ] );
+```
+
+### Entity Records vs Edited Entity Records
+
+The data module distinguishes between:
+
+- **Entity Records**: Data as fetched from the API (no local edits)
+- **Edited Entity Records**: Data with local edits applied
+
+```js
+// Returns persisted data only
+select( 'core' ).getEntityRecord( 'postType', 'page', pageId ).title
+// { "rendered": "My Page", "raw": "My Page" }
+
+// Returns data with local edits applied
+select( 'core' ).getEditedEntityRecord( 'postType', 'page', pageId ).title
+// "My Updated Page" (string, not object)
+```
+
+<Note>
+Edited entity records store only the raw value as a string, not the rendered HTML. This is because JavaScript cannot properly render server-side dynamic content like shortcodes.
+</Note>
+
+### Editing Entity Records
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+
+function EditForm( { pageId } ) {
+  const page = useSelect(
+    ( select ) => select( coreDataStore ).getEditedEntityRecord(
+      'postType',
+      'page',
+      pageId
+    ),
+    [ pageId ]
+  );
+  
+  const { editEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleChange = ( title ) => {
+    editEntityRecord( 'postType', 'page', pageId, { title } );
+  };
+
+  return (
+    <TextControl
+      label="Page title:"
+      value={ page.title }
+      onChange={ handleChange }
+    />
+  );
+}
+```
+
+### Saving Entity Records
+
+```js
+function SaveButton( { pageId } ) {
+  const { saveEditedEntityRecord } = useDispatch( coreDataStore );
+  const { isSaving, hasEdits } = useSelect(
+    ( select ) => ({
+      isSaving: select( coreDataStore ).isSavingEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+      hasEdits: select( coreDataStore ).hasEditsForEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+    }),
+    [ pageId ]
+  );
+
+  const handleSave = async () => {
+    const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+    if ( savedRecord ) {
+      // Success!
+    }
+  };
+
+  return (
+    <Button
+      onClick={ handleSave }
+      disabled={ ! hasEdits || isSaving }
+    >
+      { isSaving ? 'Saving...' : 'Save' }
+    </Button>
+  );
+}
+```
+
+### Creating New Records
+
+For new records without a pageId, use `saveEntityRecord`:
+
+```js
+function CreateForm() {
+  const [ title, setTitle ] = useState( '' );
+  const { saveEntityRecord } = useDispatch( coreDataStore );
+  const { lastError, isSaving } = useSelect(
+    ( select ) => ({
+      // Notice: no pageId argument
+      lastError: select( coreDataStore ).getLastEntitySaveError( 'postType', 'page' ),
+      isSaving: select( coreDataStore ).isSavingEntityRecord( 'postType', 'page' ),
+    }),
+    []
+  );
+
+  const handleSave = async () => {
+    const savedRecord = await saveEntityRecord(
+      'postType',
+      'page',
+      { title, status: 'publish' }
+    );
+    if ( savedRecord ) {
+      // Record created!
+    }
+  };
+
+  return (
+    <div>
+      <TextControl
+        label="Page title:"
+        value={ title }
+        onChange={ setTitle }
+      />
+      <Button onClick={ handleSave } disabled={ isSaving }>
+        { isSaving ? 'Creating...' : 'Create' }
+      </Button>
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+### Save Errors
+
+Check for errors after save operations:
+
+```js
+const { lastError } = useSelect(
+  ( select ) => ({
+    lastError: select( coreDataStore ).getLastEntitySaveError(
+      'postType',
+      'page',
+      pageId
+    ),
+  }),
+  [ pageId ]
+);
+
+const handleSave = async () => {
+  const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+  if ( ! savedRecord ) {
+    // Save failed - lastError will contain details
+  }
+};
+
+// Display error to user
+{ lastError && (
+  <div className="error">Error: { lastError.message }</div>
+) }
+```
+
+### Delete Errors
+
+```js
+const { getLastEntityDeleteError } = useSelect( coreDataStore );
+const { deleteEntityRecord } = useDispatch( coreDataStore );
+
+const handleDelete = async () => {
+  const success = await deleteEntityRecord( 'postType', 'page', pageId );
+  if ( ! success ) {
+    const lastError = getLastEntityDeleteError( 'postType', 'page', pageId );
+    console.error( lastError.message );
+  }
+};
+```
+
+## Best Practices
+
+### Cache Benefits
+
+The data module automatically caches responses:
+
+```js
+// First call triggers API request
+select( coreDataStore ).getEntityRecords( 'postType', 'page', { search: 'About' } );
+
+// Subsequent calls use cached data
+select( coreDataStore ).getEntityRecords( 'postType', 'page', { search: 'About' } );
+```
+
+This solves common problems like:
+- Out-of-order API responses
+- Duplicate requests
+- Stale data
+
+### Consistent Selector Arguments
+
+Ensure selector arguments match exactly:
+
+```js
+const selectorArgs = [ 'postType', 'page', query ];
+
+const { pages, hasResolved } = useSelect( ( select ) => ({
+  pages: select( coreDataStore ).getEntityRecords( ...selectorArgs ),
+  hasResolved: select( coreDataStore ).hasFinishedResolution(
+    'getEntityRecords',
+    selectorArgs
+  ),
+}), [ query ] );
+```
+
+### Async Action Patterns
+
+Actions return promises - use async/await:
+
+```js
+const handleSave = async () => {
+  try {
+    const result = await saveEditedEntityRecord( 'postType', 'page', pageId );
+    if ( result ) {
+      console.log( 'Saved successfully' );
+    }
+  } catch ( error ) {
+    console.error( 'Save failed', error );
+  }
+};
+```
+
+## Next Steps
+
+- [Entities & Undo/Redo](/data/entities-undo-redo) - Learn about entity architecture
+- [Building Forms](/data/building-forms) - Create complete data-driven forms

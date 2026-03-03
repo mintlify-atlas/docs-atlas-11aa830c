@@ -1,0 +1,575 @@
+---
+title: Block Templates
+description: Define default block layouts for post types and InnerBlocks using templates
+---
+
+Block templates define a default initial state for an editor session. They specify which blocks should appear by default and with what configuration.
+
+## What are Block Templates?
+
+Templates allow you to:
+
+- **Set default blocks**: Pre-populate the editor with blocks
+- **Configure initial state**: Set default attributes and content
+- **Lock structures**: Prevent users from modifying the layout
+- **Guide content creation**: Provide structure for specific content types
+
+## Template Scope
+
+Templates can be applied at two levels:
+
+1. **Post Type Templates**: Define default blocks for entire post types
+2. **InnerBlocks Templates**: Define default nested blocks within a container block
+
+## Post Type Templates
+
+Define default blocks that appear when creating a new post of a specific type.
+
+### Basic Post Type Template
+
+```php
+function my_plugin_register_template() {
+	$post_type_object = get_post_type_object( 'post' );
+	$post_type_object->template = array(
+		array( 'core/image' ),
+		array( 'core/heading' ),
+		array( 'core/paragraph' ),
+	);
+}
+add_action( 'init', 'my_plugin_register_template' );
+```
+
+When users create a new post, it will contain these three blocks.
+
+### Template with Attributes
+
+```php
+function my_plugin_register_template() {
+	$post_type_object = get_post_type_object( 'post' );
+	$post_type_object->template = array(
+		array( 'core/image', array(
+			'align' => 'left',
+		) ),
+		array( 'core/heading', array(
+			'placeholder' => 'Add Title...',
+			'level' => 2,
+		) ),
+		array( 'core/paragraph', array(
+			'placeholder' => 'Add content...',
+		) ),
+	);
+}
+add_action( 'init', 'my_plugin_register_template' );
+```
+
+### Custom Post Type with Template
+
+```php
+function my_plugin_register_book_post_type() {
+	register_post_type( 'book', array(
+		'public' => true,
+		'label'  => 'Books',
+		'show_in_rest' => true,
+		'template' => array(
+			array( 'core/image', array(
+				'align' => 'left',
+			) ),
+			array( 'core/heading', array(
+				'placeholder' => 'Book Title...',
+				'level' => 1,
+			) ),
+			array( 'core/heading', array(
+				'placeholder' => 'Author Name...',
+				'level' => 3,
+			) ),
+			array( 'core/paragraph', array(
+				'placeholder' => 'Book description...',
+			) ),
+			array( 'core/quote', array(
+				'placeholder' => 'Add a quote from the book...',
+			) ),
+		),
+	) );
+}
+add_action( 'init', 'my_plugin_register_book_post_type' );
+```
+
+## Template Locking
+
+Control how users can modify the template structure.
+
+### Lock Options
+
+```php
+$post_type_object->template_lock = 'all';
+```
+
+**Available lock types:**
+
+- `contentOnly` - Only allows editing block content. Hides blocks without content from list view.
+- `all` - Prevents all operations (insert, move, delete)
+- `insert` - Prevents inserting/removing blocks (allows reordering)
+- `false` or not set - No locking (default)
+
+### Example with Locking
+
+```php
+function my_plugin_register_template() {
+	$post_type_object = get_post_type_object( 'post' );
+	$post_type_object->template = array(
+		array( 'core/heading', array(
+			'placeholder' => 'Title...',
+		) ),
+		array( 'core/paragraph', array(
+			'placeholder' => 'Content...',
+		) ),
+	);
+	// Users can reorder but not add/remove blocks
+	$post_type_object->template_lock = 'insert';
+}
+add_action( 'init', 'my_plugin_register_template' );
+```
+
+## Nested Templates
+
+Templates can include blocks with inner blocks:
+
+```php
+$template = array(
+	array( 'core/paragraph', array(
+		'placeholder' => 'Introduction...',
+	) ),
+	array( 'core/columns', array(), array(
+		array( 'core/column', array(), array(
+			array( 'core/image', array() ),
+			array( 'core/paragraph', array(
+				'placeholder' => 'Left column content...',
+			) ),
+		) ),
+		array( 'core/column', array(), array(
+			array( 'core/heading', array(
+				'level' => 3,
+			) ),
+			array( 'core/paragraph', array(
+				'placeholder' => 'Right column content...',
+			) ),
+		) ),
+	) ),
+);
+```
+
+## InnerBlocks Templates
+
+Define default nested blocks for container blocks.
+
+### Basic InnerBlocks Template
+
+```js
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+
+const TEMPLATE = [
+	[ 'core/heading', { placeholder: 'Book Title' } ],
+	[ 'core/paragraph', { placeholder: 'Summary' } ],
+	[ 'core/image', {} ],
+];
+
+edit: () => {
+	const blockProps = useBlockProps();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks template={ TEMPLATE } />
+		</div>
+	);
+}
+```
+
+### InnerBlocks Template with Locking
+
+```js
+const TEMPLATE = [
+	[ 'core/image', {} ],
+	[ 'core/heading', { placeholder: 'Card Title' } ],
+	[ 'core/paragraph', { placeholder: 'Card description...' } ],
+];
+
+edit: () => {
+	const blockProps = useBlockProps();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks
+				template={ TEMPLATE }
+				templateLock="all"
+			/>
+		</div>
+	);
+}
+```
+
+## Individual Block Locking
+
+Lock individual blocks within a template:
+
+### JavaScript
+
+```js
+const TEMPLATE = [
+	[ 'core/image', {
+		lock: {
+			remove: true,
+			move: true,
+		},
+	} ],
+	[ 'core/paragraph', {
+		lock: {
+			remove: false,
+			move: false,
+		},
+	} ],
+];
+```
+
+### PHP
+
+```php
+$template = array(
+	array( 'core/image', array(
+		'align' => 'left',
+	) ),
+	array( 'core/heading', array(
+		'placeholder' => 'Title...',
+	) ),
+	// This paragraph can be moved/removed
+	array( 'core/paragraph', array(
+		'placeholder' => 'Editable content...',
+		'lock' => array(
+			'move'   => false,
+			'remove' => false,
+		),
+	) ),
+);
+```
+
+**Lock properties:**
+
+- `remove` - Lock/unlock removal of the block
+- `move` - Lock/unlock moving the block
+
+## Template API Format
+
+Templates are defined as arrays of block configurations:
+
+```php
+array(
+	// Block name (required)
+	'core/paragraph',
+	// Block attributes (optional)
+	array(
+		'placeholder' => 'Enter text...',
+		'fontSize' => 'large',
+	),
+	// Inner blocks (optional, for containers)
+	array(
+		array( 'core/image', array() ),
+		array( 'core/heading', array() ),
+	),
+)
+```
+
+## Block Attributes in Templates
+
+Find available attributes in block.json files:
+
+### Example: Heading Block
+
+```json
+{
+	"attributes": {
+		"content": { "type": "string" },
+		"level": { "type": "number", "default": 2 },
+		"textAlign": { "type": "string" },
+		"placeholder": { "type": "string" }
+	},
+	"supports": {
+		"anchor": true,
+		"color": true,
+		"fontSize": true
+	}
+}
+```
+
+You can use attributes and supports in templates:
+
+```php
+array( 'core/heading', array(
+	'level' => 2,
+	'textAlign' => 'center',
+	'fontSize' => 'large',
+	'anchor' => 'my-heading',
+	'placeholder' => 'Add heading...',
+) )
+```
+
+## Complete Examples
+
+### Blog Post Template
+
+```php
+function my_plugin_blog_post_template() {
+	$post_type_object = get_post_type_object( 'post' );
+	$post_type_object->template = array(
+		array( 'core/image', array(
+			'align' => 'wide',
+		) ),
+		array( 'core/heading', array(
+			'level' => 1,
+			'placeholder' => 'Post Title',
+		) ),
+		array( 'core/paragraph', array(
+			'placeholder' => 'Post introduction...',
+			'fontSize' => 'medium',
+		) ),
+		array( 'core/separator' ),
+		array( 'core/heading', array(
+			'level' => 2,
+			'placeholder' => 'Section 1',
+		) ),
+		array( 'core/paragraph', array(
+			'placeholder' => 'Section content...',
+		) ),
+		array( 'core/heading', array(
+			'level' => 2,
+			'placeholder' => 'Section 2',
+		) ),
+		array( 'core/paragraph', array(
+			'placeholder' => 'Section content...',
+		) ),
+	);
+	$post_type_object->template_lock = 'insert';
+}
+add_action( 'init', 'my_plugin_blog_post_template' );
+```
+
+### Product Template
+
+```php
+function my_plugin_product_template() {
+	register_post_type( 'product', array(
+		'public' => true,
+		'label'  => 'Products',
+		'show_in_rest' => true,
+		'template' => array(
+			array( 'core/columns', array(), array(
+				array( 'core/column', array( 'width' => '40%' ), array(
+					array( 'core/image', array(
+						'lock' => array(
+							'remove' => true,
+							'move' => true,
+						),
+					) ),
+				) ),
+				array( 'core/column', array( 'width' => '60%' ), array(
+					array( 'core/heading', array(
+						'level' => 1,
+						'placeholder' => 'Product Name',
+					) ),
+					array( 'core/paragraph', array(
+						'placeholder' => 'Product price',
+						'fontSize' => 'large',
+					) ),
+					array( 'core/paragraph', array(
+						'placeholder' => 'Product description...',
+					) ),
+					array( 'core/button', array(
+						'text' => 'Add to Cart',
+					) ),
+				) ),
+			) ),
+			array( 'core/separator' ),
+			array( 'core/heading', array(
+				'level' => 2,
+				'content' => 'Product Details',
+			) ),
+			array( 'core/list', array() ),
+		),
+		'template_lock' => 'all',
+	) );
+}
+add_action( 'init', 'my_plugin_product_template' );
+```
+
+### FAQ Template
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+
+const FAQ_TEMPLATE = [
+	[ 'core/heading', {
+		level: 3,
+		placeholder: 'Question',
+	} ],
+	[ 'core/paragraph', {
+		placeholder: 'Answer...',
+	} ],
+];
+
+registerBlockType( 'my-plugin/faq-item', {
+	title: 'FAQ Item',
+	category: 'widgets',
+	edit: () => {
+		const blockProps = useBlockProps();
+		return (
+			<div { ...blockProps }>
+				<InnerBlocks
+					template={ FAQ_TEMPLATE }
+					templateLock="all"
+				/>
+			</div>
+		);
+	},
+	save: () => {
+		const blockProps = useBlockProps.save();
+		return (
+			<div { ...blockProps }>
+				<InnerBlocks.Content />
+			</div>
+		);
+	},
+} );
+```
+
+## Template Inheritance
+
+InnerBlocks inherit locking from their parent:
+
+1. If InnerBlocks `templateLock` is not set, parent's lock is used
+2. If block is top-level, post type's `template_lock` is used
+3. Explicit `templateLock` always takes precedence
+
+```js
+// Parent has template_lock = 'all'
+// This InnerBlocks inherits 'all' lock
+<InnerBlocks template={ TEMPLATE } />
+
+// This InnerBlocks overrides with 'insert' lock
+<InnerBlocks template={ TEMPLATE } templateLock="insert" />
+```
+
+## Finding Block Attributes
+
+To find available attributes for templates:
+
+### In Gutenberg Plugin
+
+Check `packages/block-library/src/[block-name]/block.json`
+
+```json
+// packages/block-library/src/heading/block.json
+{
+	"attributes": {
+		"content": { "type": "string", "source": "html", "selector": "h1,h2,h3,h4,h5,h6" },
+		"level": { "type": "number", "default": 2 }
+	},
+	"supports": {
+		"anchor": true
+	}
+}
+```
+
+### In WordPress Core
+
+Check `wp-includes/blocks/[block-name]/block.json`
+
+## Template vs Pattern vs Variation
+
+| Feature | Template | Pattern | Variation |
+|---------|----------|---------|------------|
+| Scope | Post type / InnerBlocks | User-insertable | Single block |
+| Locked | Can be locked | Never locked | N/A |
+| Automatic | Appears automatically | User must insert | User must select |
+| Purpose | Structure posts | Reusable layouts | Block configurations |
+
+**Use templates** for structured post types and container blocks.
+**Use patterns** for reusable layout combinations.
+**Use variations** for different configurations of a single block.
+
+## Best Practices
+
+1. **Provide placeholders**: Help users understand what content goes where
+
+2. **Use appropriate locking**: Balance structure with flexibility
+
+3. **Test the workflow**: Ensure the template improves the editing experience
+
+4. **Document required fields**: Make it clear what users must fill in
+
+5. **Consider accessibility**: Use semantic HTML and proper heading hierarchy
+
+6. **Keep it simple**: Don't over-structure the content
+
+7. **Allow some flexibility**: Total locking can be frustrating
+
+## Common Use Cases
+
+### Landing Page Template
+
+```php
+array(
+	array( 'core/cover', array(
+		'minHeight' => 500,
+	), array(
+		array( 'core/heading', array(
+			'level' => 1,
+			'placeholder' => 'Hero Title',
+		) ),
+		array( 'core/buttons', array(), array(
+			array( 'core/button', array(
+				'text' => 'Get Started',
+			) ),
+		) ),
+	) ),
+	array( 'core/columns', array(), array(
+		array( 'core/column', array(), array(
+			array( 'core/heading', array( 'level' => 3 ) ),
+			array( 'core/paragraph' ),
+		) ),
+		array( 'core/column', array(), array(
+			array( 'core/heading', array( 'level' => 3 ) ),
+			array( 'core/paragraph' ),
+		) ),
+		array( 'core/column', array(), array(
+			array( 'core/heading', array( 'level' => 3 ) ),
+			array( 'core/paragraph' ),
+		) ),
+	) ),
+)
+```
+
+### Recipe Template
+
+```php
+array(
+	array( 'core/image', array( 'align' => 'wide' ) ),
+	array( 'core/heading', array(
+		'level' => 1,
+		'placeholder' => 'Recipe Name',
+	) ),
+	array( 'core/heading', array(
+		'level' => 2,
+		'content' => 'Ingredients',
+	) ),
+	array( 'core/list' ),
+	array( 'core/heading', array(
+		'level' => 2,
+		'content' => 'Instructions',
+	) ),
+	array( 'core/list', array( 'ordered' => true ) ),
+)
+```
+
+## Related Documentation
+
+- [InnerBlocks](/blocks/nested-blocks) - Nested block component
+- [Block Patterns](/blocks/block-patterns) - Reusable layouts
+- [Block Variations](/blocks/block-variations) - Block configurations
+- [Meta Box Tutorial](https://developer.wordpress.org/block-editor/how-to-guides/metabox/#step-4-finishing-touches) - Using templates with meta boxes

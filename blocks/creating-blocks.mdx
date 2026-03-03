@@ -1,0 +1,332 @@
+---
+title: Creating Blocks
+description: Learn how to create custom blocks for the Gutenberg block editor from scratch
+---
+
+Blocks are the fundamental units of markup that compose content and layout in the WordPress block editor. This guide walks you through creating custom blocks from registration to implementation.
+
+## What is a Block?
+
+A "block" is the abstract term used to describe units of markup that, composed together, form the content or layout of a webpage. The idea combines concepts of what in WordPress we traditionally achieved with shortcodes, custom HTML, and embed discovery into a single consistent API and user experience.
+
+## Block Registration
+
+Every block starts by registering a new block type definition using the `registerBlockType` function from the `@wordpress/blocks` package.
+
+### Basic Block Structure
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+
+registerBlockType( 'my-plugin/my-block', {
+	title: 'My First Block',
+	description: 'A custom block for my plugin',
+	category: 'widgets',
+	icon: 'book-alt',
+
+	edit: () => {
+		const blockProps = useBlockProps();
+		return (
+			<div { ...blockProps }>
+				Hello from the editor!
+			</div>
+		);
+	},
+
+	save: () => {
+		const blockProps = useBlockProps.save();
+		return (
+			<div { ...blockProps }>
+				Hello from the saved content!
+			</div>
+		);
+	},
+} );
+```
+
+## Block Name
+
+The name for a block is a unique string that identifies it. Names must be structured as `namespace/block-name`, where namespace is the name of your plugin or theme.
+
+```js
+// Good examples
+registerBlockType( 'my-company-blocks/hero', {} );
+registerBlockType( 'awesome-gallery-plugin/slideshow', {} );
+
+// Avoid these - too generic
+registerBlockType( 'create-block/example', {} );
+registerBlockType( 'block/content', {} );
+```
+
+<Note>
+**Important:** Block names cannot be changed later without consequences. The block name is stored in the post content, so changing it requires editing all affected posts or running database scripts.
+</Note>
+
+### Namespace Best Practices
+
+- Use your actual plugin/theme name: `my-awesome-plugin/block-name`
+- Avoid generic names like `editorial/`, `block/`, or `create-block/`
+- Use the same namespace for all blocks in your plugin/theme
+- Make it unique to prevent conflicts with other plugins
+
+## Block Configuration Properties
+
+### Required Properties
+
+#### title
+
+The display title for your block, which can be translated. Appears in the inserter and throughout the editor.
+
+```js
+title: __( 'Book' )
+```
+
+#### category
+
+Blocks are grouped into categories. Core categories include:
+
+- `text`
+- `media`
+- `design`
+- `widgets`
+- `theme`
+- `embed`
+
+```js
+category: 'widgets'
+```
+
+### Optional Properties
+
+#### description
+
+A short description shown in the Block Tab in the Settings Sidebar.
+
+```js
+description: __( 'Block showing a Book card.' )
+```
+
+#### icon
+
+An icon to identify your block. Can be a Dashicon slug or custom SVG.
+
+```js
+// Using a Dashicon
+icon: 'book-alt'
+
+// Using custom SVG
+icon: <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+	<path fill="none" d="M0 0h24v24H0V0z" />
+	<path d="M19 13H5v-2h14v2z" />
+</svg>
+
+// With colors
+icon: {
+	background: '#7e70af',
+	foreground: '#fff',
+	src: <svg>...</svg>,
+}
+```
+
+#### keywords
+
+Terms that help users discover your block while searching.
+
+```js
+keywords: [ __( 'image' ), __( 'photo' ), __( 'pics' ) ]
+```
+
+## The Edit Function
+
+The `edit` function defines what users see in the block editor when editing content.
+
+### Using useBlockProps
+
+Always use `useBlockProps()` to ensure your block works correctly with the editor:
+
+```js
+import { useBlockProps } from '@wordpress/block-editor';
+
+edit: () => {
+	const blockProps = useBlockProps();
+	return (
+		<div { ...blockProps }>
+			Editor content here
+		</div>
+	);
+}
+```
+
+The `useBlockProps` hook:
+- Adds necessary CSS classes
+- Handles block supports attributes
+- Ensures proper editor integration
+
+### Accessing Attributes
+
+```js
+edit: ( { attributes, setAttributes } ) => {
+	const { content, alignment } = attributes;
+	const blockProps = useBlockProps();
+
+	return (
+		<div { ...blockProps }>
+			<input
+				value={ content }
+				onChange={ ( e ) => setAttributes( { content: e.target.value } ) }
+			/>
+		</div>
+	);
+}
+```
+
+## The Save Function
+
+The `save` function defines the final markup saved to the database and rendered on the frontend.
+
+```js
+import { useBlockProps } from '@wordpress/block-editor';
+
+save: ( { attributes } ) => {
+	const blockProps = useBlockProps.save();
+	return (
+		<div { ...blockProps }>
+			<p>{ attributes.content }</p>
+		</div>
+	);
+}
+```
+
+<Note>
+Always use `useBlockProps.save()` in the save function to ensure attributes from block supports are properly saved.
+</Note>
+
+## Installation
+
+To use the blocks package:
+
+```bash
+npm install @wordpress/blocks --save
+```
+
+## Creating Your First Block
+
+<Steps>
+
+<Step title="Set up your development environment">
+Install Node.js and npm, then set up a build process for JSX.
+</Step>
+
+<Step title="Create your block registration file">
+Create a new JavaScript file and import the necessary functions:
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+```
+</Step>
+
+<Step title="Register your block">
+Call `registerBlockType` with your block name and configuration:
+
+```js
+registerBlockType( 'my-plugin/my-block', {
+	title: 'My Block',
+	category: 'widgets',
+	edit: () => {
+		return <div { ...useBlockProps() }>Editor view</div>;
+	},
+	save: () => {
+		return <div { ...useBlockProps.save() }>Saved view</div>;
+	},
+} );
+```
+</Step>
+
+<Step title="Enqueue your script">
+Register and enqueue your block script in PHP:
+
+```php
+function my_plugin_register_block() {
+	wp_register_script(
+		'my-plugin-block',
+		plugins_url( 'build/index.js', __FILE__ ),
+		array( 'wp-blocks', 'wp-element', 'wp-block-editor' )
+	);
+
+	register_block_type( 'my-plugin/my-block', array(
+		'editor_script' => 'my-plugin-block',
+	) );
+}
+add_action( 'init', 'my_plugin_register_block' );
+```
+</Step>
+
+<Step title="Test your block">
+Open the WordPress editor and insert your new block from the inserter.
+</Step>
+
+</Steps>
+
+## Block Collections
+
+You can group related blocks into collections:
+
+```js
+import { registerBlockCollection } from '@wordpress/blocks';
+
+registerBlockCollection( 'my-plugin', {
+	title: 'My Plugin Blocks',
+	icon: <svg>...</svg>,
+} );
+```
+
+All blocks with the `my-plugin` namespace will appear under this collection in the inserter.
+
+## Common Block Patterns
+
+### Simple Content Block
+
+```js
+registerBlockType( 'my-plugin/simple-block', {
+	title: 'Simple Block',
+	category: 'text',
+	attributes: {
+		content: {
+			type: 'string',
+			default: '',
+		},
+	},
+	edit: ( { attributes, setAttributes } ) => {
+		return (
+			<div { ...useBlockProps() }>
+				<input
+					value={ attributes.content }
+					onChange={ ( e ) => setAttributes( { content: e.target.value } ) }
+				/>
+			</div>
+		);
+	},
+	save: ( { attributes } ) => {
+		return (
+			<div { ...useBlockProps.save() }>
+				{ attributes.content }
+			</div>
+		);
+	},
+} );
+```
+
+## Next Steps
+
+- Learn about [Block Attributes](/blocks/block-attributes) to add data to your blocks
+- Explore [Block Supports](/blocks/block-supports) to add editor features
+- Understand [Dynamic Blocks](/blocks/dynamic-blocks) for server-side rendering
+- Master [Nested Blocks](/blocks/nested-blocks) to create container blocks
+
+## API Reference
+
+For complete API documentation, see:
+- [`registerBlockType`](https://github.com/WordPress/gutenberg/tree/HEAD/packages/blocks/README.md#registerBlockType)
+- [`useBlockProps`](https://github.com/WordPress/gutenberg/tree/HEAD/packages/block-editor/README.md#useBlockProps)

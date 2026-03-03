@@ -1,0 +1,451 @@
+---
+title: Coding Guidelines
+description: Follow coding patterns, conventions, and best practices for the Gutenberg Block Editor framework.
+---
+
+This document outlines coding guidelines specific to the Gutenberg project. Base coding guidelines follow the [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/).
+
+## JavaScript
+
+### Language Features
+
+Gutenberg uses modern JavaScript (ECMAScript) and JSX syntax, enabled through [@wordpress/babel-preset-default](https://github.com/WordPress/gutenberg/tree/HEAD/packages/babel-preset-default).
+
+**Important**: Only language features that have reached **Stage 4 ("Finished")** in the [TC39 proposal process](https://tc39.es/process-document/) are supported.
+
+### Import Organization
+
+Organize imports with multi-line comments separating different types:
+
+```javascript
+/**
+ * External dependencies
+ */
+import moment from 'moment';
+import clsx from 'clsx';
+
+/**
+ * WordPress dependencies
+ */
+import { __ } from '@wordpress/i18n';
+import { useState } from '@wordpress/element';
+
+/**
+ * Internal dependencies
+ */
+import BlockToolbar from './block-toolbar';
+import InspectorControls from './inspector-controls';
+```
+
+#### Import Types
+
+**External dependencies**: Third-party packages from npm
+
+```javascript
+import moment from 'moment';
+```
+
+**WordPress dependencies**: Packages from the `@wordpress` namespace
+
+```javascript
+import { __ } from '@wordpress/i18n';
+```
+
+**Internal dependencies**: Relative imports within your package
+
+```javascript
+import VisualEditor from '../visual-editor';
+```
+
+### Strings
+
+Use single quotes for string literals, unless the string contains a single quote:
+
+```javascript
+// Good
+const name = 'Matt';
+const pet = 'Matt's dog';
+const oddString = "She said 'This is odd.'";
+
+// Bad
+const name = "Matt";
+const pet = "Matt's dog"; // Should use real apostrophe
+```
+
+**Apostrophes**: Use real apostrophes (`'`) not single quotes (`'`) in user-facing strings:
+
+```javascript
+// Good (user-facing)
+const message = 'It's working';
+
+// OK (test code)
+const testMsg = 'it's working';
+```
+
+**Template literals**: Prefer template strings over concatenation:
+
+```javascript
+const name = 'Stacey';
+
+// Good
+alert(`My name is ${name}.`);
+
+// Bad
+alert('My name is ' + name + '.');
+```
+
+### Objects
+
+Use shorthand notation when possible:
+
+```javascript
+const a = 10;
+
+// Good
+const object = {
+  a,
+  performAction() {
+    // ...
+  },
+};
+
+// Bad
+const object = {
+  a: a,
+  performAction: function () {
+    // ...
+  },
+};
+```
+
+### Optional Chaining
+
+[Optional chaining](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining) can be convenient but has pitfalls:
+
+**Avoid when negating**:
+
+```javascript
+// Problematic: returns true if nodeRef.current is null/undefined
+const hasFocus = !nodeRef.current?.contains(document.activeElement);
+
+// Better: explicit check
+const hasFocus = nodeRef.current?.contains(document.activeElement) === true;
+```
+
+**Be careful with boolean contexts**:
+
+```javascript
+// Problematic: may pass undefined instead of false
+document.body.classList.toggle(
+  'has-focus',
+  nodeRef.current?.contains(document.activeElement)
+);
+
+// Better: ensure boolean value
+document.body.classList.toggle(
+  'has-focus',
+  Boolean(nodeRef.current?.contains(document.activeElement))
+);
+```
+
+### React Components
+
+Implement all components as [function components](https://react.dev/learn/your-first-component) using [hooks](https://react.dev/reference/react/hooks):
+
+```javascript
+import { useState } from '@wordpress/element';
+
+function MyComponent({ title }) {
+  const [isActive, setIsActive] = useState(false);
+
+  return (
+    <div>
+      <h2>{title}</h2>
+      <button onClick={() => setIsActive(!isActive)}>
+        Toggle
+      </button>
+    </div>
+  );
+}
+```
+
+**Exception**: Class components are acceptable only for [error boundaries](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary).
+
+## CSS
+
+### Class Naming Convention
+
+Follow a BEM-inspired naming convention:
+
+**Format**: `package-directory__descriptor-foo-bar`
+
+- Root element: `package-directory`
+- Child elements: `package-directory__descriptor`
+
+**Example**:
+
+```jsx
+// In packages/components/src/notice/index.js
+export default function Notice({ children, onRemove }) {
+  return (
+    <div className="components-notice">
+      <div className="components-notice__content">{children}</div>
+      <Button className="components-notice__dismiss" onClick={onRemove} />
+    </div>
+  );
+}
+```
+
+### State Modifiers
+
+Use modifier classes with `is-` prefix for state:
+
+```javascript
+import clsx from 'clsx';
+
+function Panel({ isOpen }) {
+  const classes = clsx('components-panel', {
+    'is-open': isOpen,
+  });
+
+  return <div className={classes}>...</div>;
+}
+```
+
+**In CSS**:
+
+```css
+.components-panel {
+  /* base styles */
+}
+
+.components-panel.is-open {
+  /* open state styles */
+}
+```
+
+### Component Isolation
+
+A component's class name should **never** be used outside its own folder (with rare exceptions).
+
+- Don't inherit styles from other components
+- Render instances of other components instead
+- Duplicate styles if necessary to maintain isolation
+
+### SCSS File Naming for Blocks
+
+**`style.scss`**: Loads on both frontend and editor
+
+```scss
+// Block styles that apply everywhere
+.wp-block-gallery {
+  display: flex;
+}
+```
+
+**`editor.scss`**: Loads only in the editor
+
+```scss
+// Editor-specific styles
+.wp-block-gallery {
+  outline: 1px dashed #ccc;
+}
+```
+
+## TypeScript & JSDoc
+
+Gutenberg uses TypeScript via JSDoc for type checking JavaScript files.
+
+### Custom Types
+
+Define custom types with `@typedef`:
+
+```javascript
+/**
+ * A block selection object.
+ *
+ * @typedef WPBlockSelection
+ *
+ * @property {string} clientId     Block client ID.
+ * @property {string} attributeKey Block attribute key.
+ * @property {number} offset       Attribute value offset.
+ */
+```
+
+**Naming**: Use `WP` prefix and descriptive names without redundant suffixes.
+
+### Type Unions
+
+Define sets of options as union types:
+
+```javascript
+/**
+ * Named breakpoint sizes.
+ *
+ * @typedef {'huge'|'wide'|'large'|'medium'|'small'|'mobile'} WPBreakpoint
+ */
+```
+
+### Importing Types
+
+Use TypeScript import syntax in JSDoc:
+
+```javascript
+/** @typedef {import('@wordpress/data').WPDataRegistry} WPDataRegistry */
+```
+
+### Generic Types
+
+Always provide details for generic types:
+
+```javascript
+// Bad
+/** @type {Object} */
+/** @type {Promise} */
+
+// Good
+/** @type {Record<string, number>} */
+/** @type {{[key: string]: any}} */
+/** @type {Promise<string>} */
+/** @type {(key: string) => boolean} */
+```
+
+### Documenting Components
+
+Document component props using dot notation:
+
+```javascript
+/**
+ * Renders a block title.
+ *
+ * @param {Object} props
+ * @param {string} props.clientId Client ID of block.
+ *
+ * @return {string|null} Block title.
+ */
+function BlockTitle({ clientId }) {
+  // ...
+}
+```
+
+### Examples in Documentation
+
+Include usage examples with code blocks:
+
+````javascript
+/**
+ * Selects a store.
+ *
+ * @param {string} name Store name.
+ *
+ * @example
+ * ```js
+ * select('my-shop').getPrice('hammer');
+ * ```
+ *
+ * @return {Object} Store selectors.
+ */
+````
+
+## PHP
+
+### PHP_CodeSniffer
+
+Gutenberg uses [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer) with [WordPress Coding Standards](https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards).
+
+### Running PHP Checks
+
+```bash
+# Check standards
+npm run lint:php
+# or
+vendor/bin/phpcs
+
+# Auto-fix issues
+vendor/bin/phpcbf
+
+# Specific file
+vendor/bin/phpcs path/to/file.php
+vendor/bin/phpcbf path/to/file.php
+```
+
+### Installing Locally
+
+```bash
+# Install via Composer
+composer install
+
+# Run checks
+composer lint
+```
+
+## Private and Experimental APIs
+
+### Private APIs
+
+Use the `@wordpress/private-apis` package for internal-only APIs:
+
+```javascript
+// Opt-in to private APIs
+import { __dangerousOptInToUnstableAPIsOnlyForCoreModules } from '@wordpress/private-apis';
+
+export const { lock, unlock } = __dangerousOptInToUnstableAPIsOnlyForCoreModules(
+  'I acknowledge private features are not for use in themes or plugins...',
+  '@wordpress/my-package'
+);
+
+// Lock private functions
+const privateFunction = () => {};
+export const publicObject = {};
+lock(publicObject, { privateFunction });
+
+// Unlock in other packages
+const { privateFunction } = unlock(publicObject);
+```
+
+### Plugin-Only APIs
+
+Export APIs only in the Gutenberg plugin:
+
+```javascript
+if (globalThis.IS_GUTENBERG_PLUGIN) {
+  export { experimentalFeature } from './api';
+}
+```
+
+### Legacy Experimental APIs
+
+**Avoid** using `__experimental` or `__unstable` prefixes for new APIs. Use private APIs or plugin-only APIs instead.
+
+## Code Quality Tools
+
+### ESLint
+
+JavaScript linting with [ESLint](https://eslint.org/):
+
+```bash
+npm run lint:js
+npm run lint:js:fix
+```
+
+### Prettier
+
+Code formatting with [Prettier](https://prettier.io/):
+
+```bash
+npm run format
+```
+
+### TypeScript
+
+Type checking via TypeScript:
+
+```bash
+npm run build:packages
+```
+
+## Next Steps
+
+- Review [Testing Guide](/contributing/testing) for testing conventions
+- Check [Architectural Decisions](/contributing/architectural-decisions) for design patterns
+- See [Common Pitfalls](/contributing/common-pitfalls) to avoid mistakes

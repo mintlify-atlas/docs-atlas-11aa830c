@@ -1,0 +1,395 @@
+---
+title: Media Blocks
+description: Core blocks for embedding and displaying media content in the Gutenberg Block Editor
+---
+
+# Media Blocks
+
+Media blocks enable you to embed and display rich media content including images, videos, audio files, and interactive elements.
+
+## Image
+
+**Name:** `core/image`
+
+**Description:** Insert an image to make a visual statement.
+
+### Attributes
+
+- `url` (string) - Image source URL
+- `alt` (string) - Alternative text for accessibility
+- `caption` (rich-text) - Image caption
+- `id` (number) - Media library attachment ID
+- `width` (string) - Image width
+- `height` (string) - Image height
+- `aspectRatio` (string) - Aspect ratio constraint
+- `scale` (string) - Object-fit value (cover, contain, fill)
+- `sizeSlug` (string) - Image size (thumbnail, medium, large, full)
+- `href` (string) - Link URL
+- `linkDestination` (string) - Link destination (media, attachment, custom, none)
+- `linkTarget` (string) - Link target (_blank, _self)
+- `rel` (string) - Link rel attribute
+- `linkClass` (string) - Link CSS class
+- `focalPoint` (object) - Focal point for cropping
+- `lightbox` (object) - Lightbox settings
+- `title` (string) - Image title attribute
+- `blob` (string) - Temporary blob URL during upload
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Filter:** duotone
+- **Spacing:** margin
+- **Border:** color, radius, width
+- **Shadow:** true
+- **Interactivity:** true
+
+### Styles
+
+- `default` - Default style (isDefault: true)
+- `rounded` - Rounded corners
+
+### Usage
+
+```javascript
+// Basic image from media library
+wp.blocks.createBlock('core/image', {
+  id: 123,
+  url: 'https://example.com/image.jpg',
+  alt: 'Description of the image',
+});
+
+// Image with caption and link
+wp.blocks.createBlock('core/image', {
+  url: 'https://example.com/image.jpg',
+  alt: 'Featured product',
+  caption: '<em>Our latest innovation</em>',
+  href: 'https://example.com/product',
+  linkTarget: '_blank',
+});
+
+// Image with aspect ratio and duotone filter
+wp.blocks.createBlock('core/image', {
+  url: 'https://example.com/image.jpg',
+  aspectRatio: '16/9',
+  scale: 'cover',
+});
+```
+
+## Gallery
+
+**Name:** `core/gallery`
+
+**Description:** Display multiple images in a rich gallery.
+
+### Attributes
+
+- `images` (array) - Array of image objects
+- `ids` (array) - Array of attachment IDs
+- `columns` (number) - Number of columns
+- `caption` (string) - Gallery caption
+- `imageCrop` (boolean) - Crop images to aspect ratio
+- `fixedHeight` (boolean) - Use fixed height layout
+- `aspectRatio` (string) - Aspect ratio for images
+- `linkTarget` (string) - Link target for images
+- `linkTo` (string) - Link destination (none, media, attachment)
+- `sizeSlug` (string) - Image size
+- `allowResize` (boolean) - Allow individual image resizing
+- `randomOrder` (boolean) - Display in random order
+- `navigationButtonType` (string) - Navigation button style
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Color:** background, gradients
+- **Layout:** default
+- **Spacing:** margin, padding, blockGap
+- **Allowed Blocks:** core/image
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/gallery', {
+  images: [
+    { id: 1, url: 'image1.jpg', alt: 'Image 1' },
+    { id: 2, url: 'image2.jpg', alt: 'Image 2' },
+    { id: 3, url: 'image3.jpg', alt: 'Image 3' },
+  ],
+  columns: 3,
+  imageCrop: true,
+});
+```
+
+## Video
+
+**Name:** `core/video`
+
+**Description:** Embed a video from your media library or upload a new one.
+
+### Attributes
+
+- `src` (string) - Video source URL
+- `id` (number) - Media library attachment ID
+- `caption` (string) - Video caption
+- `poster` (string) - Poster image URL
+- `autoplay` (boolean) - Auto-play on load
+- `controls` (boolean) - Show video controls, default: true
+- `loop` (boolean) - Loop playback
+- `muted` (boolean) - Mute audio
+- `playsInline` (boolean) - Play inline on mobile
+- `preload` (string) - Preload setting (auto, metadata, none)
+- `tracks` (array) - Text tracks (subtitles, captions)
+- `blob` (string) - Temporary blob URL during upload
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Spacing:** margin, padding
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/video', {
+  src: 'https://example.com/video.mp4',
+  poster: 'https://example.com/poster.jpg',
+  controls: true,
+  loop: true,
+});
+```
+
+## Audio
+
+**Name:** `core/audio`
+
+**Description:** Embed a simple audio player.
+
+### Attributes
+
+- `src` (string) - Audio source URL
+- `id` (number) - Media library attachment ID
+- `caption` (string) - Audio caption
+- `autoplay` (boolean) - Auto-play on load
+- `loop` (boolean) - Loop playback
+- `preload` (string) - Preload setting (auto, metadata, none)
+- `blob` (string) - Temporary blob URL during upload
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Spacing:** margin, padding
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/audio', {
+  src: 'https://example.com/audio.mp3',
+  caption: 'Podcast Episode 1',
+});
+```
+
+## Cover
+
+**Name:** `core/cover`
+
+**Description:** Add an image or video with a text overlay.
+
+### Attributes
+
+- `url` (string) - Background media URL
+- `id` (number) - Media library attachment ID
+- `alt` (string) - Alternative text for background image
+- `backgroundType` (string) - Media type (image, video)
+- `dimRatio` (number) - Overlay opacity (0-100)
+- `overlayColor` (string) - Overlay color slug
+- `customOverlayColor` (string) - Custom overlay color
+- `gradient` (string) - Gradient preset slug
+- `customGradient` (string) - Custom gradient
+- `contentPosition` (string) - Content alignment position
+- `isDark` (boolean) - Use light text color
+- `hasParallax` (boolean) - Enable parallax effect
+- `isRepeated` (boolean) - Repeat background image
+- `focalPoint` (object) - Background focal point
+- `minHeight` (number) - Minimum height
+- `minHeightUnit` (string) - Min height unit (px, vh, etc.)
+- `tagName` (string) - HTML tag (div, section, etc.)
+- `useFeaturedImage` (boolean) - Use post's featured image
+- `poster` (string) - Video poster image
+- `sizeSlug` (string) - Image size
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Color:** text, heading
+- **Dimensions:** aspectRatio
+- **Filter:** duotone
+- **Layout:** true
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+
+### Usage
+
+```javascript
+// Image cover with overlay
+wp.blocks.createBlock('core/cover', {
+  url: 'https://example.com/background.jpg',
+  dimRatio: 50,
+  overlayColor: 'black',
+  contentPosition: 'center center',
+});
+
+// Video cover with gradient
+wp.blocks.createBlock('core/cover', {
+  url: 'https://example.com/video.mp4',
+  backgroundType: 'video',
+  gradient: 'vivid-cyan-blue-to-vivid-purple',
+  minHeight: 400,
+  minHeightUnit: 'px',
+});
+```
+
+## File
+
+**Name:** `core/file`
+
+**Description:** Add a link to a downloadable file.
+
+### Attributes
+
+- `href` (string) - File URL
+- `fileId` (number) - Media library attachment ID (deprecated, use id)
+- `id` (number) - Media library attachment ID
+- `fileName` (string) - Display filename
+- `textLinkHref` (string) - Text link URL
+- `textLinkTarget` (string) - Text link target
+- `showDownloadButton` (boolean) - Show download button, default: true
+- `downloadButtonText` (string) - Download button text
+- `displayPreview` (boolean) - Display PDF preview
+- `previewHeight` (number) - Preview height in pixels
+- `blob` (string) - Temporary blob URL during upload
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, gradients, link
+- **Spacing:** margin, padding
+- **Interactivity:** true
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/file', {
+  href: 'https://example.com/document.pdf',
+  fileName: 'Annual Report 2024',
+  showDownloadButton: true,
+  downloadButtonText: 'Download PDF',
+});
+```
+
+## Icon
+
+**Name:** `core/icon`
+
+**Description:** Insert an SVG icon.
+
+### Attributes
+
+- `icon` (string|object) - Icon definition (SVG or icon object)
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, text
+- **Dimensions:** width
+- **Spacing:** margin, padding
+- **ariaLabel:** true
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/icon', {
+  icon: 'heart',
+});
+```
+
+## Media & Text
+
+**Name:** `core/media-text`
+
+**Description:** Set media and words side-by-side for a richer layout.
+
+### Attributes
+
+- `mediaUrl` (string) - Media URL
+- `mediaId` (number) - Media library attachment ID
+- `mediaType` (string) - Media type (image, video)
+- `mediaPosition` (string) - Media position (left, right)
+- `mediaAlt` (string) - Media alt text
+- `mediaWidth` (number) - Media width percentage
+- `mediaSizeSlug` (string) - Image size
+- `focalPoint` (object) - Image focal point
+- `imageFill` (boolean) - Fill container (crop)
+- `verticalAlignment` (string) - Vertical alignment
+- `isStackedOnMobile` (boolean) - Stack on mobile, default: true
+- `href` (string) - Media link URL
+- `linkDestination` (string) - Link destination
+- `linkTarget` (string) - Link target
+- `linkClass` (string) - Link CSS class
+- `rel` (string) - Link rel attribute
+- `useFeaturedImage` (boolean) - Use post's featured image
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, gradients, text, link, heading
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/media-text', {
+  mediaUrl: 'https://example.com/image.jpg',
+  mediaType: 'image',
+  mediaPosition: 'left',
+  mediaWidth: 50,
+  verticalAlignment: 'center',
+});
+```
+
+## Playlist (Experimental)
+
+**Name:** `core/playlist`
+
+**Description:** Embed a simple playlist.
+
+### Attributes
+
+- `type` (string) - Playlist type (audio, video)
+- `caption` (string) - Playlist caption
+- `currentTrack` (number) - Currently playing track index
+- `showTracklist` (boolean) - Show track list
+- `showImages` (boolean) - Show track images
+- `showArtists` (boolean) - Show artist names
+- `showNumbers` (boolean) - Show track numbers
+- `order` (string) - Play order
+
+### Supports
+
+- **Align:** true
+- **Color:** background, gradients, text, link
+- **Spacing:** margin, padding
+- **Allowed Blocks:** core/playlist-track
+- **Interactivity:** true
+
+## Best Practices
+
+1. **Always include alt text** - Essential for accessibility and SEO
+2. **Optimize images** - Compress images before uploading
+3. **Use appropriate sizes** - Select the right image size for your layout
+4. **Provide captions** - Add context to media with captions
+5. **Video accessibility** - Include captions/subtitles using tracks attribute
+6. **Aspect ratios** - Use consistent aspect ratios in galleries
+7. **File downloads** - Use descriptive filenames and button text
+8. **Cover overlays** - Ensure text is readable against background media

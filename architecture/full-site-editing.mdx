@@ -1,0 +1,334 @@
+---
+title: Full Site Editing Architecture
+description: Understanding how Full Site Editing, templates, and template parts work in the Block Editor
+---
+
+Full Site Editing (FSE) extends the block editor beyond post content to enable editing the entire site structure—from header to footer—using blocks.
+
+## Overview
+
+Full Site Editing allows users to:
+- Edit complete page templates using blocks
+- Customize reusable template parts (header, footer, sidebar)
+- Manage site-wide design through Global Styles
+- Create and modify templates for different contexts (home, archive, single, 404)
+
+## Core Concepts
+
+### Templates
+
+Templates describe a full page structure. They define the layout and content for different page contexts.
+
+**Template Types:**
+- **Home** - Site homepage
+- **Singular** - Individual posts and pages
+- **Archive** - Post listings, categories, tags
+- **404** - Error pages
+- **Search** - Search results
+- **Custom** - User-created templates
+
+### Template Parts
+
+Template parts are reusable areas within templates, representing semantic sections:
+
+**Common Template Parts:**
+- **Header** - Site header and navigation
+- **Footer** - Site footer
+- **Sidebar** - Sidebar content
+- **Custom** - User-defined sections
+
+### Relationship
+
+Templates compose template parts:
+```
+┌─────────────────────────┐
+│  Template: Home         │
+├─────────────────────────┤
+│  [Template Part: Header]│
+│  [Content Area]         │
+│  [Template Part: Footer]│
+└─────────────────────────┘
+```
+
+## Storage Architecture
+
+Templates and template parts use a hybrid storage system combining theme files and database records.
+
+### Initial Storage: Theme Files
+
+Block templates initially live as files in the theme folder, just like traditional PHP templates.
+
+**File Location:**
+```
+theme-directory/
+  templates/
+    index.html
+    home.html
+    single.html
+  parts/
+    header.html
+    footer.html
+```
+
+### User Customization: Custom Post Types
+
+When a user edits a template in the Site Editor:
+1. Original theme file remains unchanged
+2. Forked version saved to database as custom post type
+3. Database version takes precedence over theme file
+
+**Post Types:**
+- `wp_template` - Customized templates
+- `wp_template_part` - Customized template parts
+
+### Mixed Source Rendering
+
+At any point, the site uses a mix of:
+- **Theme files** - Unedited templates
+- **Database records** - Customized templates
+
+## Template Synchronization
+
+To simplify template management, WordPress performs **template synchronization**.
+
+### How Synchronization Works
+
+**Auto-Draft Duplication:**
+Theme templates are duplicated in the custom post type with `auto-draft` status.
+
+**Status Progression:**
+```
+Theme File → auto-draft (unedited) → publish (edited)
+```
+
+### Benefits
+
+**1. Unified Querying:**
+REST API and rendering only need to query the CPT—no need to check theme files directly.
+
+**2. Clear Edit State:**
+- `auto-draft` status = pristine theme template
+- `publish` status = user-customized template
+
+**3. Simplified Export:**
+When exporting a block theme, only export CPT templates back to files.
+
+### When Synchronization Occurs
+
+**During REST API Requests:**
+GET requests to `/wp/v2/templates` and `/wp/v2/template-parts` trigger sync.
+
+**During Template Resolution:**
+When WordPress determines which template to render for the current page.
+
+**During Theme Export:**
+When exporting a block theme to file format.
+
+## Template Resolution
+
+Template resolution is the algorithm WordPress follows to find the right template for the current page.
+
+### Resolution Flow
+
+```
+1. Check for customized template (wp_template CPT with 'publish' status)
+   ↓
+2. Check for theme template (wp_template CPT with 'auto-draft' status)
+   ↓
+3. Fall back to default template
+```
+
+### Template Hierarchy
+
+Follows WordPress template hierarchy:
+```
+Single Post:
+  single-{post-type}-{slug}.html
+  ↓
+  single-{post-type}.html
+  ↓
+  single.html
+  ↓
+  singular.html
+  ↓
+  index.html
+```
+
+## Theme Attribution
+
+Templates and template parts track their origin theme via the `theme` post meta field.
+
+### Why Track Theme?
+
+Each template/part CPT entry stores:
+- **`theme` meta** - The theme identifier it originated from
+
+This enables:
+- Proper association with source theme
+- Future cross-theme template usage
+- Clear provenance tracking
+
+### Current Behavior
+
+For the current phase of FSE:
+- Templates and template parts are **theme-specific**
+- Switching themes doesn't carry over customizations
+- Each theme has its own set of templates
+
+### Future Possibilities
+
+Future iterations may allow:
+- Using header from Theme A in Theme B
+- Mixing templates from different themes
+- Theme-agnostic template parts
+
+## Switching Themes
+
+When switching between block themes:
+
+**Theme A → Theme B:**
+1. Theme B templates are synchronized
+2. Theme A's custom templates (with `theme: theme-a` meta) remain in database
+3. Theme B's templates (with `theme: theme-b` meta) become active
+4. Theme A customizations preserved but inactive
+
+**Returning to Theme A:**
+Previous customizations are restored automatically.
+
+## Template Editing Flow
+
+### User Perspective
+
+1. User opens Site Editor
+2. Selects template to edit
+3. Makes changes using block editor
+4. Clicks "Save"
+5. Customized version saved to database
+
+### Technical Flow
+
+```
+1. Site Editor loads template via REST API
+   GET /wp/v2/templates/{id}
+   (Triggers synchronization)
+
+2. User edits template in block editor
+   (Changes tracked in core-data store)
+
+3. User saves template
+   POST /wp/v2/templates/{id}
+   
+4. Template saved to wp_template CPT
+   Status: auto-draft → publish
+   
+5. Frontend rendering uses customized version
+```
+
+## Template Parts in Templates
+
+Template parts are referenced within templates using the `core/template-part` block:
+
+```html
+<!-- wp:template-part {"slug":"header","theme":"mytheme"} /-->
+```
+
+**Key Attributes:**
+- `slug` - Template part identifier
+- `theme` - Origin theme
+- `area` - Semantic area (header, footer, sidebar)
+
+### Rendering Template Parts
+
+When rendering a template:
+1. Template content is parsed
+2. `core/template-part` blocks are detected
+3. Corresponding template part is resolved
+4. Template part content is inserted
+
+## Site Editor Package
+
+The Site Editor is implemented in `@wordpress/edit-site`:
+
+**Responsibilities:**
+- Template and template part selection UI
+- Full canvas editing experience
+- Global Styles interface
+- Template management (create, duplicate, delete)
+- Navigation structure editing
+
+**Architecture:**
+Builds on editor layers:
+```
+edit-site → editor → block-editor
+```
+
+## Special Blocks for Templates
+
+Certain blocks are particularly useful in template contexts:
+
+**Site Identity:**
+- `core/site-title` - Site name
+- `core/site-logo` - Site logo
+- `core/site-tagline` - Site description
+
+**Navigation:**
+- `core/navigation` - Site navigation menu
+- `core/page-list` - Automatic page list
+
+**Query:**
+- `core/query` - Post query loop
+- `core/post-template` - Post loop item template
+
+**Template Parts:**
+- `core/template-part` - Template part insertion
+
+## Best Practices
+
+### Theme Development
+
+**Provide Default Templates:**
+Include comprehensive default templates in theme files.
+
+**Use Template Parts:**
+Create reusable template parts for common sections.
+
+**Test Customization:**
+Ensure templates work well when customized by users.
+
+### User Customization
+
+**Start with Defaults:**
+Begin with theme templates and customize as needed.
+
+**Use Template Parts:**
+Reuse template parts across multiple templates.
+
+**Preview Changes:**
+Use Site Editor preview before saving.
+
+### Development
+
+**Handle Both Sources:**
+Code should handle templates from both theme files and database.
+
+**Respect Synchronization:**
+Don't bypass the synchronization system.
+
+**Track Theme Attribution:**
+Always set the `theme` meta correctly.
+
+## Future Direction
+
+Full Site Editing continues to evolve:
+
+**Pattern Management:**
+Enhanced pattern creation and management.
+
+**Cross-Theme Templates:**
+Potential for theme-agnostic templates.
+
+**Enhanced Navigation:**
+Richer navigation editing capabilities.
+
+**Style Variations:**
+Multiple style variations per theme.

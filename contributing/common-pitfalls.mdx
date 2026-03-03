@@ -1,0 +1,385 @@
+---
+title: Common Pitfalls
+description: Avoid common mistakes and pitfalls when contributing to the Gutenberg Block Editor framework.
+---
+
+This guide highlights common mistakes and pitfalls to avoid when contributing to Gutenberg. Learning from these can save you time and prevent issues in your pull requests.
+
+## PHP Development
+
+### PHP Compatibility Features
+
+**Pitfall**: Adding PHP features to the wrong directory.
+
+**Rule**: PHP features in `lib/compat/` MUST target a specific `wordpress-X.Y/` subdirectory.
+
+```php
+// ❌ BAD: Generic compat directory
+/lib/compat/my-feature.php
+
+// ✅ GOOD: WordPress version-specific
+/lib/compat/wordpress-6.4/my-feature.php
+```
+
+**Why**: This ensures compatibility features are loaded only for the appropriate WordPress versions.
+
+**When adding new PHP features**:
+1. Determine the target WordPress version
+2. Create or use the appropriate `wordpress-X.Y/` directory
+3. Place your feature file there
+
+## Package Architecture
+
+### Private APIs in Bundled Packages
+
+**Pitfall**: Using private APIs in packages that are distributed via npm.
+
+**Rule**: Avoid using private APIs in bundled packages (packages without `wpScript` or `wpModuleExports`).
+
+**Why**: Bundled packages may be imported via npm into plugin scripts. Private APIs are intended for Core usage only and can cause incompatibilities.
+
+```javascript
+// ❌ BAD in a bundled package
+import { __experimentalUseColors } from '@wordpress/block-editor';
+
+// ✅ GOOD: Use stable, public APIs
+import { useColors } from '@wordpress/block-editor';
+```
+
+**How to identify bundled packages**: Check `package.json` - if it lacks `wpScript` or `wpModuleExports` fields, it's a bundled package.
+
+### block-editor Package Dependencies
+
+**Pitfall**: Adding WordPress-specific dependencies to `@wordpress/block-editor`.
+
+**Rule**: `@wordpress/block-editor` is a WordPress-agnostic package. NEVER add `core-data` dependencies or direct REST API calls to it.
+
+```javascript
+// ❌ BAD in @wordpress/block-editor
+import { useEntityProp } from '@wordpress/core-data';
+import apiFetch from '@wordpress/api-fetch';
+
+function MyComponent() {
+  const [title] = useEntityProp('postType', 'post', 'title');
+  // ...
+}
+
+// ✅ GOOD: Accept data via props
+function MyComponent({ title, onTitleChange }) {
+  // Component stays agnostic
+  // Higher layers (editor/edit-post) provide the data
+}
+```
+
+**Why**: The `block-editor` package is designed to be reusable in non-WordPress contexts. Adding WordPress dependencies breaks this design.
+
+**Solution**: 
+- Pass WordPress-specific data as props from higher layers (`editor`, `edit-post`, `edit-site`)
+- Use the data registry pattern for extensibility
+
+### Build Tool Changes
+
+**Pitfall**: Adding Gutenberg-specific features to `@wordpress/scripts`.
+
+**Rule**: `@wordpress/scripts` is a generic build tool used both in Gutenberg and by plugins targeting WordPress Core directly. Avoid Gutenberg-specific changes in it.
+
+```javascript
+// ❌ BAD: Gutenberg-specific check
+if (projectName === 'gutenberg') {
+  // Special webpack config
+}
+
+// ✅ GOOD: Make it configurable
+if (config.enableExperimentalFeatures) {
+  // Feature enabled via configuration
+}
+```
+
+**Why**: `@wordpress/scripts` serves multiple communities:
+- Gutenberg plugin developers
+- WordPress Core contributors
+- Third-party plugin and theme developers
+
+Gutenberg-specific assumptions break these other use cases.
+
+## Testing
+
+### Test Coverage Expectations
+
+**Pitfall**: Assuming tests are optional.
+
+**Rule**: All code changes should include tests. Pull requests without tests may be delayed or rejected.
+
+**Expected test types**:
+
+- **JavaScript changes**: Unit tests or integration tests
+- **PHP changes**: PHPUnit tests
+- **UI changes**: E2E tests (when appropriate)
+- **New blocks**: At least one fixture file per save function and deprecation
+
+```bash
+# Ensure tests pass before submitting PR
+npm test
+npm run test:php
+```
+
+### Prefixed Functions in Tests
+
+**Pitfall**: Testing source functions instead of built functions in PHP.
+
+**Rule**: Test the **built (prefixed) versions** of functions, not the source versions.
+
+**Why**: Gutenberg's build system prefixes PHP functions with `gutenberg_` to avoid conflicts.
+
+```php
+// ❌ BAD: Testing source function
+public function test_my_function() {
+    $result = block_core_my_block_render($args);
+    $this->assertEquals($expected, $result);
+}
+
+// ✅ GOOD: Testing built function
+public function test_my_function() {
+    $result = gutenberg_block_core_my_block_render($args);
+    $this->assertEquals($expected, $result);
+}
+```
+
+## Code Quality
+
+### Linting and Formatting
+
+**Pitfall**: Ignoring linting errors or inconsistent formatting.
+
+**Rule**: All formatting and linting issues are enforced through CI. Fix them before submitting.
+
+```bash
+# Fix formatting issues
+npm run format
+
+# Check for linting issues
+npm run lint:js
+npm run lint:php
+
+# Auto-fix PHP standards
+vendor/bin/phpcbf
+```
+
+**Common issues**:
+- Inconsistent indentation
+- Missing semicolons
+- Incorrect spacing
+- Unused imports
+
+**Prevention**: Set up editor integration for ESLint, Prettier, and EditorConfig.
+
+### Build Failures
+
+**Pitfall**: Submitting PRs without ensuring the build passes.
+
+**Rule**: Ensure the build passes locally before pushing.
+
+```bash
+# Test the build
+npm run build
+
+# Run all checks
+npm test
+npm run lint:js
+npm run lint:php
+```
+
+**Common build issues**:
+- TypeScript errors
+- Import/export mismatches
+- Missing dependencies
+- Circular dependencies
+
+## Accessibility
+
+### Accessibility Testing
+
+**Pitfall**: Forgetting to test accessibility when making UI changes.
+
+**Rule**: Accessibility should be thoroughly tested for all UI changes.
+
+**Test with**:
+- Keyboard navigation (Tab, Enter, Escape, Arrow keys)
+- Screen readers (NVDA, JAWS, VoiceOver)
+- High contrast mode
+- Reduced motion preferences
+- Zoom at 200%
+
+**Common issues**:
+- Missing ARIA labels
+- Keyboard traps
+- Insufficient color contrast
+- Missing focus indicators
+- Non-semantic HTML
+
+See the [accessibility testing guide](https://github.com/WordPress/gutenberg/blob/trunk/docs/contributors/accessibility-testing.md) for details.
+
+## React Native Compatibility
+
+### Native File Synchronization
+
+**Pitfall**: Forgetting to update `.native.js` files when renaming functions/classes.
+
+**Rule**: Verify that changes affecting function/class/variable names are mirrored in corresponding `.native.js` versions.
+
+```javascript
+// If you rename in: block-editor/src/components/toolbar.js
+// Also update: block-editor/src/components/toolbar.native.js
+
+// ❌ BAD: Desktop renamed, mobile not updated
+// toolbar.js
+export function BlockToolbar() { /* ... */ }
+
+// toolbar.native.js (outdated)
+export function Toolbar() { /* ... */ }
+
+// ✅ GOOD: Both synchronized
+// toolbar.js
+export function BlockToolbar() { /* ... */ }
+
+// toolbar.native.js
+export function BlockToolbar() { /* ... */ }
+```
+
+**Why**: This prevents breaking changes in the React Native Mobile Editor.
+
+## Backward Compatibility
+
+### Breaking Changes
+
+**Pitfall**: Introducing breaking changes without deprecation warnings.
+
+**Rule**: Follow the [WordPress Backward Compatibility policy](https://developer.wordpress.org/block-editor/contributors/code/backward-compatibility/).
+
+**For public APIs**:
+1. Add deprecation warning using `@wordpress/deprecated`
+2. Provide migration path
+3. Document in dev notes
+4. Maintain old API alongside new one
+
+```javascript
+import deprecated from '@wordpress/deprecated';
+
+export function oldFunction() {
+  deprecated('oldFunction', {
+    since: '10.3',
+    plugin: 'Gutenberg',
+    alternative: 'newFunction',
+  });
+
+  return newFunction();
+}
+
+export function newFunction() {
+  // New implementation
+}
+```
+
+### Block Deprecations
+
+**Pitfall**: Changing block markup without providing a deprecation.
+
+**Rule**: If block markup changes, add a deprecated version.
+
+```javascript
+const deprecated = [
+  {
+    attributes: { /* old attributes */ },
+    save({ attributes }) {
+      // Old save function
+    },
+  },
+];
+
+export default {
+  // Current block definition
+  deprecated,
+};
+```
+
+**Why**: This prevents existing blocks from becoming invalid when the editor loads.
+
+## Pull Request Workflow
+
+### Commit Organization
+
+**Pitfall**: Making a PR with poorly organized commits.
+
+**Best practices**:
+- Keep commits focused and atomic
+- Write clear commit messages
+- Squash WIP commits before requesting review
+- Don't mix unrelated changes
+
+```bash
+# ❌ BAD commit message
+git commit -m "fixes"
+
+# ✅ GOOD commit message
+git commit -m "Fix block toolbar alignment in nested blocks"
+```
+
+### Keeping PRs Focused
+
+**Pitfall**: Submitting large PRs with multiple unrelated changes.
+
+**Rule**: One feature or fix per PR.
+
+**Benefits**:
+- Easier to review
+- Faster to merge
+- Easier to revert if needed
+- Clearer git history
+
+**If you have multiple changes**: Create separate PRs.
+
+## Development Environment
+
+### wp-env Status
+
+**Pitfall**: Running E2E/PHP tests without wp-env running.
+
+**Rule**: Always check wp-env status before running tests.
+
+```bash
+# Check status first
+npm run wp-env status
+
+# Start if not running
+npm run wp-env start
+
+# Then run tests
+npm run test:e2e
+npm run test:php
+```
+
+**Common error**: Tests fail with connection errors when wp-env isn't running.
+
+## Quick Reference Checklist
+
+Before submitting a PR, verify:
+
+- [ ] PHP features target specific `wordpress-X.Y/` directory
+- [ ] No private APIs in bundled packages
+- [ ] No `core-data` dependencies in `block-editor`
+- [ ] No Gutenberg-specific changes in `@wordpress/scripts`
+- [ ] Tests included and passing
+- [ ] Testing built/prefixed PHP functions
+- [ ] Build passes locally
+- [ ] Linting and formatting pass
+- [ ] Accessibility tested (for UI changes)
+- [ ] `.native.js` files updated (if renaming)
+- [ ] Deprecation warnings added (for breaking changes)
+- [ ] Block deprecations provided (if markup changed)
+- [ ] wp-env running (for E2E/PHP tests)
+
+## Next Steps
+
+- Review [Architectural Decisions](/contributing/architectural-decisions) to understand design principles
+- Check [Coding Guidelines](/contributing/coding-guidelines) for style conventions
+- See [Testing Guide](/contributing/testing) for testing requirements

@@ -1,0 +1,158 @@
+---
+title: Components Overview
+description: A library of reusable UI components for building WordPress block editor interfaces
+---
+
+The `@wordpress/components` package provides a comprehensive library of generic WordPress components for creating common UI elements shared between screens and features of the WordPress dashboard.
+
+## Installation
+
+```bash
+npm install @wordpress/components --save
+```
+
+## Basic Usage
+
+Import components from the root directory:
+
+```jsx
+import { Button } from '@wordpress/components';
+
+export default function MyButton() {
+  return <Button variant="primary">Click Me!</Button>;
+}
+```
+
+<Note>
+  This package is currently in transition. Components are being migrated to `@wordpress/ui`, but you should continue using `@wordpress/components` until further notice. Check each component's Storybook documentation for the most accurate status information.
+</Note>
+
+## Styling
+
+Most components include CSS styles that must be loaded:
+
+### Within WordPress
+
+Add the `wp-components` stylesheet as a dependency:
+
+```php
+wp_enqueue_style(
+  'my-plugin-style',
+  plugins_url('style.css', __FILE__),
+  array('wp-components')
+);
+```
+
+### Outside WordPress
+
+Link directly to the built stylesheet:
+
+```html
+<link rel="stylesheet" href="node_modules/@wordpress/components/build-style/style.css" />
+```
+
+## TypeScript Support
+
+This package exports types for all components. Extract props types using `React.ComponentProps`:
+
+```tsx
+import type { ComponentProps } from 'react';
+import { Button } from '@wordpress/components';
+
+export default function MyButton(props: ComponentProps<typeof Button>) {
+  return <Button {...props}>Click Me!</Button>;
+}
+```
+
+## Component Categories
+
+### UI Controls
+
+Form inputs and interactive controls for user input:
+- Button, ButtonGroup
+- TextControl, TextareaControl
+- ToggleControl, CheckboxControl, RadioControl
+- SelectControl, ComboboxControl
+- RangeControl, NumberControl
+- ColorPicker, DateTimePicker
+
+[View all UI Controls →](/api/components/ui-controls)
+
+### Layout Components
+
+Containers and layout primitives for organizing content:
+- Flex, HStack, VStack
+- Grid, Spacer
+- Panel, PanelBody, PanelRow
+- Card, CardHeader, CardBody, CardFooter
+
+[View all Layout Components →](/api/components/layout)
+
+### Data Display
+
+Components for presenting information:
+- Spinner
+- ProgressBar
+- Badge
+- Avatar, AvatarGroup
+- Icon, Dashicon
+
+[View all Data Display Components →](/api/components/data-display)
+
+### Feedback Components
+
+Overlays and notifications for user feedback:
+- Notice, SnackbarList
+- Modal, ConfirmDialog
+- Popover, Tooltip
+- DropdownMenu
+
+[View all Feedback Components →](/api/components/feedback)
+
+## Storybook Documentation
+
+Detailed examples and interactive demos are available in Storybook:
+
+[https://wordpress.github.io/gutenberg/](https://wordpress.github.io/gutenberg/)
+
+<Note>
+  Component status in Storybook files is the most accurate signal, above any `experimental` tag or component prefix.
+</Note>
+
+## Special Features
+
+### Popovers
+
+By default, `Popover` components render in an extra element appended to the document body. For precise control, use `Popover.Slot`:
+
+```jsx
+import { Popover, SlotFillProvider } from '@wordpress/components';
+import { MyComponentWithPopover } from './my-component';
+
+const Example = () => (
+  <SlotFillProvider>
+    <MyComponentWithPopover />
+    <Popover.Slot />
+  </SlotFillProvider>
+);
+```
+
+### Form Validation
+
+For forms that edit dataset items, consider using `DataForm` from `@wordpress/dataviews`.
+
+For validation, use the [Validated Form Components](/api/components/ui-controls#validated-form-controls).
+
+## Component Status
+
+Due to the ongoing transition to `@wordpress/ui`, some components may be deprecated or removed. Always:
+
+1. Check the component's Storybook documentation for current status
+2. Look for `componentStatus` metadata in story files
+3. The Storybook status is more reliable than `experimental` prefixes
+
+## Resources
+
+- [Components Source Code](https://github.com/WordPress/gutenberg/tree/trunk/packages/components)
+- [Storybook Documentation](https://wordpress.github.io/gutenberg/)
+- [Contributing Guide](https://github.com/WordPress/gutenberg/tree/HEAD/packages/components/CONTRIBUTING.md)

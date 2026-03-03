@@ -1,0 +1,300 @@
+---
+title: Block Editor Layers
+description: Deep dive into the three-layer architecture of the Block Editor and the separation of concerns between layers
+---
+
+The Block Editor is architected as three distinct layers, each with specific responsibilities and constraints. Understanding these layers is essential for working with the editor effectively.
+
+## The Three-Layer Architecture
+
+```
+┌─────────────────────────────────────┐
+│  @wordpress/edit-post / edit-site   │  Layer 3: Full Screen
+│  (WordPress admin screens)          │
+└────────────┬────────────────────────┘
+             │ depends on
+             ▼
+┌─────────────────────────────────────┐
+│     @wordpress/editor                │  Layer 2: Post Editing
+│  (WordPress post-type aware)        │
+└────────────┬────────────────────────┘
+             │ depends on
+             ▼
+┌─────────────────────────────────────┐
+│   @wordpress/block-editor            │  Layer 1: Block Editing
+│   (Generic, WP-agnostic)            │
+└─────────────────────────────────────┘
+```
+
+## Layer 1: Block Editor
+
+**Package:** `@wordpress/block-editor`
+
+### Responsibilities
+
+- Generic block editing functionality
+- Block tree manipulation
+- Block insertion, selection, and movement
+- Block toolbar and inspector controls
+- Block canvas rendering
+- InnerBlocks API for nested blocks
+
+### Key Characteristics
+
+**WordPress-Agnostic:**
+This package has zero knowledge of WordPress. It operates purely on an array of block objects.
+
+**Value-Based:**
+Operates on a primitive value—an array of block objects. Makes no assumptions about:
+- How the value is persisted
+- Where it comes from
+- What happens after editing
+
+**No WordPress Dependencies:**
+Must not depend on:
+- `@wordpress/core-data`
+- WordPress REST API
+- WordPress-specific concepts
+
+### Architectural Constraint
+
+> `block-editor` is a WordPress-agnostic package. NEVER add `core-data` dependencies or direct REST API calls to it.
+
+### Use Cases
+
+- Building block editors outside WordPress
+- Custom save mechanisms
+- Non-post-based block interfaces
+- Comments editors
+- Standalone block-based applications
+
+### Example
+
+```js
+import { BlockEditorProvider, BlockList } from '@wordpress/block-editor';
+
+function MyEditor({ blocks, onChange }) {
+  return (
+    <BlockEditorProvider value={blocks} onChange={onChange}>
+      <BlockList />
+    </BlockEditorProvider>
+  );
+}
+```
+
+## Layer 2: Editor
+
+**Package:** `@wordpress/editor`
+
+### Responsibilities
+
+- WordPress post editing functionality
+- Post entity awareness
+- Post title, excerpt, featured image
+- Post settings (categories, tags, etc.)
+- Content saving to WordPress
+- Post type specific features
+
+### Key Characteristics
+
+**Post-Type Aware:**
+Understands the concept of a WordPress post and its properties.
+
+**Utilizes Block Editor:**
+Builds on `@wordpress/block-editor` components, adding WordPress-specific context.
+
+**Flexible Context:**
+Does not assume:
+- Where rendering happens (admin screen, custom page, etc.)
+- Layout arrangement
+- Specific screen implementation
+
+**Any Post Type:**
+Supports editing posts of any post type (posts, pages, custom post types).
+
+### Data Management
+
+**Uses Core Data:**
+Relies on `@wordpress/core-data` for:
+- Loading post entities
+- Saving post changes
+- Managing edit state
+
+### Use Cases
+
+- Reusable block editor (editing `wp_block` post type)
+- Custom post type editors
+- Embedded post editors
+- Any WordPress post editing context
+
+### Example
+
+```js
+import { EditorProvider, PostTitle } from '@wordpress/editor';
+import { BlockEditorProvider, BlockList } from '@wordpress/block-editor';
+
+function MyPostEditor({ postType, postId }) {
+  return (
+    <EditorProvider postType={postType} postId={postId}>
+      <PostTitle />
+      <BlockList />
+    </EditorProvider>
+  );
+}
+```
+
+## Layer 3: Edit Post / Edit Site
+
+**Packages:** `@wordpress/edit-post`, `@wordpress/edit-site`
+
+### Responsibilities
+
+- Full screen implementation
+- Layout and UI arrangement
+- Sidebars (settings, block inspector)
+- Header area (save button, tools)
+- WordPress admin integration
+- Screen-specific features
+
+### Key Characteristics
+
+**Screen Implementation:**
+Complete implementation of specific WordPress admin screens:
+- `edit-post` - Post editing screen
+- `edit-site` - Site Editor screen
+
+**Layout Management:**
+Responsible for:
+- Component arrangement
+- Sidebar positioning
+- Header toolbar
+- Canvas display
+- Panel management
+
+**WordPress Admin Aware:**
+Full awareness of:
+- WordPress admin dashboard
+- Admin UI patterns
+- Screen-specific requirements
+
+### Parallel Implementations
+
+Multiple packages can exist at this layer:
+- `@wordpress/edit-post` - Post editor screen
+- `@wordpress/edit-site` - Site editor screen
+- `@wordpress/edit-widgets` - Widgets editor screen
+- Custom implementations for plugins
+
+### Use Cases
+
+- Standard WordPress post editor
+- Site editor for full site editing
+- Widgets editor
+- Custom admin screens for plugins
+
+## Dependency Rules
+
+### Strict Layer Enforcement
+
+**Rule:** Lower layers MUST NOT depend on higher ones.
+
+```
+✅ Allowed:
+- edit-post → editor → block-editor
+- editor → block-editor
+- edit-site → editor → block-editor
+
+❌ Not Allowed:
+- block-editor → editor
+- block-editor → edit-post
+- editor → edit-post
+```
+
+### Why This Matters
+
+**Reusability:**
+Lower layers can be used independently without pulling in unnecessary dependencies.
+
+**Maintainability:**
+Clear boundaries make it easier to understand and modify code.
+
+**Flexibility:**
+Different higher-layer implementations can use the same lower layers.
+
+## Data Flow Through Layers
+
+### Layer 1 (Block Editor)
+```
+Block Tree ↔ Block Editor Components
+```
+
+### Layer 2 (Editor)
+```
+Post Entity ↔ Editor Components ↔ Block Tree ↔ Block Editor Components
+```
+
+### Layer 3 (Edit Post/Site)
+```
+WordPress Admin ↔ Screen Layout ↔ Post Entity ↔ Block Tree
+```
+
+## Common Patterns
+
+### Creating a Custom Editor
+
+**For WordPress Posts:**
+Use Layer 2 (`@wordpress/editor`) + Layer 1 (`@wordpress/block-editor`)
+
+**For Non-WordPress Use:**
+Use Layer 1 (`@wordpress/block-editor`) only
+
+**For Full Admin Screen:**
+Use all three layers or create a custom Layer 3 implementation
+
+### Extending the Editor
+
+**Adding Block Features:**
+Work at Layer 1 (block-editor)
+
+**Adding Post Features:**
+Work at Layer 2 (editor)
+
+**Adding Screen Features:**
+Work at Layer 3 (edit-post/edit-site)
+
+## Best Practices
+
+### Choosing the Right Layer
+
+1. **Need WordPress post awareness?** Use Layer 2+
+2. **Need admin screen integration?** Use Layer 3
+3. **Building generic block interface?** Use Layer 1 only
+
+### Avoiding Layer Violations
+
+**Don't:**
+- Add WordPress-specific code to `block-editor`
+- Import from higher layers in lower layers
+- Assume WordPress context in Layer 1
+
+**Do:**
+- Keep Layer 1 generic and reusable
+- Use Layer 2 for WordPress post integration
+- Implement screen-specific UI in Layer 3
+
+## Architectural Benefits
+
+### Separation of Concerns
+Each layer has a clear, focused purpose.
+
+### Reusability
+Lower layers can be used in multiple contexts.
+
+### Testability
+Each layer can be tested independently.
+
+### Maintainability
+Clear boundaries make changes safer and easier.
+
+### Flexibility
+New implementations can reuse existing layers.

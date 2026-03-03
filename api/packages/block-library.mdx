@@ -1,0 +1,211 @@
+---
+title: "@wordpress/block-library"
+description: Core WordPress blocks library with all default block implementations
+---
+
+The `@wordpress/block-library` package contains the implementation of all core WordPress blocks. It provides a single function to register all core blocks at once.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/block-library --save
+```
+
+```bash yarn
+yarn add @wordpress/block-library
+```
+</CodeGroup>
+
+## Basic Usage
+
+### Register All Core Blocks
+
+```js
+import { registerCoreBlocks } from '@wordpress/block-library';
+
+registerCoreBlocks();
+```
+
+This single function call registers all core blocks including:
+
+- Paragraph
+- Heading
+- Image
+- List
+- Quote
+- Code
+- And many more...
+
+### Load Required Styles
+
+Don't forget to load the block stylesheets:
+
+```js
+import '@wordpress/block-library/build-style/style.css';
+import '@wordpress/block-library/build-style/editor.css';
+import '@wordpress/block-library/build-style/theme.css';
+```
+
+## Registering Individual Blocks
+
+You can also register blocks individually for more control:
+
+### Method 1: Auto-register on Import
+
+```js
+import '@wordpress/block-library/build-module/paragraph/init';
+```
+
+### Method 2: Get Block Reference
+
+```js
+import paragraphBlock from '@wordpress/block-library/build-module/paragraph/init';
+```
+
+### Method 3: Manual Control
+
+```js
+import { init } from '@wordpress/block-library/build-module/paragraph';
+
+const paragraphBlock = init();
+```
+
+## Core Blocks Included
+
+The block library includes implementations for:
+
+### Text Blocks
+- Paragraph
+- Heading
+- List
+- Quote
+- Code
+- Preformatted
+- Pullquote
+- Verse
+
+### Media Blocks
+- Image
+- Gallery
+- Audio
+- Video
+- File
+- Media & Text
+- Cover
+
+### Design Blocks
+- Button/Buttons
+- Columns
+- Group
+- Row
+- Stack
+- Separator
+- Spacer
+
+### Layout Blocks
+- Template Part
+- Navigation
+- Site Logo
+- Site Title
+- Site Tagline
+
+### Embed Blocks
+- Embed (with variations for YouTube, Twitter, etc.)
+
+### Widget Blocks
+- Archives
+- Calendar
+- Categories
+- Latest Comments
+- Latest Posts
+- Page List
+- RSS
+- Search
+- Tag Cloud
+
+### Theme Blocks
+- Query
+- Post Content
+- Post Title
+- Post Featured Image
+- Post Excerpt
+- Post Date
+- Post Author
+- Comments
+
+## Custom Block Development
+
+When building custom blocks, you can use this package as a reference for best practices and patterns used in core blocks.
+
+### Example: Studying Core Block Implementation
+
+```js
+// Look at the paragraph block source for reference
+import { metadata, name, settings } from '@wordpress/block-library/build-module/paragraph';
+
+console.log( 'Paragraph block config:', { metadata, name, settings } );
+```
+
+## Adding Core Blocks to Custom Editors
+
+When building a custom block editor, register core blocks before initializing:
+
+```js
+import { registerCoreBlocks } from '@wordpress/block-library';
+import { createRoot } from '@wordpress/element';
+import { BlockEditorProvider, BlockList } from '@wordpress/block-editor';
+
+// Register blocks first
+registerCoreBlocks();
+
+// Then initialize your editor
+function MyEditor() {
+	return (
+		<BlockEditorProvider value={ [] }>
+			<BlockList />
+		</BlockEditorProvider>
+	);
+}
+
+const root = createRoot( document.getElementById( 'editor' ) );
+root.render( <MyEditor /> );
+```
+
+## Selective Block Registration
+
+You can choose which blocks to register:
+
+```js
+import { registerCoreBlocks } from '@wordpress/block-library';
+
+// Register only specific blocks
+registerCoreBlocks( [
+	'core/paragraph',
+	'core/heading',
+	'core/image',
+] );
+```
+
+## Block Styles
+
+Core blocks come with three stylesheet types:
+
+1. **style.css** - Styles for both editor and frontend
+2. **editor.css** - Editor-only styles
+3. **theme.css** - Theme-dependent styles
+
+## Environment Requirements
+
+This package requires an ES2015+ environment. Include the polyfill from `@wordpress/babel-preset-default` if needed.
+
+## Contributing
+
+When adding new core blocks, additional steps are required:
+
+1. Register the block in the package's `index.js`
+2. Add it to `lib/blocks.php` in Gutenberg
+3. Create an `init.js` file in the block directory
+4. Add script modules to `package.json` if needed
+
+See the [package README](https://github.com/WordPress/gutenberg/tree/HEAD/packages/block-library/README.md) for detailed contribution guidelines.

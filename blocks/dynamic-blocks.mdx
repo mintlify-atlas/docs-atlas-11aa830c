@@ -1,0 +1,483 @@
+---
+title: Dynamic Blocks
+description: Create blocks with server-side rendering for dynamic content that updates automatically
+---
+
+Dynamic blocks build their structure and content on the fly when rendered on the frontend. Unlike static blocks, their output is generated server-side using PHP, allowing for dynamic content that updates automatically.
+
+## When to Use Dynamic Blocks
+
+Dynamic blocks are ideal for:
+
+1. **Auto-updating content**: Content that should change even if a post hasn't been updated (e.g., Latest Posts block)
+2. **Immediate code updates**: When updates to block code (HTML, CSS, JS) should appear immediately across all instances without validation errors
+3. **Server-side data**: Content that requires database queries or server-side processing
+
+## How Dynamic Blocks Work
+
+For dynamic blocks:
+
+1. The `save` function typically returns `null`
+2. Only block attributes are saved to the database
+3. A server-side `render_callback` function generates the output
+4. Validation is skipped since there's no saved markup to validate
+
+## Basic Dynamic Block
+
+### JavaScript (Block Registration)
+
+```jsx
+import { registerBlockType } from '@wordpress/blocks';
+import { useSelect } from '@wordpress/data';
+import { useBlockProps } from '@wordpress/block-editor';
+
+registerBlockType( 'my-plugin/latest-post', {
+	apiVersion: 3,
+	title: 'Latest Post',
+	icon: 'megaphone',
+	category: 'widgets',
+
+	edit: () => {
+		const blockProps = useBlockProps();
+		const posts = useSelect( ( select ) => {
+			return select( 'core' ).getEntityRecords( 'postType', 'post', {
+				per_page: 1,
+			} );
+		}, [] );
+
+		return (
+			<div { ...blockProps }>
+				{ ! posts && 'Loading...' }
+				{ posts && posts.length === 0 && 'No Posts' }
+				{ posts && posts.length > 0 && (
+					<a href={ posts[ 0 ].link }>
+						{ posts[ 0 ].title.rendered }
+					</a>
+				) }
+			</div>
+		);
+	},
+
+	// No save function needed - defaults to null
+} );
+```
+
+### PHP (Server-Side Rendering)
+
+```php
+<?php
+/**
+ * Plugin Name: Latest Post Block
+ */
+
+function my_plugin_render_latest_post( $attributes, $content ) {
+	$recent_posts = wp_get_recent_posts( array(
+		'numberposts' => 1,
+		'post_status' => 'publish',
+	) );
+
+	if ( count( $recent_posts ) === 0 ) {
+		return 'No posts';
+	}
+
+	$post = $recent_posts[0];
+	$post_id = $post['ID'];
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf(
+		'<div %1$s><a href="%2$s">%3$s</a></div>',
+		$wrapper_attributes,
+		esc_url( get_permalink( $post_id ) ),
+		esc_html( get_the_title( $post_id ) )
+	);
+}
+
+function my_plugin_register_latest_post() {
+	// Automatically load dependencies and version
+	$asset_file = include( plugin_dir_path( __FILE__ ) . 'build/index.asset.php' );
+
+	wp_register_script(
+		'my-plugin-latest-post',
+		plugins_url( 'build/index.js', __FILE__ ),
+		$asset_file['dependencies'],
+		$asset_file['version']
+	);
+
+	register_block_type( 'my-plugin/latest-post', array(
+		'api_version'       => 3,
+		'editor_script'     => 'my-plugin-latest-post',
+		'render_callback'   => 'my_plugin_render_latest_post',
+	) );
+}
+add_action( 'init', 'my_plugin_register_latest_post' );
+```
+
+## Using Block Attributes
+
+Dynamic blocks can save attributes to customize behavior.
+
+### JavaScript with Attributes
+
+```jsx
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, RangeControl } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
+
+registerBlockType( 'my-plugin/latest-posts', {
+	apiVersion: 3,
+	title: 'Latest Posts',
+	category: 'widgets',
+	attributes: {
+		numberOfPosts: {
+			type: 'number',
+			default: 3,
+		},
+	},
+	edit: ( { attributes, setAttributes } ) => {
+		const { numberOfPosts } = attributes;
+		const blockProps = useBlockProps();
+
+		const posts = useSelect(
+			( select ) => {
+				return select( 'core' ).getEntityRecords( 'postType', 'post', {
+					per_page: numberOfPosts,
+				} );
+			},
+			[ numberOfPosts ]
+		);
+
+		return (
+			<>
+				<InspectorControls>
+					<PanelBody title="Settings">
+						<RangeControl
+							label="Number of Posts"
+							value={ numberOfPosts }
+							onChange={ ( value ) =>
+								setAttributes( { numberOfPosts: value } )
+							}
+							min={ 1 }
+							max={ 10 }
+						/>
+					</PanelBody>
+				</InspectorControls>
+				<div { ...blockProps }>
+					{ ! posts && 'Loading...' }
+					{ posts && posts.length === 0 && 'No Posts' }
+					{ posts && posts.length > 0 && (
+						<ul>
+							{ posts.map( ( post ) => (
+								<li key={ post.id }>
+									<a href={ post.link }>
+										{ post.title.rendered }
+									</a>
+								</li>
+							) ) }
+						</ul>
+					) }
+				</div>
+			</>
+		);
+	},
+} );
+```
+
+### PHP Render Callback with Attributes
+
+```php
+<?php
+function my_plugin_render_latest_posts( $attributes, $content ) {
+	$number_of_posts = isset( $attributes['numberOfPosts'] )
+		? $attributes['numberOfPosts']
+		: 3;
+
+	$recent_posts = wp_get_recent_posts( array(
+		'numberposts' => $number_of_posts,
+		'post_status' => 'publish',
+	) );
+
+	if ( empty( $recent_posts ) ) {
+		return '<p>No posts</p>';
+	}
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	$output = sprintf( '<div %s><ul>', $wrapper_attributes );
+
+	foreach ( $recent_posts as $post ) {
+		$output .= sprintf(
+			'<li><a href="%s">%s</a></li>',
+			esc_url( get_permalink( $post['ID'] ) ),
+			esc_html( $post['post_title'] )
+		);
+	}
+
+	$output .= '</ul></div>';
+
+	return $output;
+}
+
+register_block_type( 'my-plugin/latest-posts', array(
+	'api_version'     => 3,
+	'render_callback' => 'my_plugin_render_latest_posts',
+	'attributes'      => array(
+		'numberOfPosts' => array(
+			'type'    => 'number',
+			'default' => 3,
+		),
+	),
+) );
+```
+
+## Using ServerSideRender
+
+The `<ServerSideRender>` component shows a live preview of the server-rendered output in the editor.
+
+<Note>
+Server-side render is a fallback. Client-side rendering in JavaScript is always preferred as it's faster and allows better editor manipulation.
+</Note>
+
+```jsx
+import { registerBlockType } from '@wordpress/blocks';
+import ServerSideRender from '@wordpress/server-side-render';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, RangeControl } from '@wordpress/components';
+
+registerBlockType( 'my-plugin/latest-posts', {
+	apiVersion: 3,
+	title: 'Latest Posts',
+	category: 'widgets',
+	attributes: {
+		numberOfPosts: {
+			type: 'number',
+			default: 3,
+		},
+	},
+	edit: ( { attributes, setAttributes } ) => {
+		const blockProps = useBlockProps();
+
+		return (
+			<>
+				<InspectorControls>
+					<PanelBody title="Settings">
+						<RangeControl
+							label="Number of Posts"
+							value={ attributes.numberOfPosts }
+							onChange={ ( value ) =>
+								setAttributes( { numberOfPosts: value } )
+							}
+							min={ 1 }
+							max={ 10 }
+						/>
+					</PanelBody>
+				</InspectorControls>
+				<div { ...blockProps }>
+					<ServerSideRender
+						block="my-plugin/latest-posts"
+						attributes={ attributes }
+					/>
+				</div>
+			</>
+		);
+	},
+} );
+```
+
+## Dynamic Blocks with InnerBlocks
+
+If your dynamic block contains InnerBlocks, you must save them:
+
+```jsx
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+
+edit: () => {
+	const blockProps = useBlockProps();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks />
+		</div>
+	);
+},
+
+save: () => {
+	const blockProps = useBlockProps.save();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks.Content />
+		</div>
+	);
+}
+```
+
+## Working with Block Supports
+
+Dynamic blocks can use Block Supports for features like colors, spacing, and typography.
+
+### JavaScript
+
+```jsx
+registerBlockType( 'my-plugin/dynamic-box', {
+	apiVersion: 3,
+	title: 'Dynamic Box',
+	category: 'widgets',
+	supports: {
+		color: {
+			background: true,
+			text: true,
+		},
+		spacing: {
+			padding: true,
+			margin: true,
+		},
+	},
+	edit: () => {
+		return <div { ...useBlockProps() }>Dynamic Content</div>;
+	},
+} );
+```
+
+### PHP
+
+```php
+<?php
+function render_dynamic_box( $attributes, $content ) {
+	$wrapper_attributes = get_block_wrapper_attributes();
+	$dynamic_content = get_option( 'my_dynamic_content', 'Default content' );
+
+	return sprintf(
+		'<div %s>%s</div>',
+		$wrapper_attributes,
+		esc_html( $dynamic_content )
+	);
+}
+
+register_block_type( 'my-plugin/dynamic-box', array(
+	'render_callback' => 'render_dynamic_box',
+	'supports'        => array(
+		'color' => array(
+			'background' => true,
+			'text'       => true,
+		),
+		'spacing' => array(
+			'padding' => true,
+			'margin'  => true,
+		),
+	),
+) );
+```
+
+<Note>
+Always use `get_block_wrapper_attributes()` in your render callback to ensure Block Supports are properly applied.
+</Note>
+
+## Common Patterns
+
+### Query-Based Block
+
+```php
+<?php
+function render_category_posts( $attributes ) {
+	$category = isset( $attributes['category'] ) ? $attributes['category'] : 0;
+	$posts_per_page = isset( $attributes['postsPerPage'] ) ? $attributes['postsPerPage'] : 5;
+
+	$query = new WP_Query( array(
+		'cat'            => $category,
+		'posts_per_page' => $posts_per_page,
+		'post_status'    => 'publish',
+	) );
+
+	if ( ! $query->have_posts() ) {
+		return '<p>No posts found.</p>';
+	}
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+	ob_start();
+	?>
+	<div <?php echo $wrapper_attributes; ?>>
+		<ul>
+			<?php while ( $query->have_posts() ) : $query->the_post(); ?>
+				<li>
+					<a href="<?php the_permalink(); ?>">
+						<?php the_title(); ?>
+					</a>
+				</li>
+			<?php endwhile; ?>
+		</ul>
+	</div>
+	<?php
+	wp_reset_postdata();
+	return ob_get_clean();
+}
+```
+
+### User Data Block
+
+```php
+<?php
+function render_user_info( $attributes ) {
+	$user_id = isset( $attributes['userId'] ) ? $attributes['userId'] : get_current_user_id();
+	$user = get_userdata( $user_id );
+
+	if ( ! $user ) {
+		return '<p>User not found.</p>';
+	}
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf(
+		'<div %s>
+			<h3>%s</h3>
+			<p>%s</p>
+		</div>',
+		$wrapper_attributes,
+		esc_html( $user->display_name ),
+		esc_html( $user->user_email )
+	);
+}
+```
+
+## Performance Considerations
+
+1. **Cache when possible**: Use transients or object caching for expensive queries
+
+```php
+function render_expensive_block( $attributes ) {
+	$cache_key = 'my_block_' . md5( serialize( $attributes ) );
+	$output = get_transient( $cache_key );
+
+	if ( false === $output ) {
+		// Generate output
+		$output = generate_expensive_content( $attributes );
+		set_transient( $cache_key, $output, HOUR_IN_SECONDS );
+	}
+
+	return $output;
+}
+```
+
+2. **Limit query results**: Don't query more data than needed
+
+3. **Use efficient queries**: Leverage WordPress query optimizations
+
+4. **Consider pagination**: For large datasets, implement pagination
+
+## Best Practices
+
+1. **Always use `get_block_wrapper_attributes()`**: Ensures Block Supports work correctly
+
+2. **Escape output**: Use `esc_html()`, `esc_url()`, `esc_attr()` appropriately
+
+3. **Validate attributes**: Check and sanitize attribute values
+
+4. **Provide fallbacks**: Handle cases where data isn't available
+
+5. **Use block.json**: Define attributes and supports in block.json for better organization
+
+## Related Documentation
+
+- [Block Attributes](/blocks/block-attributes) - Managing block data
+- [Block Supports](/blocks/block-supports) - Editor features
+- [Server Side Render](https://github.com/WordPress/gutenberg/tree/HEAD/packages/server-side-render) - Component documentation
+- [InnerBlocks](/blocks/nested-blocks) - Nested block content

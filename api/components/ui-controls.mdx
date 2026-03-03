@@ -1,0 +1,496 @@
+---
+title: UI Controls
+description: Form inputs and interactive controls for capturing user input in the block editor
+---
+
+UI Controls are interactive components that allow users to input data, make selections, and trigger actions within the WordPress block editor.
+
+## Buttons
+
+### Button
+
+Lets users take actions and make choices with a single click or tap.
+
+```jsx
+import { Button } from '@wordpress/components';
+
+function MyButton() {
+  return (
+    <Button
+      variant="primary"
+      onClick={() => console.log('Clicked!')}
+    >
+      Click here
+    </Button>
+  );
+}
+```
+
+**Variants:**
+- `primary` - Bold color fill for primary actions (use sparingly, one per layout)
+- `secondary` - Standard actions that accompany primary actions
+- `tertiary` - Minimal emphasis for subtle actions
+- `link` - Low emphasis for supplementary or navigation actions
+
+**Props:**
+- `variant?: 'primary' | 'secondary' | 'tertiary' | 'link'`
+- `size?: 'default' | 'compact' | 'small'`
+- `icon?: IconType` - Display an icon
+- `iconPosition?: 'left' | 'right'` - Icon placement
+- `isDestructive?: boolean` - For irreversible actions
+- `isBusy?: boolean` - Shows loading state
+- `disabled?: boolean` - Disables interaction
+- `href?: string` - Renders as anchor tag
+- `label?: string` - Accessibility label
+- `showTooltip?: boolean` - Display tooltip on hover
+
+[Storybook: Button](https://wordpress.github.io/gutenberg/?path=/docs/components-button--docs)
+
+<Note>
+  Status: **Stable** (global usage). Will be superseded by Button in `@wordpress/ui`, but continue using for now.
+</Note>
+
+### ButtonGroup
+
+Groups related buttons together.
+
+```jsx
+import { Button, ButtonGroup } from '@wordpress/components';
+import { formatBold, formatItalic, link } from '@wordpress/icons';
+
+function FormattingToolbar() {
+  return (
+    <ButtonGroup>
+      <Button icon={formatBold} label="Bold" />
+      <Button icon={formatItalic} label="Italic" />
+      <Button icon={link} label="Link" />
+    </ButtonGroup>
+  );
+}
+```
+
+## Text Inputs
+
+### TextControl
+
+Lets users enter and edit single-line text.
+
+```jsx
+import { TextControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyTextControl() {
+  const [value, setValue] = useState('');
+
+  return (
+    <TextControl
+      __next40pxDefaultSize
+      label="Additional CSS Class"
+      value={value}
+      onChange={(newValue) => setValue(newValue)}
+      help="Add custom CSS classes"
+    />
+  );
+}
+```
+
+**Props:**
+- `label?: string` - Field label
+- `value: string` - Current value
+- `onChange: (value: string) => void` - Change handler
+- `type?: string` - Input type (default: 'text')
+- `help?: string` - Help text below input
+- `hideLabelFromVision?: boolean` - Visually hide label
+- `__next40pxDefaultSize?: boolean` - Use 40px height
+
+### TextareaControl
+
+Multi-line text input for longer content.
+
+```jsx
+import { TextareaControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyTextarea() {
+  const [text, setText] = useState('');
+
+  return (
+    <TextareaControl
+      label="Description"
+      value={text}
+      onChange={(value) => setText(value)}
+      rows={4}
+    />
+  );
+}
+```
+
+### NumberControl
+
+Numeric input with optional step controls.
+
+```jsx
+import { __experimentalNumberControl as NumberControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyNumberControl() {
+  const [value, setValue] = useState(0);
+
+  return (
+    <NumberControl
+      label="Width"
+      value={value}
+      onChange={(val) => setValue(val)}
+      min={0}
+      max={100}
+      step={1}
+    />
+  );
+}
+```
+
+## Selection Controls
+
+### ToggleControl
+
+Binary on/off switch for boolean values.
+
+```jsx
+import { ToggleControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyToggle() {
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  return (
+    <ToggleControl
+      label="Enable Feature"
+      checked={isEnabled}
+      onChange={() => setIsEnabled((state) => !state)}
+      help={isEnabled ? 'Feature is enabled' : 'Feature is disabled'}
+    />
+  );
+}
+```
+
+### CheckboxControl
+
+Single checkbox for boolean selection.
+
+```jsx
+import { CheckboxControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyCheckbox() {
+  const [isChecked, setIsChecked] = useState(false);
+
+  return (
+    <CheckboxControl
+      label="Accept terms and conditions"
+      checked={isChecked}
+      onChange={setIsChecked}
+    />
+  );
+}
+```
+
+### RadioControl
+
+Mutually exclusive options selection.
+
+```jsx
+import { RadioControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyRadio() {
+  const [option, setOption] = useState('a');
+
+  return (
+    <RadioControl
+      label="Choose an option"
+      selected={option}
+      options={[
+        { label: 'Option A', value: 'a' },
+        { label: 'Option B', value: 'b' },
+        { label: 'Option C', value: 'c' },
+      ]}
+      onChange={setOption}
+    />
+  );
+}
+```
+
+### SelectControl
+
+Dropdown selection from a list of options.
+
+```jsx
+import { SelectControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MySelect() {
+  const [size, setSize] = useState('medium');
+
+  return (
+    <SelectControl
+      __next40pxDefaultSize
+      label="Size"
+      value={size}
+      options={[
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+      ]}
+      onChange={setSize}
+    />
+  );
+}
+```
+
+### ComboboxControl
+
+Searchable dropdown with filtering.
+
+```jsx
+import { ComboboxControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyCombobox() {
+  const [value, setValue] = useState('');
+
+  return (
+    <ComboboxControl
+      label="Select or type a country"
+      value={value}
+      onChange={setValue}
+      options={[
+        { label: 'United States', value: 'us' },
+        { label: 'United Kingdom', value: 'uk' },
+        { label: 'Canada', value: 'ca' },
+      ]}
+    />
+  );
+}
+```
+
+### RangeControl
+
+Slider input for numeric values within a range.
+
+```jsx
+import { RangeControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyRange() {
+  const [opacity, setOpacity] = useState(50);
+
+  return (
+    <RangeControl
+      __next40pxDefaultSize
+      label="Opacity"
+      value={opacity}
+      onChange={setOpacity}
+      min={0}
+      max={100}
+      step={5}
+    />
+  );
+}
+```
+
+## Color Controls
+
+### ColorPicker
+
+Full-featured color selection interface.
+
+```jsx
+import { ColorPicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyColorPicker() {
+  const [color, setColor] = useState('#000000');
+
+  return (
+    <ColorPicker
+      color={color}
+      onChangeComplete={(value) => setColor(value.hex)}
+      enableAlpha
+    />
+  );
+}
+```
+
+### ColorPalette
+
+Predefined color swatches for quick selection.
+
+```jsx
+import { ColorPalette } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyColorPalette() {
+  const [color, setColor] = useState('#000000');
+
+  return (
+    <ColorPalette
+      colors={[
+        { name: 'Black', color: '#000000' },
+        { name: 'White', color: '#ffffff' },
+        { name: 'Red', color: '#ff0000' },
+        { name: 'Blue', color: '#0000ff' },
+      ]}
+      value={color}
+      onChange={setColor}
+    />
+  );
+}
+```
+
+## Date & Time
+
+### DateTimePicker
+
+Combined date and time selection.
+
+```jsx
+import { DateTimePicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyDatePicker() {
+  const [date, setDate] = useState(new Date());
+
+  return (
+    <DateTimePicker
+      currentDate={date}
+      onChange={setDate}
+      is12Hour
+    />
+  );
+}
+```
+
+### DatePicker
+
+Date selection without time.
+
+```jsx
+import { DatePicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyDatePicker() {
+  const [date, setDate] = useState(new Date());
+
+  return (
+    <DatePicker
+      currentDate={date}
+      onChange={setDate}
+    />
+  );
+}
+```
+
+### TimePicker
+
+Time selection without date.
+
+```jsx
+import { TimePicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyTimePicker() {
+  const [time, setTime] = useState('12:00');
+
+  return (
+    <TimePicker
+      currentTime={time}
+      onChange={setTime}
+      is12Hour
+    />
+  );
+}
+```
+
+## Validated Form Controls
+
+For forms requiring validation, use the validated form control variants:
+
+```jsx
+import {
+  ValidatedTextControl,
+  ValidatedNumberControl,
+  ValidatedToggleControl,
+} from '@wordpress/components/build-types/validated-form-controls/components';
+
+function MyValidatedForm() {
+  return (
+    <form>
+      <ValidatedTextControl
+        label="Email"
+        pattern="[^@]+@[^@]+\.[^@]+"
+        validationMessage="Please enter a valid email"
+      />
+    </form>
+  );
+}
+```
+
+## Advanced Controls
+
+### CustomSelectControl
+
+Customizable select with rich content options.
+
+```jsx
+import { CustomSelectControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyCustomSelect() {
+  const [value, setValue] = useState('small');
+
+  return (
+    <CustomSelectControl
+      label="Size"
+      value={value}
+      onChange={({ selectedItem }) => setValue(selectedItem.key)}
+      options={[
+        { key: 'small', name: 'Small', style: { fontSize: '12px' } },
+        { key: 'medium', name: 'Medium', style: { fontSize: '16px' } },
+        { key: 'large', name: 'Large', style: { fontSize: '20px' } },
+      ]}
+    />
+  );
+}
+```
+
+### UnitControl
+
+Numeric input with unit selection (px, em, rem, etc.).
+
+```jsx
+import { __experimentalUnitControl as UnitControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyUnitControl() {
+  const [value, setValue] = useState('16px');
+
+  return (
+    <UnitControl
+      label="Padding"
+      value={value}
+      onChange={setValue}
+      units={[
+        { value: 'px', label: 'px' },
+        { value: 'em', label: 'em' },
+        { value: 'rem', label: 'rem' },
+      ]}
+    />
+  );
+}
+```
+
+## Resources
+
+- [Storybook: All Controls](https://wordpress.github.io/gutenberg/)
+- [BaseControl](https://wordpress.github.io/gutenberg/?path=/docs/components-basecontrol--docs) - Base wrapper for custom controls
+- [FormTokenField](https://wordpress.github.io/gutenberg/?path=/docs/components-formtokenfield--docs) - Token/tag input

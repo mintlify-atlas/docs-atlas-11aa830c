@@ -1,0 +1,83 @@
+---
+title: Accessibility
+description: Learn about accessibility best practices and landmark regions in the Gutenberg Block Editor framework.
+---
+
+Accessibility is fundamental to creating inclusive editing experiences in the Block Editor. This guide covers essential accessibility patterns and tools for developers working on Gutenberg projects.
+
+## Landmark Regions
+
+Landmark regions help screen reader users navigate between different sections of the editor efficiently.
+
+<Tip>
+Include ALL content on the page in landmarks so that screen reader users who rely on them to navigate from section to section do not lose track of content.
+</Tip>
+
+### HTML5 Landmark Elements
+
+Use semantic HTML5 elements that define ARIA landmarks by default:
+
+```jsx
+<header>
+  <h1>Block Editor</h1>
+</header>
+
+<nav aria-label="Main navigation">
+  {/* Navigation content */}
+</nav>
+
+<main>
+  {/* Primary content */}
+</main>
+
+<aside>
+  {/* Sidebar content */}
+</aside>
+```
+
+## Navigate Regions Package
+
+For setting up keyboard navigation between different regions, use the `navigateRegions` higher-order component:
+
+```jsx
+import { navigateRegions } from '@wordpress/components';
+
+function Editor() {
+  return (
+    <div className="editor-layout">
+      <header>Editor Header</header>
+      <main>Block Canvas</main>
+      <aside>Inspector Sidebar</aside>
+    </div>
+  );
+}
+
+export default navigateRegions( Editor );
+```
+
+This HOC enables keyboard navigation between the different regions in your editor layout, improving accessibility for keyboard-only users.
+
+## Best Practices
+
+<Tip>
+- Use semantic HTML elements whenever possible
+- Provide clear labels for landmark regions using `aria-label` or `aria-labelledby`
+- Ensure all interactive elements are keyboard accessible
+- Test your editor interface with screen readers
+</Tip>
+
+### General Principles of Landmark Design
+
+Follow W3C guidelines for implementing landmarks:
+
+- Keep landmark regions consistent across your application
+- Use unique labels when multiple landmarks of the same type exist
+- Avoid excessive nesting of landmark regions
+- Ensure complementary landmarks (like sidebars) are clearly related to main content
+
+## Additional Resources
+
+- [Make WordPress Accessibility Handbook](https://make.wordpress.org/accessibility/handbook/)
+- [W3C General Principles of Landmark Design](https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/#x4-2-general-principles-of-landmark-design)
+- [ARIA Landmarks Examples](https://www.w3.org/WAI/ARIA/apg/example-index/landmarks/)
+- [WordPress Accessibility Team](https://make.wordpress.org/accessibility/)

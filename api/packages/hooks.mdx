@@ -1,0 +1,534 @@
+---
+title: "@wordpress/hooks"
+description: JavaScript event management system with actions and filters
+---
+
+The `@wordpress/hooks` package provides a lightweight event management system for JavaScript, similar to WordPress PHP hooks. It enables extensibility through actions and filters.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/hooks --save
+```
+
+```bash yarn
+yarn add @wordpress/hooks
+```
+</CodeGroup>
+
+## Core Concepts
+
+### Actions
+
+Actions allow you to execute code at specific points without returning a value.
+
+### Filters
+
+Filters allow you to modify data before it's used.
+
+## Basic Usage
+
+### Global Hooks
+
+In WordPress, hooks are available globally:
+
+```js
+// Add an action
+wp.hooks.addAction( 'myPlugin.init', 'myPlugin', () => {
+	console.log( 'Plugin initialized' );
+} );
+
+// Trigger the action
+wp.hooks.doAction( 'myPlugin.init' );
+```
+
+### Custom Hook Instance
+
+```js
+import { createHooks } from '@wordpress/hooks';
+
+const hooks = createHooks();
+
+hooks.addAction( 'init', 'myNamespace', () => {
+	console.log( 'Initialized' );
+} );
+
+hooks.doAction( 'init' );
+```
+
+## Actions
+
+### addAction
+
+Registers a callback to be executed when an action fires.
+
+```js
+import { addAction } from '@wordpress/hooks';
+
+addAction(
+	'editor.blockInserted',
+	'myPlugin/logBlockInsert',
+	( block ) => {
+		console.log( 'Block inserted:', block.name );
+	},
+	10 // Priority (lower runs first)
+);
+```
+
+**Parameters:**
+- `hookName` (string) - Name of the action
+- `namespace` (string) - Unique identifier (vendor/plugin/function)
+- `callback` (Function) - Function to execute
+- `priority` (number) - Optional priority (default: 10)
+
+### doAction
+
+Triggers all callbacks registered to an action.
+
+```js
+import { doAction } from '@wordpress/hooks';
+
+doAction( 'editor.blockInserted', blockData, additionalInfo );
+```
+
+### removeAction
+
+Removes a previously registered action callback.
+
+```js
+import { removeAction } from '@wordpress/hooks';
+
+removeAction( 'editor.blockInserted', 'myPlugin/logBlockInsert' );
+```
+
+### removeAllActions
+
+Removes all callbacks for an action.
+
+```js
+import { removeAllActions } from '@wordpress/hooks';
+
+removeAllActions( 'editor.blockInserted' );
+```
+
+### hasAction
+
+Checks if any callbacks are registered for an action.
+
+```js
+import { hasAction } from '@wordpress/hooks';
+
+if ( hasAction( 'editor.blockInserted' ) ) {
+	console.log( 'Action has callbacks' );
+}
+
+// Check specific namespace
+if ( hasAction( 'editor.blockInserted', 'myPlugin/logBlockInsert' ) ) {
+	console.log( 'Namespace has callback registered' );
+}
+```
+
+### doingAction
+
+Checks if an action is currently being executed.
+
+```js
+import { doingAction } from '@wordpress/hooks';
+
+if ( doingAction( 'editor.blockInserted' ) ) {
+	console.log( 'Currently executing blockInserted action' );
+}
+```
+
+### didAction
+
+Returns the number of times an action has been triggered.
+
+```js
+import { didAction } from '@wordpress/hooks';
+
+const count = didAction( 'editor.blockInserted' );
+console.log( `Action fired ${ count } times` );
+```
+
+## Filters
+
+### addFilter
+
+Registers a callback to modify a value.
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+addFilter(
+	'editor.blockTitle',
+	'myPlugin/modifyTitle',
+	( title, block ) => {
+		return `${ title } (Modified)`;
+	},
+	10
+);
+```
+
+### applyFilters
+
+Applies all filters and returns the modified value.
+
+```js
+import { applyFilters } from '@wordpress/hooks';
+
+const title = applyFilters( 'editor.blockTitle', 'Paragraph', blockData );
+// Returns: "Paragraph (Modified)"
+```
+
+### removeFilter
+
+Removes a previously registered filter callback.
+
+```js
+import { removeFilter } from '@wordpress/hooks';
+
+removeFilter( 'editor.blockTitle', 'myPlugin/modifyTitle' );
+```
+
+### removeAllFilters
+
+Removes all callbacks for a filter.
+
+```js
+import { removeAllFilters } from '@wordpress/hooks';
+
+removeAllFilters( 'editor.blockTitle' );
+```
+
+### hasFilter
+
+Checks if any callbacks are registered for a filter.
+
+```js
+import { hasFilter } from '@wordpress/hooks';
+
+if ( hasFilter( 'editor.blockTitle' ) ) {
+	console.log( 'Filter has callbacks' );
+}
+```
+
+### doingFilter
+
+Checks if a filter is currently being applied.
+
+```js
+import { doingFilter } from '@wordpress/hooks';
+
+if ( doingFilter( 'editor.blockTitle' ) ) {
+	console.log( 'Currently applying blockTitle filter' );
+}
+```
+
+### didFilter
+
+Returns the number of times a filter has been applied.
+
+```js
+import { didFilter } from '@wordpress/hooks';
+
+const count = didFilter( 'editor.blockTitle' );
+console.log( `Filter applied ${ count } times` );
+```
+
+## Async Operations
+
+### doActionAsync
+
+Triggers action callbacks asynchronously.
+
+```js
+import { addAction, doActionAsync } from '@wordpress/hooks';
+
+addAction( 'savePost', 'myPlugin/save', async () => {
+	await fetch( '/api/save' );
+} );
+
+await doActionAsync( 'savePost' );
+```
+
+### applyFiltersAsync
+
+Applies filters asynchronously.
+
+```js
+import { addFilter, applyFiltersAsync } from '@wordpress/hooks';
+
+addFilter( 'content', 'myPlugin/process', async ( content ) => {
+	const processed = await processContent( content );
+	return processed;
+} );
+
+const result = await applyFiltersAsync( 'content', originalContent );
+```
+
+## Practical Examples
+
+### Plugin Initialization
+
+```js
+import { addAction, doAction } from '@wordpress/hooks';
+
+// Plugin A
+addAction( 'app.init', 'pluginA/init', () => {
+	console.log( 'Plugin A initialized' );
+} );
+
+// Plugin B
+addAction( 'app.init', 'pluginB/init', () => {
+	console.log( 'Plugin B initialized' );
+} );
+
+// Application
+function initializeApp() {
+	doAction( 'app.init' );
+}
+```
+
+### Modifying Data
+
+```js
+import { addFilter, applyFilters } from '@wordpress/hooks';
+
+// Add custom validation
+addFilter(
+	'form.validateEmail',
+	'myPlugin/corporateEmailOnly',
+	( isValid, email ) => {
+		if ( ! email.endsWith( '@company.com' ) ) {
+			return false;
+		}
+		return isValid;
+	}
+);
+
+// Use the filter
+function validateEmail( email ) {
+	const basicValidation = email.includes( '@' );
+	return applyFilters( 'form.validateEmail', basicValidation, email );
+}
+```
+
+### Block Editor Extensions
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+// Modify block attributes
+addFilter(
+	'blocks.registerBlockType',
+	'myPlugin/addCustomAttribute',
+	( settings, name ) => {
+		if ( name === 'core/paragraph' ) {
+			return {
+				...settings,
+				attributes: {
+					...settings.attributes,
+					customField: {
+						type: 'string',
+						default: '',
+					},
+				},
+			};
+		}
+		return settings;
+	}
+);
+```
+
+### Priority Management
+
+```js
+import { addAction } from '@wordpress/hooks';
+
+// Runs first (priority 5)
+addAction( 'init', 'plugin/early', () => {
+	console.log( '1. Early initialization' );
+}, 5 );
+
+// Runs second (default priority 10)
+addAction( 'init', 'plugin/normal', () => {
+	console.log( '2. Normal initialization' );
+} );
+
+// Runs last (priority 20)
+addAction( 'init', 'plugin/late', () => {
+	console.log( '3. Late initialization' );
+}, 20 );
+```
+
+## Hook Events
+
+The hooks system triggers meta events:
+
+### hookAdded
+
+Fired when a hook is added.
+
+```js
+import { addAction } from '@wordpress/hooks';
+
+addAction( 'hookAdded', 'myPlugin/trackHooks', ( hookName, namespace ) => {
+	console.log( `Hook added: ${ hookName } (${ namespace })` );
+} );
+```
+
+### hookRemoved
+
+Fired when a hook is removed.
+
+```js
+import { addAction } from '@wordpress/hooks';
+
+addAction( 'hookRemoved', 'myPlugin/trackHooks', ( hookName, namespace ) => {
+	console.log( `Hook removed: ${ hookName } (${ namespace })` );
+} );
+```
+
+## The 'all' Hook (Development Only)
+
+In non-minified builds, you can hook into all actions/filters:
+
+```js
+import { addAction, addFilter } from '@wordpress/hooks';
+
+// Log all actions
+addAction( 'all', 'myPlugin/debugActions', ( hookName ) => {
+	console.log( 'Action fired:', hookName );
+} );
+
+// Log all filters
+addFilter( 'all', 'myPlugin/debugFilters', ( value, hookName ) => {
+	console.log( 'Filter applied:', hookName, value );
+	return value;
+} );
+```
+
+<Warning>
+The 'all' hook is removed in production builds for performance reasons.
+</Warning>
+
+## Naming Conventions
+
+### Hook Names
+
+- Use only letters, numbers, dashes, periods, and underscores
+- Don't start with `__` (reserved)
+- Use descriptive, hierarchical names
+
+**Good examples:**
+- `editor.blockInserted`
+- `form.validate.email`
+- `app.init.complete`
+
+### Namespaces
+
+- Format: `vendor/plugin/function`
+- Use only letters, numbers, dashes, periods, underscores, and slashes
+- Must be unique
+
+**Good examples:**
+- `myCompany/myPlugin/logAction`
+- `wordpress/editor/modifyBlock`
+- `acme-corp/analytics/trackEvent`
+
+## Best Practices
+
+1. **Always use namespaces** - Prevents conflicts with other plugins
+2. **Choose descriptive hook names** - Make purpose clear
+3. **Document your hooks** - Help other developers extend your code
+4. **Use appropriate priorities** - Control execution order
+5. **Clean up hooks** - Remove hooks when no longer needed
+6. **Return values in filters** - Always return a value from filter callbacks
+7. **Don't modify arguments** - Create new objects/arrays instead
+
+## Common Patterns
+
+### Conditional Hook Registration
+
+```js
+import { addAction } from '@wordpress/hooks';
+
+if ( isFeatureEnabled( 'analytics' ) ) {
+	addAction( 'app.pageView', 'myPlugin/trackPageView', trackPageView );
+}
+```
+
+### Hook Cleanup
+
+```js
+import { addAction, removeAction } from '@wordpress/hooks';
+
+function setupTracking() {
+	addAction( 'app.event', 'myPlugin/track', trackEvent );
+}
+
+function teardownTracking() {
+	removeAction( 'app.event', 'myPlugin/track' );
+}
+```
+
+### Chaining Filters
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+// First filter
+addFilter( 'content', 'plugin1/uppercase', ( text ) => {
+	return text.toUpperCase();
+}, 10 );
+
+// Second filter (runs after first)
+addFilter( 'content', 'plugin2/addPrefix', ( text ) => {
+	return `PREFIX: ${ text }`;
+}, 20 );
+
+// Result: "PREFIX: HELLO WORLD"
+const result = applyFilters( 'content', 'hello world' );
+```
+
+## TypeScript Support
+
+The package includes TypeScript definitions:
+
+```typescript
+import { addFilter } from '@wordpress/hooks';
+
+type ContentFilter = ( content: string, context: object ) => string;
+
+addFilter<ContentFilter>(
+	'content.process',
+	'myPlugin/processContent',
+	( content, context ) => {
+		return content.toUpperCase();
+	}
+);
+```
+
+## Debugging
+
+### List All Registered Hooks
+
+```js
+import { actions, filters } from '@wordpress/hooks';
+
+console.log( 'Registered actions:', actions );
+console.log( 'Registered filters:', filters );
+```
+
+### Track Hook Usage
+
+```js
+import { addAction, didAction, didFilter } from '@wordpress/hooks';
+
+function logHookStats() {
+	console.log( 'init action fired:', didAction( 'init' ), 'times' );
+	console.log( 'content filter applied:', didFilter( 'content' ), 'times' );
+}
+```

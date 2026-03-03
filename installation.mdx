@@ -1,0 +1,183 @@
+---
+title: Installation
+description: Set up your development environment to start building custom blocks for the Gutenberg Block Editor.
+---
+
+Before you can start developing custom blocks for the Gutenberg Block Editor, you need to set up your local development environment. This guide will walk you through the essential requirements and setup steps.
+
+## System requirements
+
+<Note>
+  Ensure your system meets these minimum requirements before proceeding with installation.
+</Note>
+
+The Gutenberg Block Editor requires:
+
+- **Node.js** version 20.10.0 or higher
+- **npm** version 10.2.3 or higher
+- **WordPress** local development environment
+- **Docker** (optional, for wp-env)
+
+## Installation steps
+
+<Steps>
+  <Step title="Install Node.js and npm">
+    Download and install Node.js from [nodejs.org](https://nodejs.org/). This will also install npm, the Node package manager.
+
+    Verify your installation by running:
+
+    ```bash
+    node --version
+    npm --version
+    ```
+
+    You should see version numbers matching or exceeding the system requirements above.
+  </Step>
+
+  <Step title="Set up a local WordPress environment">
+    You have several options for running WordPress locally:
+
+    ### Option 1: wp-env (recommended)
+
+    The `@wordpress/env` package provides a simple way to set up a local WordPress environment using Docker.
+
+    ```bash
+    npm install -g @wordpress/env
+    ```
+
+    ### Option 2: Traditional local environment
+
+    You can also use traditional local development tools like:
+    - [Local by Flywheel](https://localwp.com/)
+    - [MAMP](https://www.mamp.info/)
+    - [XAMPP](https://www.apachefriends.org/)
+    - [Laravel Valet](https://laravel.com/docs/valet)
+
+    <Warning>
+      If using wp-env, ensure Docker is installed and running on your machine before proceeding.
+    </Warning>
+  </Step>
+
+  <Step title="Install the Gutenberg plugin (optional)">
+    To get the latest features and test bleeding-edge functionality, you can install the Gutenberg plugin:
+
+    **From WordPress admin:**
+    1. Navigate to Plugins → Add New in your WordPress dashboard
+    2. Search for "Gutenberg"
+    3. Click "Install Now" and then "Activate"
+
+    **Or download directly:**
+    - [Download from WordPress.org](https://wordpress.org/plugins/gutenberg/)
+
+    <Note>
+      The Gutenberg plugin is not required for block development. WordPress includes the block editor by default. The plugin provides access to the latest features before they're merged into WordPress core.
+    </Note>
+  </Step>
+
+  <Step title="Install build tools">
+    The `@wordpress/scripts` package provides all the build tooling you need for block development:
+
+    ```bash
+    npm install --save-dev @wordpress/scripts
+    ```
+
+    This package includes webpack configuration, Babel presets, ESLint rules, and more—all pre-configured for WordPress block development.
+  </Step>
+</Steps>
+
+## Verify your installation
+
+To verify everything is set up correctly, run the following commands:
+
+```bash
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
+
+# Check if wp-env is installed (if using wp-env)
+wp-env --version
+```
+
+## Development tools
+
+While not required, these tools will enhance your development experience:
+
+<CardGroup cols={2}>
+  <Card title="VS Code" icon="code">
+    The most popular code editor for JavaScript development with excellent WordPress extensions available.
+  </Card>
+  <Card title="Browser DevTools" icon="browser">
+    Chrome or Firefox developer tools for debugging JavaScript and inspecting the DOM.
+  </Card>
+  <Card title="React Developer Tools" icon="react">
+    Browser extension for debugging React components used throughout the block editor.
+  </Card>
+  <Card title="Git" icon="git">
+    Version control system for tracking changes and collaborating with others.
+  </Card>
+</CardGroup>
+
+## Common setup commands
+
+Here are some common commands you'll use during development:
+
+<CodeGroup>
+  ```bash npm
+  # Install dependencies
+  npm install
+
+  # Start development mode with watch
+  npm start
+
+  # Build for production
+  npm run build
+
+  # Run linting
+  npm run lint:js
+
+  # Format code
+  npm run format
+  ```
+
+  ```bash wp-env
+  # Start WordPress environment
+  wp-env start
+
+  # Stop WordPress environment
+  wp-env stop
+
+  # Check environment status
+  wp-env status
+
+  # Clean and reset environment
+  wp-env clean
+  ```
+</CodeGroup>
+
+## Troubleshooting
+
+### Docker issues with wp-env
+
+If `wp-env` fails to start:
+- Ensure Docker Desktop is running
+- Check that ports 8888 and 8889 are not in use
+- Try `wp-env clean all` to reset the environment
+
+### Node version conflicts
+
+If you need to manage multiple Node versions, consider using:
+- [nvm](https://github.com/nvm-sh/nvm) (Node Version Manager) for macOS/Linux
+- [nvm-windows](https://github.com/coreybutler/nvm-windows) for Windows
+
+### Build errors
+
+If you encounter build errors:
+- Clear your `node_modules` folder and run `npm install` again
+- Ensure you're using the correct Node and npm versions
+- Check that all dependencies are properly installed
+
+## Next steps
+
+With your development environment set up, you're ready to create your first block. Head over to the [quickstart guide](/quickstart) to build a working block in minutes.

@@ -1,0 +1,553 @@
+---
+title: Theme Blocks
+description: Blocks for theme development and site structure in the Gutenberg Block Editor
+---
+
+# Theme Blocks
+
+Theme blocks are specifically designed for building themes and managing site-wide elements like navigation, headers, footers, and post templates.
+
+## Site Identity Blocks
+
+### Site Title
+
+**Name:** `core/site-title`
+
+**Description:** Displays the name of this site. Update the block, and the changes apply everywhere it's used.
+
+#### Attributes
+
+- `level` (number) - Heading level (1-6)
+- `levelOptions` (array) - Available heading levels
+- `isLink` (boolean) - Link to homepage
+- `linkTarget` (string) - Link target
+
+#### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+- **Interactivity:** clientNavigation
+
+### Site Tagline
+
+**Name:** `core/site-tagline`
+
+**Description:** Describe in a few words what this site is about.
+
+#### Attributes
+
+- `level` (number) - Heading level
+- `levelOptions` (array) - Available heading levels
+
+#### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Site Logo
+
+**Name:** `core/site-logo`
+
+**Description:** Display an image to represent this site. Update this block and the changes apply everywhere.
+
+#### Attributes
+
+- `width` (number) - Logo width
+- `isLink` (boolean) - Link to homepage, default: true
+- `linkTarget` (string) - Link target
+- `shouldSyncIcon` (boolean) - Sync with site icon
+
+#### Supports
+
+- **Align:** left, center, right
+- **Color:** (text and background disabled)
+- **Filter:** duotone
+- **Spacing:** margin, padding
+- **Interactivity:** clientNavigation
+
+#### Usage
+
+```javascript
+wp.blocks.createBlock('core/site-logo', {
+  width: 120,
+  isLink: true,
+});
+```
+
+## Navigation Blocks
+
+### Navigation
+
+**Name:** `core/navigation`
+
+**Description:** A collection of blocks that allow visitors to get around your site.
+
+#### Attributes
+
+- `ref` (number) - Navigation menu reference ID
+- `textColor` (string) - Text color slug
+- `backgroundColor` (string) - Background color slug
+- `overlayMenu` (string) - Overlay menu mode (always, mobile, never)
+- `overlayBackgroundColor` (string) - Overlay background color
+- `overlayTextColor` (string) - Overlay text color
+- `hasIcon` (boolean) - Show menu icon
+- `icon` (string) - Menu icon type
+- `showSubmenuIcon` (boolean) - Show submenu indicators
+- `submenuVisibility` (string) - Submenu visibility behavior
+- `maxNestingLevel` (number) - Maximum nesting level
+- `templateLock` (string|false) - Template locking
+
+#### Supports
+
+- **Align:** wide, full
+- **Layout:** default, allowSizingOnChildren
+- **Spacing:** blockGap
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** true
+- **ariaLabel:** true
+- **Allowed Blocks:** core/navigation-link, core/search, core/social-links, core/page-list, core/spacer, core/home-link, core/icon, core/site-title, core/site-logo, core/navigation-submenu, core/loginout, core/buttons
+
+#### Usage
+
+```javascript
+// Basic navigation
+wp.blocks.createBlock('core/navigation', {
+  overlayMenu: 'mobile',
+  showSubmenuIcon: true,
+});
+```
+
+### Navigation Link (Custom Link)
+
+**Name:** `core/navigation-link`
+
+**Description:** Add a page, link, or another item to your navigation.
+
+#### Attributes
+
+- `label` (string) - Link text
+- `url` (string) - Link URL
+- `title` (string) - Link title attribute
+- `kind` (string) - Link kind (post-type, custom, taxonomy)
+- `type` (string) - Link type
+- `id` (number) - Referenced object ID
+- `opensInNewTab` (boolean) - Open in new tab
+- `rel` (string) - Link rel attribute
+- `description` (string) - Link description
+- `isTopLevelLink` (boolean) - Top-level menu item
+
+#### Supports
+
+- **Parent:** core/navigation
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+- **Renaming:** false
+- **Reusable:** false
+
+## Post Template Blocks
+
+### Query Loop
+
+**Name:** `core/query`
+
+**Description:** An advanced block that allows displaying post types based on different query parameters and visual configurations.
+
+#### Attributes
+
+- `queryId` (number) - Unique query ID
+- `query` (object) - Query parameters:
+  - `perPage` (number) - Posts per page
+  - `pages` (number) - Number of pages
+  - `offset` (number) - Offset
+  - `postType` (string) - Post type
+  - `order` (string) - Sort order (desc, asc)
+  - `orderBy` (string) - Sort by (date, title, etc.)
+  - `author` (string) - Author ID
+  - `search` (string) - Search term
+  - `exclude` (array) - Excluded post IDs
+  - `sticky` (string) - Sticky posts handling
+  - `inherit` (boolean) - Inherit query from template
+  - `taxQuery` (object) - Taxonomy query parameters
+- `tagName` (string) - HTML tag
+- `namespace` (string) - Query namespace
+- `enhancedPagination` (boolean) - Enable enhanced pagination
+
+#### Supports
+
+- **Align:** wide, full
+- **Layout:** true
+- **Interactivity:** true
+
+#### Usage
+
+```javascript
+wp.blocks.createBlock('core/query', {
+  query: {
+    perPage: 6,
+    postType: 'post',
+    orderBy: 'date',
+    order: 'desc',
+  }
+});
+```
+
+### Post Template
+
+**Name:** `core/post-template`
+
+**Description:** Contains the block elements used to render a post.
+
+#### Supports
+
+- **Ancestor:** core/query
+- **Align:** wide, full
+- **Color:** background, text, link, gradients
+- **Layout:** true
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Reusable:** false
+
+### Post Content
+
+**Name:** `core/post-content`
+
+**Description:** Displays the contents of a post or page.
+
+#### Attributes
+
+- `tagName` (string) - HTML tag (div, section, etc.)
+
+#### Supports
+
+- **Align:** wide, full
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, text, link, heading, gradients
+- **Dimensions:** minHeight
+- **Layout:** true
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+
+### Post Title
+
+**Name:** `core/post-title`
+
+**Description:** Displays the title of a post, page, or any other content-type.
+
+#### Attributes
+
+- `level` (number) - Heading level, default: 2
+- `levelOptions` (array) - Available heading levels
+- `isLink` (boolean) - Link to post
+- `linkTarget` (string) - Link target
+- `rel` (string) - Link rel attribute
+- `placeholder` (string) - Placeholder text
+
+#### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Post Featured Image
+
+**Name:** `core/post-featured-image`
+
+**Description:** Display a post's featured image.
+
+#### Attributes
+
+- `isLink` (boolean) - Link to post
+- `linkTarget` (string) - Link target
+- `rel` (string) - Link rel attribute
+- `aspectRatio` (string) - Aspect ratio
+- `width` (string) - Image width
+- `height` (string) - Image height
+- `scale` (string) - Object-fit value
+- `sizeSlug` (string) - Image size
+- `dimRatio` (number) - Overlay opacity
+- `overlayColor` (string) - Overlay color slug
+- `customOverlayColor` (string) - Custom overlay color
+- `gradient` (string) - Gradient preset
+- `customGradient` (string) - Custom gradient
+- `useFirstImageFromPost` (boolean) - Fallback to first image in content
+
+#### Supports
+
+- **Align:** left, center, right, wide, full
+- **Filter:** duotone
+- **Spacing:** margin, padding
+- **Shadow:** true
+
+### Post Date
+
+**Name:** `core/post-date`
+
+**Description:** Display a custom date.
+
+#### Attributes
+
+- `format` (string) - Date format
+- `isLink` (boolean) - Link to post
+- `datetime` (string) - ISO 8601 datetime
+- `textAlign` (string) - Text alignment
+
+#### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Post Excerpt
+
+**Name:** `core/post-excerpt`
+
+**Description:** Display the excerpt.
+
+#### Attributes
+
+- `textAlign` (string) - Text alignment
+- `moreText` (string) - "Read more" text
+- `showMoreOnNewLine` (boolean) - Show link on new line
+- `excerptLength` (number) - Excerpt length in words
+
+#### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textColumns
+
+### Post Author Name
+
+**Name:** `core/post-author-name`
+
+**Description:** The author name.
+
+#### Attributes
+
+- `isLink` (boolean) - Link to author archive
+- `linkTarget` (string) - Link target
+
+#### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Post Terms
+
+**Name:** `core/post-terms`
+
+**Description:** Post terms.
+
+#### Attributes
+
+- `term` (string) - Taxonomy to display (category, post_tag, etc.)
+- `separator` (string) - Term separator, default: ', '
+- `prefix` (string) - Text before terms
+- `suffix` (string) - Text after terms
+
+#### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+## Comment Blocks
+
+### Comments
+
+**Name:** `core/comments`
+
+**Description:** An advanced block that allows displaying post comments using different visual configurations.
+
+#### Attributes
+
+- `tagName` (string) - HTML tag
+- `legacy` (boolean) - Use legacy comment form
+
+#### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, link, heading, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Comment Template
+
+**Name:** `core/comment-template`
+
+**Description:** Contains the block elements used to display a comment.
+
+#### Supports
+
+- **Parent:** core/comments
+- **Align:** true
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Reusable:** false
+
+### Comment Author Name
+
+**Name:** `core/comment-author-name`
+
+**Description:** Displays the name of the author of the comment.
+
+#### Attributes
+
+- `isLink` (boolean) - Link to author URL
+- `linkTarget` (string) - Link target
+
+#### Supports
+
+- **Ancestor:** core/comment-template
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Comment Content
+
+**Name:** `core/comment-content`
+
+**Description:** Displays the contents of a comment.
+
+#### Supports
+
+- **Ancestor:** core/comment-template
+- **Color:** background, text, link, gradients
+- **Spacing:** padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Comment Date
+
+**Name:** `core/comment-date`
+
+**Description:** Displays the date on which the comment was posted.
+
+#### Attributes
+
+- `format` (string) - Date format
+- `isLink` (boolean) - Link to comment
+
+#### Supports
+
+- **Ancestor:** core/comment-template
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+### Comments Form
+
+**Name:** `core/post-comments-form`
+
+**Description:** Display a post's comments form.
+
+#### Supports
+
+- **Color:** background, text, link, heading, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight, textAlign
+
+## Other Theme Blocks
+
+### Avatar
+
+**Name:** `core/avatar`
+
+**Description:** Add a user's avatar.
+
+#### Attributes
+
+- `userId` (number) - User ID
+- `size` (number) - Avatar size in pixels, default: 96
+- `isLink` (boolean) - Link to user profile
+- `linkTarget` (string) - Link target
+
+#### Supports
+
+- **Color:** (background and text disabled)
+- **Filter:** duotone
+- **Spacing:** margin, padding
+
+### Breadcrumbs
+
+**Name:** `core/breadcrumbs`
+
+**Description:** Display a breadcrumb trail showing the path to the current page.
+
+#### Attributes
+
+- `separator` (string) - Breadcrumb separator
+- `showHomeItem` (boolean) - Show home link
+- `showCurrentItem` (boolean) - Show current page
+- `showOnHomePage` (boolean) - Show on homepage
+- `prefersTaxonomy` (string) - Preferred taxonomy for hierarchical posts
+
+#### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Login/Logout
+
+**Name:** `core/loginout`
+
+**Description:** Show login & logout links.
+
+#### Attributes
+
+- `displayLoginAsForm` (boolean) - Display as inline form
+- `redirectToCurrent` (boolean) - Redirect to current page after login
+
+#### Supports
+
+- **Color:** background, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+
+### Template Part
+
+**Name:** `core/template-part`
+
+**Description:** Edit the different global regions of your site, like the header, footer, sidebar, or create your own.
+
+#### Attributes
+
+- `slug` (string) - Template part slug
+- `theme` (string) - Theme identifier
+- `area` (string) - Template area (header, footer, uncategorized)
+- `tagName` (string) - HTML tag
+
+#### Supports
+
+- **Align:** true
+- **Interactivity:** clientNavigation
+- **Renaming:** false
+- **Reusable:** false
+
+#### Usage
+
+```javascript
+// Header template part
+wp.blocks.createBlock('core/template-part', {
+  slug: 'header',
+  area: 'header',
+});
+```
+
+## Best Practices
+
+1. **Site identity** - Use Site Title, Site Tagline, and Site Logo together in headers
+2. **Navigation structure** - Keep navigation hierarchies shallow (2-3 levels max)
+3. **Query performance** - Limit posts per page in Query Loop blocks
+4. **Template organization** - Use Template Part blocks for reusable header/footer sections
+5. **Post templates** - Combine Post Template with Post Title, Post Featured Image, Post Excerpt
+6. **Comment moderation** - Style comment blocks to match your theme design
+7. **Breadcrumbs** - Place breadcrumbs above page titles for better navigation
+8. **Responsive navigation** - Use overlayMenu: 'mobile' for better mobile experience

@@ -1,0 +1,294 @@
+---
+title: Entities and Undo/Redo
+description: Understanding entity records, how the editor manages WordPress data, and the undo/redo system
+---
+
+The WordPress editors manipulate what we call **entity records**—objects that represent posts, pages, users, terms, templates, and more. These are the data objects stored in the database and managed through the editor.
+
+## What Are Entities?
+
+Entities represent WordPress data objects. Each editor can fetch, edit, and save multiple entity records simultaneously.
+
+### Example: Editing a Page in Site Editor
+
+When opening a page in the Site Editor, you can edit:
+- Properties of the page itself (title, content)
+- Properties of the page's template (content, design)
+- Properties of template parts used in the template (header, footer)
+
+The editor tracks all these modifications and orchestrates saving all modified records. This happens within the `@wordpress/core-data` package.
+
+## Entity Identification
+
+Each entity is identified by three pieces of information:
+
+1. **Kind** - The type of entity (e.g., `postType`, `taxonomy`)
+2. **Name** - The specific entity name (e.g., `post`, `page`, `wp_template`)
+3. **Record ID** - The unique identifier for the record (e.g., `1`, `42`)
+
+### Common Entities
+
+**Post Types:**
+- `{ kind: 'postType', name: 'post' }` - Blog posts
+- `{ kind: 'postType', name: 'page' }` - Pages
+- `{ kind: 'postType', name: 'wp_block' }` - Reusable blocks
+- `{ kind: 'postType', name: 'wp_template' }` - Templates
+- `{ kind: 'postType', name: 'wp_template_part' }` - Template parts
+
+**Other Entities:**
+- `{ kind: 'taxonomy', name: 'category' }` - Categories
+- `{ kind: 'root', name: 'user' }` - Users
+- `{ kind: 'root', name: 'site' }` - Site settings
+
+## Editing Entities
+
+### Loading an Entity
+
+Before editing, you must fetch and load the entity into the `core` store:
+
+```js
+wp.data.select('core').getEntityRecord('postType', 'post', 1);
+```
+
+This loads post with ID 1 into the store.
+
+### Entity Record State
+
+For each fetched entity record, `core-data` tracks:
+
+**Persisted Record:**
+The last state of the record as fetched from the backend.
+
+**List of Edits:**
+Unsaved local modifications for one or several properties.
+
+### Making Edits
+
+Use `editEntityRecord` to modify entity properties:
+
+```js
+wp.data.dispatch('core').editEntityRecord(
+  'postType',  // kind
+  'post',      // name
+  1,           // record ID
+  { title: 'Hello World' }  // changes
+);
+```
+
+### Saving Changes
+
+Use `saveEditedEntityRecord` to persist changes:
+
+```js
+wp.data.dispatch('core').saveEditedEntityRecord(
+  'postType',
+  'post',
+  1
+);
+```
+
+## Architectural Decision
+
+> **Data layer**: Uses `@wordpress/data` (Redux-like stores). Edit entities through `core-data` actions (`editEntityRecord` / `saveEditedEntityRecord`), not direct state manipulation.
+
+## The Undo/Redo System
+
+Since WordPress editors allow editing multiple entity records simultaneously, `core-data` maintains a common undo/redo stack.
+
+### Undo/Redo Stack Structure
+
+Each step in the stack contains a list of edits that should be undone or redone together.
+
+### Edit Information
+
+Each modification stores:
+
+- **Entity kind and name** - The identifier pair (e.g., `postType`, `post`)
+- **Entity Record ID** - The ID of the modified record
+- **Property** - The name of the modified property
+- **From** - Previous value (for undo)
+- **To** - New value (for redo)
+
+### Example Undo/Redo Stack
+
+User actions:
+1. Edits post title
+2. Modifies post slug
+3. Changes reusable block title
+
+Stack contents:
+```js
+[
+  [
+    {
+      kind: 'postType',
+      name: 'post',
+      id: 1,
+      property: 'title',
+      from: '',
+      to: 'Hello World'
+    }
+  ],
+  [
+    {
+      kind: 'postType',
+      name: 'post',
+      id: 1,
+      property: 'slug',
+      from: 'previous-slug',
+      to: 'hello-world'
+    }
+  ],
+  [
+    {
+      kind: 'postType',
+      name: 'wp_block',
+      id: 2,
+      property: 'title',
+      from: 'Reusable Block',
+      to: 'Awesome Reusable Block'
+    }
+  ]
+]
+```
+
+### Undo/Redo Pointer
+
+The store maintains a pointer to the current step:
+- By default, points to the last item
+- Updated when user performs undo or redo
+- Enables bidirectional history traversal
+
+## Cached Changes
+
+The undo/redo system supports **cached modifications**—changes not immediately stored in the undo/redo stack.
+
+### Why Cached Changes?
+
+When a user types in a text field:
+- Value updates in the store immediately
+- But we don't create an undo step for each character
+- Instead, changes are cached until:
+  - User moves to the next word
+  - A few milliseconds pass
+  - `__unstableCreateUndoLevel` is called
+  - Next non-cached modification occurs
+
+### Using Cached Changes
+
+By default, `editEntityRecord` calls are non-cached. Use the `isCached` option:
+
+```js
+wp.data.dispatch('core').editEntityRecord(
+  'postType',
+  'post',
+  1,
+  { title: 'Hello World' },
+  { isCached: true }  // Mark as cached
+);
+```
+
+### Cached Changes Storage
+
+Cached modifications are kept outside the main undo/redo stack in a "cache" area. They're only added to the stack when:
+- Explicitly calling `__unstableCreateUndoLevel`
+- Next modification is not cached
+
+## Multi-Entity Editing
+
+The system's true power is handling multiple entities simultaneously.
+
+### Example: Site Editor Session
+
+```js
+// Edit page title
+wp.data.dispatch('core').editEntityRecord(
+  'postType', 'page', 5,
+  { title: 'About Us' }
+);
+
+// Edit template content
+wp.data.dispatch('core').editEntityRecord(
+  'postType', 'wp_template', 'page',
+  { content: '<!-- wp:template-part ... -->' }
+);
+
+// Edit template part
+wp.data.dispatch('core').editEntityRecord(
+  'postType', 'wp_template_part', 'header',
+  { content: '<!-- wp:site-title /-->' }
+);
+
+// Save all modified entities
+const entitiesToSave = wp.data.select('core').getEntityRecordsToBeSaved();
+for (const entity of entitiesToSave) {
+  wp.data.dispatch('core').saveEditedEntityRecord(
+    entity.kind,
+    entity.name,
+    entity.id
+  );
+}
+```
+
+## Checking Entity State
+
+### Has Unsaved Changes?
+
+```js
+const hasEdits = wp.data.select('core').hasEditsForEntityRecord(
+  'postType',
+  'post',
+  1
+);
+```
+
+### Get Current Edits
+
+```js
+const edits = wp.data.select('core').getEntityRecordEdits(
+  'postType',
+  'post',
+  1
+);
+// Returns: { title: 'New Title', content: 'New content' }
+```
+
+### Get All Entities to Save
+
+```js
+const entitiesToSave = wp.data.select('core').getEntityRecordsToBeSaved();
+// Returns array of all entities with unsaved changes
+```
+
+## Best Practices
+
+### Always Use Actions
+
+Don't manipulate state directly—use `editEntityRecord` and `saveEditedEntityRecord`.
+
+### Load Before Editing
+
+Ensure entities are loaded before editing:
+```js
+const post = wp.data.select('core').getEntityRecord('postType', 'post', 1);
+if (!post) {
+  // Entity not loaded yet
+}
+```
+
+### Handle Multiple Entities
+
+When working with templates, remember you're editing multiple entities simultaneously.
+
+### Use Cached Changes Wisely
+
+Only use `isCached: true` for rapid, frequent updates like typing.
+
+## Integration with Block Editor
+
+The block editor content is stored as an entity property:
+- Blocks are the `content` property of post entities
+- Changes to blocks create entity edits
+- Saving the post saves the block content
+
+This seamless integration allows the undo/redo system to work across both content changes and metadata changes.

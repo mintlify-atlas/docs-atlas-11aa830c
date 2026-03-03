@@ -1,0 +1,521 @@
+---
+title: Feedback Components
+description: Overlays, notifications, and feedback mechanisms for communicating with users in the block editor
+---
+
+Feedback components provide ways to communicate important information, confirm actions, and guide users through interactions in the WordPress block editor.
+
+## Notifications
+
+### Notice
+
+Communicates feedback to users about actions, states, or errors.
+
+```jsx
+import { Notice } from '@wordpress/components';
+
+function NoticeExamples() {
+  return (
+    <>
+      <Notice status="info">
+        Your settings have been updated.
+      </Notice>
+
+      <Notice status="success" isDismissible onRemove={() => {}}>
+        Post published successfully!
+      </Notice>
+
+      <Notice status="warning">
+        This action cannot be undone.
+      </Notice>
+
+      <Notice status="error" isDismissible={false}>
+        An error occurred while saving.
+      </Notice>
+    </>
+  );
+}
+```
+
+**Props:**
+- `status?: 'info' | 'success' | 'warning' | 'error'` - Notice type (default: 'info')
+- `isDismissible?: boolean` - Show close button (default: true)
+- `onRemove?: () => void` - Called when dismissed
+- `onDismiss?: () => void` - Additional dismiss callback
+- `actions?: Array<NoticeAction>` - Action buttons
+- `politeness?: 'polite' | 'assertive'` - Screen reader announcement priority
+- `spokenMessage?: string | ReactNode` - Custom screen reader message
+
+**Notice Actions:**
+
+```jsx
+import { Notice, Button } from '@wordpress/components';
+
+function NoticeWithActions() {
+  return (
+    <Notice
+      status="warning"
+      actions={[
+        {
+          label: 'View Details',
+          onClick: () => console.log('View clicked'),
+          variant: 'primary',
+        },
+        {
+          label: 'Dismiss',
+          onClick: () => console.log('Dismissed'),
+        },
+      ]}
+    >
+      Update available for your plugin.
+    </Notice>
+  );
+}
+```
+
+[Storybook: Notice](https://wordpress.github.io/gutenberg/?path=/docs/components-notice--docs)
+
+### Snackbar / SnackbarList
+
+Temporary, unobtrusive notifications that auto-dismiss.
+
+```jsx
+import { SnackbarList } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function SnackbarExample() {
+  const [notices, setNotices] = useState([
+    {
+      id: '1',
+      content: 'Item added to cart',
+      status: 'success',
+    },
+  ]);
+
+  const removeNotice = (id) => {
+    setNotices(notices.filter((notice) => notice.id !== id));
+  };
+
+  return (
+    <SnackbarList
+      notices={notices}
+      onRemove={removeNotice}
+    />
+  );
+}
+```
+
+**Props:**
+- `notices: Array<Notice>` - Array of notice objects
+- `onRemove: (id) => void` - Remove notice handler
+- `className?: string` - Additional CSS class
+
+**Notice Object:**
+- `id: string` - Unique identifier
+- `content: string | ReactNode` - Notice content
+- `status?: 'info' | 'success' | 'warning' | 'error'`
+- `actions?: Array<NoticeAction>` - Action buttons
+
+[Storybook: Snackbar](https://wordpress.github.io/gutenberg/?path=/docs/components-snackbar--docs)
+
+## Modals & Dialogs
+
+### Modal
+
+Overlay dialog for focused interactions.
+
+```jsx
+import { Modal, Button } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function ModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setIsOpen(true)}>
+        Open Modal
+      </Button>
+
+      {isOpen && (
+        <Modal
+          title="Settings"
+          onRequestClose={() => setIsOpen(false)}
+        >
+          <p>Modal content goes here.</p>
+          <Button variant="primary" onClick={() => setIsOpen(false)}>
+            Save
+          </Button>
+        </Modal>
+      )}
+    </>
+  );
+}
+```
+
+**Props:**
+- `title: string` - Modal title
+- `onRequestClose: () => void` - Close handler
+- `isDismissible?: boolean` - Show close button (default: true)
+- `shouldCloseOnClickOutside?: boolean` - Close on backdrop click (default: true)
+- `shouldCloseOnEsc?: boolean` - Close on Escape key (default: true)
+- `size?: 'small' | 'medium' | 'large'` - Modal size
+- `icon?: IconType` - Title icon
+- `headerActions?: ReactNode` - Custom header actions
+
+**Modal Features:**
+- Traps focus within the modal
+- Prevents body scrolling
+- Accessible with ARIA labels
+- Supports keyboard navigation
+- Animated entrance/exit
+
+[Storybook: Modal](https://wordpress.github.io/gutenberg/?path=/docs/components-modal--docs)
+
+### ConfirmDialog
+
+Simple confirmation dialog built on Modal.
+
+```jsx
+import { ConfirmDialog, Button } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function DeleteConfirmation() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleConfirm = () => {
+    console.log('Deleted');
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      <Button isDestructive onClick={() => setIsOpen(true)}>
+        Delete Item
+      </Button>
+
+      <ConfirmDialog
+        isOpen={isOpen}
+        onConfirm={handleConfirm}
+        onCancel={() => setIsOpen(false)}
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      >
+        Are you sure you want to delete this item? This action cannot be undone.
+      </ConfirmDialog>
+    </>
+  );
+}
+```
+
+**Props:**
+- `isOpen: boolean` - Dialog visibility
+- `onConfirm: () => void` - Confirm action handler
+- `onCancel: () => void` - Cancel action handler
+- `confirmButtonText?: string` - Confirm button label (default: 'OK')
+- `cancelButtonText?: string` - Cancel button label (default: 'Cancel')
+- `isDestructive?: boolean` - Style confirm button as destructive
+- `children: ReactNode` - Dialog message
+
+[Storybook: ConfirmDialog](https://wordpress.github.io/gutenberg/?path=/docs/components-confirmdialog--docs)
+
+<Note>
+  ConfirmDialog uses the experimental `@ariakit/react` Dialog component. The API may change in future releases.
+</Note>
+
+## Popovers & Tooltips
+
+### Popover
+
+Floating content container positioned relative to a target.
+
+```jsx
+import { Popover, Button } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function PopoverExample() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div>
+      <Button onClick={() => setIsVisible(!isVisible)}>
+        Toggle Popover
+      </Button>
+
+      {isVisible && (
+        <Popover
+          position="bottom center"
+          onClose={() => setIsVisible(false)}
+        >
+          <div style={{ padding: '16px' }}>
+            Popover content
+          </div>
+        </Popover>
+      )}
+    </div>
+  );
+}
+```
+
+**Props:**
+- `position?: string` - Placement (e.g., 'top', 'bottom center', 'left')
+- `onClose?: () => void` - Close handler
+- `onFocusOutside?: (event) => void` - Focus outside handler
+- `noArrow?: boolean` - Hide arrow pointer (default: true)
+- `anchor?: Element` - Anchor element for positioning
+- `placement?: Placement` - Modern placement API
+- `focusOnMount?: boolean | 'firstElement'` - Focus behavior
+- `expandOnMobile?: boolean` - Full-width on mobile
+- `headerTitle?: string` - Mobile header title
+- `animate?: boolean` - Enable animations (default: true)
+
+**Positioning:**
+
+```jsx
+<Popover position="top left">Top left</Popover>
+<Popover position="middle right">Middle right</Popover>
+<Popover position="bottom center">Bottom center</Popover>
+```
+
+[Storybook: Popover](https://wordpress.github.io/gutenberg/?path=/docs/components-popover--docs)
+
+### Tooltip
+
+Small text hint shown on hover.
+
+```jsx
+import { Tooltip, Button } from '@wordpress/components';
+import { help } from '@wordpress/icons';
+
+function TooltipExample() {
+  return (
+    <>
+      <Tooltip text="Click for help">
+        <Button icon={help} label="Help" />
+      </Tooltip>
+
+      <Tooltip text="Save changes" shortcut="Ctrl+S">
+        <Button variant="primary">Save</Button>
+      </Tooltip>
+    </>
+  );
+}
+```
+
+**Props:**
+- `text: string` - Tooltip content (required)
+- `shortcut?: string` - Keyboard shortcut to display
+- `placement?: Placement` - Tooltip position
+- `delay?: number` - Show delay in milliseconds
+- `children: ReactElement` - Single child element
+
+**Note:** Button components have built-in tooltip support:
+
+```jsx
+<Button
+  icon={save}
+  label="Save"
+  showTooltip
+  shortcut="Ctrl+S"
+/>
+```
+
+[Storybook: Tooltip](https://wordpress.github.io/gutenberg/?path=/docs/components-tooltip--docs)
+
+## Dropdown Menus
+
+### DropdownMenu
+
+Menu with multiple actions triggered from a button.
+
+```jsx
+import { DropdownMenu } from '@wordpress/components';
+import { more, trash, edit, external } from '@wordpress/icons';
+
+function ActionsMenu() {
+  return (
+    <DropdownMenu
+      icon={more}
+      label="Actions"
+      controls={[
+        {
+          title: 'Edit',
+          icon: edit,
+          onClick: () => console.log('Edit'),
+        },
+        {
+          title: 'View',
+          icon: external,
+          onClick: () => console.log('View'),
+        },
+        {
+          title: 'Delete',
+          icon: trash,
+          onClick: () => console.log('Delete'),
+          isDestructive: true,
+        },
+      ]}
+    />
+  );
+}
+```
+
+**Props:**
+- `icon?: IconType` - Toggle button icon
+- `label?: string` - Accessibility label
+- `controls: Array<Control | Array<Control>>` - Menu items (arrays create groups)
+- `className?: string` - Additional CSS class
+
+**Control Object:**
+- `title: string` - Menu item label
+- `icon?: IconType` - Item icon
+- `onClick: () => void` - Click handler
+- `isActive?: boolean` - Active state
+- `isDisabled?: boolean` - Disabled state
+- `isDestructive?: boolean` - Destructive styling
+
+**Grouped Controls:**
+
+```jsx
+<DropdownMenu
+  icon={more}
+  controls={[
+    [
+      { title: 'Edit', icon: edit, onClick: () => {} },
+      { title: 'Duplicate', onClick: () => {} },
+    ],
+    [
+      { title: 'Delete', icon: trash, onClick: () => {}, isDestructive: true },
+    ],
+  ]}
+/>
+```
+
+[Storybook: DropdownMenu](https://wordpress.github.io/gutenberg/?path=/docs/components-dropdownmenu--docs)
+
+### Dropdown
+
+Lower-level dropdown component for custom popover content.
+
+```jsx
+import { Dropdown, Button } from '@wordpress/components';
+import { chevronDown } from '@wordpress/icons';
+
+function CustomDropdown() {
+  return (
+    <Dropdown
+      renderToggle={({ isOpen, onToggle }) => (
+        <Button
+          onClick={onToggle}
+          icon={chevronDown}
+          aria-expanded={isOpen}
+        >
+          Options
+        </Button>
+      )}
+      renderContent={() => (
+        <div style={{ padding: '16px' }}>
+          <p>Custom dropdown content</p>
+          <Button variant="primary">Action</Button>
+        </div>
+      )}
+    />
+  );
+}
+```
+
+**Props:**
+- `renderToggle: (props) => ReactElement` - Toggle button renderer
+- `renderContent: (props) => ReactElement` - Dropdown content renderer
+- `position?: string` - Popover position
+- `className?: string` - Additional CSS class
+- `contentClassName?: string` - Content container class
+- `popoverProps?: object` - Additional Popover props
+
+[Storybook: Dropdown](https://wordpress.github.io/gutenberg/?path=/docs/components-dropdown--docs)
+
+## Disclosure Components
+
+### Disclosure
+
+Accessible show/hide toggle using the disclosure pattern.
+
+```jsx
+import { __experimentalDisclosure as Disclosure } from '@wordpress/components';
+
+function DisclosureExample() {
+  return (
+    <Disclosure>
+      <Disclosure.Trigger>Show Details</Disclosure.Trigger>
+      <Disclosure.Content>
+        <p>Hidden content that can be toggled</p>
+      </Disclosure.Content>
+    </Disclosure>
+  );
+}
+```
+
+## Slot Fill System
+
+For advanced plugin integration, use the SlotFill pattern to inject content into predefined areas:
+
+```jsx
+import { SlotFillProvider, Slot, Fill } from '@wordpress/components';
+
+function App() {
+  return (
+    <SlotFillProvider>
+      <div>
+        <h1>Header</h1>
+        <Slot name="Toolbar" />
+      </div>
+    </SlotFillProvider>
+  );
+}
+
+function Plugin() {
+  return (
+    <Fill name="Toolbar">
+      <Button>Plugin Action</Button>
+    </Fill>
+  );
+}
+```
+
+## Accessibility
+
+All feedback components follow accessibility best practices:
+
+- **Notice**: Announces status changes to screen readers with configurable politeness
+- **Modal**: Traps focus, prevents body scroll, supports keyboard navigation
+- **Tooltip**: Uses `aria-label` and respects user preferences for reduced motion
+- **Popover**: Manages focus properly and supports Escape key dismissal
+- **DropdownMenu**: Full keyboard navigation with arrow keys and Enter
+
+## Best Practices
+
+### When to Use Each Component
+
+- **Notice**: Important, persistent messages that require user attention
+- **Snackbar**: Brief, temporary confirmations of actions
+- **Modal**: Complex interactions requiring focus and confirmation
+- **ConfirmDialog**: Simple yes/no confirmations for destructive actions
+- **Tooltip**: Supplementary information on hover (not critical info)
+- **Popover**: Contextual content and temporary controls
+- **DropdownMenu**: Multiple related actions
+
+### Usage Guidelines
+
+1. Use appropriate `status` values for semantic meaning
+2. Provide clear, actionable button labels
+3. Don't nest modals within modals
+4. Keep snackbar messages concise (2-3 words)
+5. Use destructive styling for irreversible actions
+6. Ensure tooltips don't hide critical information
+
+## Resources
+
+- [Storybook: All Feedback Components](https://wordpress.github.io/gutenberg/)
+- [ARIA Practices Guide](https://www.w3.org/WAI/ARIA/apg/)
+- [Modal Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)
+- [Disclosure Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)

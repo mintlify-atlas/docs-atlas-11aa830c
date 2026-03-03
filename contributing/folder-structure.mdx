@@ -1,0 +1,238 @@
+---
+title: Folder Structure
+description: Understand the organization of the Gutenberg repository and locate files for development.
+---
+
+This guide explains the structure of the Gutenberg repository to help you navigate the codebase effectively.
+
+## Root Files
+
+### Configuration Files
+
+```
+.editorconfig           # Editor configuration
+.eslintrc              # JavaScript linting rules
+.prettierrc.js         # Code formatting rules
+.stylelintrc.js        # CSS linting rules
+phpcs.xml.dist         # PHP coding standards
+```
+
+### Build Configuration
+
+```
+.browserslistrc        # Browser compatibility targets
+babel.config.js        # JavaScript transpilation
+tsconfig.json          # TypeScript configuration
+webpack.config.js      # Bundling configuration
+```
+
+### Environment Configuration
+
+```
+.wp-env.json           # WordPress development environment config
+```
+
+### Dependency Management
+
+```
+package.json           # JavaScript dependencies and scripts
+package-lock.json      # Locked JavaScript dependencies
+composer.json          # PHP development dependencies
+composer.lock          # Locked PHP dependencies
+```
+
+### Documentation Files
+
+```
+README.md              # Project overview
+CONTRIBUTING.md        # Contributing guidelines
+SECURITY.md            # Security reporting
+LICENSE                # License information
+changelog.txt          # Plugin changelog
+readme.txt             # WordPress.org plugin readme
+```
+
+## Plugin Files
+
+```
+gutenberg.php          # Plugin entry point
+post-content.php       # Demo post content for showcasing blocks
+```
+
+## Key Directories
+
+### `/packages/`
+
+Source code of WordPress packages. Each package can be:
+- **Production packages**: Shipped as WordPress scripts (e.g., `wp-components`, `wp-editor`)
+- **Development tools**: Available on npm (e.g., `@wordpress/scripts`, `@wordpress/env`)
+
+**Package Structure**:
+
+```
+packages/{packageName}/
+├── package.json           # Package dependencies
+├── README.md              # Package documentation
+├── CHANGELOG.md           # Version history
+├── src/                   # Source code
+│   ├── **/*.js           # JavaScript files
+│   ├── **/*.scss         # Styles
+│   ├── **/*.test.js      # Unit tests
+│   ├── {Component}/
+│   │   ├── index.js      # Component entry point
+│   │   ├── style.scss    # Component styles
+│   │   └── stories/*.jsx # Storybook stories
+```
+
+### `/lib/`
+
+PHP source code of the Gutenberg plugin.
+
+```
+lib/
+├── compat/wordpress-x.x/  # Backward compatibility for WordPress versions
+```
+
+Note: New PHP features targeting specific WordPress versions go in `lib/compat/wordpress-X.Y/`.
+
+### `/phpunit/`
+
+Unit tests for PHP code:
+
+```
+phpunit/
+├── blocks/               # Block-specific tests
+├── class-*.php          # Class tests
+```
+
+### `/test/`
+
+JavaScript and end-to-end tests:
+
+```
+test/
+├── e2e/                  # End-to-end tests (Puppeteer/Playwright)
+├── integration/          # Integration tests
+├── unit/                 # Unit test configuration
+├── native/               # React Native test configuration
+├── performance/          # Performance benchmarks
+```
+
+### `/docs/`
+
+Project documentation:
+
+```
+docs/
+├── contributors/         # Contributing guides
+│   ├── code/            # Code contribution docs
+│   ├── design/          # Design contribution docs
+│   └── documentation/   # Documentation contribution docs
+├── explanations/
+│   └── architecture/    # Architecture documentation
+├── how-to-guides/       # Implementation tutorials
+├── reference-guides/    # API documentation
+```
+
+### `/bin/`
+
+Scripts and tools:
+
+```
+bin/
+├── api-docs/            # API documentation generator
+├── packages/            # Package build scripts
+├── plugin/              # Plugin release tools
+```
+
+### `/platform-docs/`
+
+Documentation for non-WordPress developers using Gutenberg:
+- Deployed at: [https://wordpress.org/gutenberg-framework/](https://wordpress.org/gutenberg-framework/)
+
+### `/storybook/`
+
+Configuration for [Gutenberg Storybook](https://wordpress.github.io/gutenberg/).
+
+### `/.github/`
+
+GitHub-specific configuration:
+
+```
+.github/
+├── ISSUE_TEMPLATE/      # Issue templates
+├── PULL_REQUEST_TEMPLATE.md
+├── workflows/           # CI/CD workflows
+```
+
+### `/tools/`
+
+Build and development tools:
+
+```
+tools/
+├── eslint/              # ESLint configuration
+├── webpack/             # Webpack configuration
+```
+
+## Key Directories Reference
+
+Quick reference for common development tasks:
+
+| Task | Directory |
+|------|----------|
+| JavaScript packages | `/packages/` |
+| PHP code | `/lib/` |
+| PHP tests | `/phpunit/` |
+| JavaScript tests | `/packages/{name}/src/**/*.test.js` |
+| E2E tests | `/test/e2e/` |
+| Documentation | `/docs/` |
+| Build scripts | `/bin/` |
+| Configuration | Root directory |
+
+## Package Organization
+
+### Production Packages
+
+Loaded as WordPress scripts (`wp-*` handles):
+- `@wordpress/block-editor` - Generic block editor (WordPress-agnostic)
+- `@wordpress/editor` - WordPress post-type-aware editor
+- `@wordpress/edit-post` - Full post editor screen
+- `@wordpress/edit-site` - Full site editor screen
+- `@wordpress/components` - Reusable UI components
+- `@wordpress/data` - State management
+
+### Development Packages
+
+Available as npm packages:
+- `@wordpress/scripts` - Build and development scripts
+- `@wordpress/env` - Local WordPress environment
+- `@wordpress/eslint-plugin` - ESLint configuration
+- `@wordpress/prettier-config` - Prettier configuration
+
+## Block Library Structure
+
+Blocks follow a specific file structure:
+
+```
+packages/block-library/src/{block-name}/
+├── index.js             # Block registration
+├── edit.js              # Editor component
+├── save.js              # Save component
+├── style.scss           # Frontend + editor styles
+├── editor.scss          # Editor-only styles
+├── block.json           # Block metadata
+└── test/
+    └── edit.js          # Integration tests
+```
+
+### Style Files
+
+- `style.scss` - Loads on both frontend and in editor
+- `editor.scss` - Loads only in editor
+
+## Next Steps
+
+- Review [Coding Guidelines](/contributing/coding-guidelines) for file organization conventions
+- Check [Architectural Decisions](/contributing/architectural-decisions) to understand package layering
+- See [Development Workflow](/contributing/development-workflow) for making changes

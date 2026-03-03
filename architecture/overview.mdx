@@ -1,0 +1,89 @@
+---
+title: Architecture Overview
+description: Understanding the Gutenberg Block Editor framework architecture and design principles
+---
+
+The Gutenberg Block Editor is built as a modular, layered system designed to be flexible, maintainable, and reusable across different WordPress contexts.
+
+## Core Principles
+
+The Block Editor architecture is founded on several key principles:
+
+### Modularity
+
+The editor is composed of independent, reusable packages published to npm as `@wordpress/*`. These packages can be used together to build the full editor experience or separately for custom implementations. Each package has a well-defined public API and clear boundaries.
+
+### Layered Architecture
+
+The editor is structured in three distinct layers, each building upon the previous:
+
+1. **`@wordpress/block-editor`** - Generic, WordPress-agnostic block editing functionality
+2. **`@wordpress/editor`** - WordPress post-type-aware editing features
+3. **`@wordpress/edit-post` / `@wordpress/edit-site`** - Full screen implementations for specific editing contexts
+
+This layering ensures that lower-level packages remain generic and reusable, while higher layers add WordPress-specific functionality.
+
+### Data-Driven Design
+
+The editor uses a centralized state management system (`@wordpress/data`) based on Redux patterns. All data flows through well-defined stores, actions, and selectors, making the application predictable and testable.
+
+### Separation of Concerns
+
+Blocks exist as in-memory tree structures during editing but are serialized to HTML with comment delimiters for storage. The editor works with the block tree via APIs, not with serialized HTML directly.
+
+## Key Components
+
+### Blocks
+
+Blocks are the fundamental unit of content. Everything from a paragraph to a site header is represented as a block. Each block is an object with:
+- A unique `clientId`
+- A block `type` (e.g., `core/paragraph`)
+- `attributes` containing the block's data
+- Optional `innerBlocks` for nested content
+
+### Data Stores
+
+The editor uses specialized data stores for different concerns:
+- `core/block-editor` - Block tree manipulation
+- `core/editor` - Post editing state
+- `core` (core-data) - Entity management and persistence
+
+### Entities
+
+Entity records represent WordPress data objects like posts, pages, templates, and template parts. The editor can fetch, edit, and save multiple entities simultaneously through the `@wordpress/core-data` package.
+
+## Package Distribution
+
+Packages are available in two forms:
+
+**As npm packages:**
+```bash
+npm install @wordpress/components
+```
+
+**As WordPress script handles:**
+```php
+wp_register_script('my-script', 'script.js', array('wp-components'));
+```
+
+This dual distribution allows plugins to avoid code duplication by using WordPress core scripts, while also enabling usage outside WordPress contexts.
+
+## Development vs Production Packages
+
+**Production packages** ship with WordPress and provide runtime functionality (components, API utilities, data stores).
+
+**Development packages** provide build tools, testing utilities, and development workflows (e.g., `@wordpress/scripts`, `@wordpress/env`).
+
+## Architecture Documentation
+
+Explore specific architectural concepts:
+
+- [Key Concepts](/architecture/key-concepts) - Blocks, patterns, templates, and reusable blocks
+- [Data Flow](/architecture/data-flow) - Block serialization and the data lifecycle
+- [Modularity](/architecture/modularity) - Package structure and editor layers
+- [Block Editor Layers](/architecture/block-editor-layers) - Understanding the three-layer architecture
+- [Entities](/architecture/entities) - Entity records and undo/redo system
+- [Styles System](/architecture/styles-system) - Block supports and global styles
+- [Full Site Editing](/architecture/full-site-editing) - Template and template part architecture
+- [Templates](/architecture/templates) - Template storage and synchronization
+- [Theme JSON](/architecture/theme-json) - Configuration and styling system

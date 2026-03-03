@@ -1,0 +1,254 @@
+---
+title: "@wordpress/blocks"
+description: Core block API for registering and managing WordPress block types
+---
+
+The `@wordpress/blocks` package provides the foundational API for working with blocks in WordPress. It includes functions for registering block types, managing block attributes, parsing and serializing blocks, and handling block transformations.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/blocks --save
+```
+
+```bash yarn
+yarn add @wordpress/blocks
+```
+</CodeGroup>
+
+## What is a Block?
+
+A block is the abstract term for units of markup that compose the content or layout of a webpage. Blocks combine concepts of shortcodes, custom HTML, and embeds into a single consistent API.
+
+## Core Functions
+
+### registerBlockType
+
+Registers a new block type.
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+registerBlockType( 'namespace/block-name', {
+	title: __( 'My First Block' ),
+	edit: () => <div>{ __( 'Hello from the editor!' ) }</div>,
+	save: () => <div>Hello from the saved content!</div>,
+} );
+```
+
+**Parameters:**
+- `blockNameOrMetadata` (string|Object) - Block type name or metadata
+- `settings` (Object) - Block configuration
+
+**Returns:** `WPBlockType | undefined`
+
+### createBlock
+
+Creates a new block instance.
+
+```js
+import { createBlock } from '@wordpress/blocks';
+
+const block = createBlock( 'core/paragraph', {
+	content: 'Hello World',
+} );
+```
+
+**Parameters:**
+- `name` (string) - Block type name
+- `attributes` (Object) - Block attributes
+- `innerBlocks` (Array) - Nested blocks
+
+**Returns:** `Object` - Block object
+
+### parse
+
+Parses post content into blocks.
+
+```js
+import { parse } from '@wordpress/blocks';
+
+const blocks = parse( postContent );
+```
+
+**Parameters:**
+- `content` (string) - Post content
+- `options` (Object) - Parsing options
+
+**Returns:** `Array` - Block list
+
+### serialize
+
+Serializes blocks to post content.
+
+```js
+import { serialize } from '@wordpress/blocks';
+
+const content = serialize( blocks );
+```
+
+**Parameters:**
+- `blocks` (Array) - Blocks to serialize
+- `options` (Object) - Serialization options
+
+**Returns:** `string` - Post content
+
+## Block Registration
+
+### registerBlockCollection
+
+Groups blocks in the inserter by namespace.
+
+```js
+import { registerBlockCollection } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+registerBlockCollection( 'my-plugin', {
+	title: __( 'My Plugin Blocks' ),
+	icon: 'wordpress',
+} );
+```
+
+### registerBlockStyle
+
+Registers alternative block styles.
+
+```js
+import { registerBlockStyle } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+registerBlockStyle( 'core/quote', {
+	name: 'fancy-quote',
+	label: __( 'Fancy Quote' ),
+} );
+```
+
+### registerBlockVariation
+
+Registers block variations.
+
+```js
+import { registerBlockVariation } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+registerBlockVariation( 'core/embed', {
+	name: 'youtube',
+	title: __( 'YouTube' ),
+	attributes: { providerNameSlug: 'youtube' },
+} );
+```
+
+## Block Utilities
+
+### getBlockType
+
+Retrieves a registered block type.
+
+```js
+import { getBlockType } from '@wordpress/blocks';
+
+const blockType = getBlockType( 'core/paragraph' );
+```
+
+### getBlockTypes
+
+Returns all registered blocks.
+
+```js
+import { getBlockTypes } from '@wordpress/blocks';
+
+const allBlocks = getBlockTypes();
+```
+
+### hasBlockSupport
+
+Checks if a block supports a feature.
+
+```js
+import { hasBlockSupport } from '@wordpress/blocks';
+
+const supportsAlign = hasBlockSupport( 'core/image', 'align' );
+```
+
+## Block Bindings
+
+### registerBlockBindingsSource
+
+Registers a block bindings source for dynamic attribute values.
+
+```js
+import { registerBlockBindingsSource } from '@wordpress/blocks';
+import { _x } from '@wordpress/i18n';
+
+registerBlockBindingsSource( {
+	name: 'plugin/custom-source',
+	label: _x( 'Custom Source', 'block bindings source' ),
+	usesContext: [ 'postId' ],
+	getValues: ( { select, context } ) => {
+		return {
+			content: 'Dynamic content',
+		};
+	},
+} );
+```
+
+## Block Transforms
+
+### getBlockTransforms
+
+Retrieves available block transforms.
+
+```js
+import { getBlockTransforms } from '@wordpress/blocks';
+
+const transforms = getBlockTransforms( 'from', 'core/paragraph' );
+```
+
+### switchToBlockType
+
+Transforms blocks to another type.
+
+```js
+import { switchToBlockType } from '@wordpress/blocks';
+
+const newBlocks = switchToBlockType( block, 'core/heading' );
+```
+
+## Block Categories
+
+### setCategories
+
+Defines available block categories.
+
+```js
+import { setCategories } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+setCategories( [
+	{ slug: 'text', title: __( 'Text' ) },
+	{ slug: 'media', title: __( 'Media' ) },
+	{ slug: 'custom', title: __( 'Custom' ) },
+] );
+```
+
+## Store
+
+The blocks package includes a data store accessible via `@wordpress/data`:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as blocksStore } from '@wordpress/blocks';
+
+function MyComponent() {
+	const blockTypes = useSelect( ( select ) => {
+		return select( blocksStore ).getBlockTypes();
+	}, [] );
+}
+```
+
+## Learn More
+
+- [Create a Block Tutorial](https://developer.wordpress.org/block-editor/getting-started/create-block/)
+- [Block API Reference](https://developer.wordpress.org/block-editor/reference-guides/block-api/)

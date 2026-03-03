@@ -1,0 +1,409 @@
+---
+title: Block deprecation
+description: Handle block updates and maintain backward compatibility
+---
+
+When updating block markup and attributes, you need to provide a migration path for existing content. Block deprecation allows the editor to recognize and upgrade old block versions.
+
+## Overview
+
+For more details, see the [block deprecation tutorial](https://developer.wordpress.org/news/2023/03/block-deprecation-a-tutorial/) on the WordPress Developer Blog.
+
+When updating blocks, you can:
+
+1. Create a new block with a different name (no deprecation needed)
+2. Provide deprecated versions to upgrade existing content
+
+## How deprecations work
+
+Deprecations are **not** a chain of sequential updates. Instead:
+
+1. If the current `save` doesn't match, the first deprecation is tried
+2. If that deprecation's `save` produces valid content, it's used to parse attributes
+3. If it has a `migrate` function, that runs with the parsed attributes
+4. If the first deprecation fails, subsequent deprecations are tried
+5. Once a valid deprecation is found, attributes pass to the current `save`
+6. The block is now valid and the process stops
+
+<Warning>
+If a deprecation's `save` doesn't produce valid content, it's skipped entirely—even if `isEligible` would return true and even if it has a `migrate` function.
+</Warning>
+
+## Deprecation structure
+
+Deprecations are defined in the `deprecated` array:
+
+```js
+const deprecated = [
+	v3, // Most recent first
+	v2,
+	v1
+];
+```
+
+Each deprecation object includes:
+
+<ParamField path="attributes" type="object" required>
+  The attribute definition from the deprecated version
+</ParamField>
+
+<ParamField path="supports" type="object">
+  The supports definition from the deprecated version
+</ParamField>
+
+<ParamField path="save" type="function" required>
+  The save function from the deprecated version
+</ParamField>
+
+<ParamField path="migrate" type="function">
+  Function to transform old attributes to new format
+  
+  **Parameters:**
+  - `attributes` (object) - Old attributes
+  - `innerBlocks` (array) - Old inner blocks
+  
+  **Returns:**
+  - `object | [object, array]` - New attributes or `[attributes, innerBlocks]`
+</ParamField>
+
+<ParamField path="isEligible" type="function">
+  Determines if a technically valid block should still be migrated
+  
+  **Parameters:**
+  - `attributes` (object) - Raw block attributes
+  - `innerBlocks` (array) - Current inner blocks
+  - `data` (object) - Contains `blockNode` and `block`
+  
+  **Returns:**
+  - `boolean` - Whether to run this deprecation
+</ParamField>
+
+<Warning>
+`attributes`, `supports`, and `save` are not inherited from the current version. You must define them in each deprecation.
+</Warning>
+
+## Basic example: Changing markup
+
+Changing from `<p>` to `<div>`:
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+
+const attributes = {
+	text: {
+		type: 'string',
+		default: 'some random value'
+	}
+};
+
+const supports = {
+	className: false
+};
+
+registerBlockType( 'my-plugin/my-block', {
+	attributes,
+	supports,
+	
+	// Current version
+	save( { attributes } ) {
+		return <div>{ attributes.text }</div>;
+	},
+	
+	// Deprecated versions
+	deprecated: [
+		{
+			attributes,
+			supports,
+			
+			// Old version used <p>
+			save( { attributes } ) {
+				return <p>{ attributes.text }</p>;
+			}
+		}
+	]
+} );
+```
+
+## Renaming attributes
+
+Use the `migrate` function to transform attributes:
+
+```js
+registerBlockType( 'my-plugin/my-block', {
+	// Current version
+	attributes: {
+		content: {
+			type: 'string',
+			default: 'some random value'
+		}
+	},
+	
+	save( { attributes } ) {
+		return <div>{ attributes.content }</div>;
+	},
+	
+	// Deprecated versions
+	deprecated: [
+		{
+			// Old version used 'text' instead of 'content'
+			attributes: {
+				text: {
+					type: 'string',
+					default: 'some random value'
+				}
+			},
+			
+			migrate( { text } ) {
+				return {
+					content: text
+				};
+			},
+			
+			save( { attributes } ) {
+				return <p>{ attributes.text }</p>;
+			}
+		}
+	]
+} );
+```
+
+## Migrating to inner blocks
+
+Move attribute content to inner blocks:
+
+```js
+import { registerBlockType, createBlock } from '@wordpress/blocks';
+
+registerBlockType( 'my-plugin/container', {
+	// Current version has no title attribute
+	attributes: {},
+	
+	save() {
+		return <InnerBlocks.Content />;
+	},
+	
+	deprecated: [
+		{
+			attributes: {
+				title: {
+					type: 'string',
+					source: 'html',
+					selector: 'p'
+				}
+			},
+			
+			migrate( attributes, innerBlocks ) {
+				const { title, ...restAttributes } = attributes;
+				
+				return [
+					restAttributes,
+					[
+						createBlock( 'core/paragraph', {
+							content: title,
+							fontSize: 'large'
+						} ),
+						...innerBlocks
+					]
+				];
+			},
+			
+			save( { attributes } ) {
+				return <p>{ attributes.title }</p>;
+			}
+		}
+	]
+} );
+```
+
+## Using isEligible
+
+Migrate technically valid blocks that still need updates:
+
+```js
+deprecated: [
+	{
+		attributes: {
+			url: {
+				type: 'string'
+			}
+		},
+		
+		// Migrate blocks using old domain
+		isEligible( attributes ) {
+			return attributes.url && attributes.url.includes( 'oldomain.com' );
+		},
+		
+		migrate( attributes ) {
+			return {
+				...attributes,
+				url: attributes.url.replace( 'olddomain.com', 'newdomain.com' )
+			};
+		},
+		
+		save( { attributes } ) {
+			return <a href={ attributes.url }>Link</a>;
+		}
+	}
+]
+```
+
+## Best practices
+
+### Version organization
+
+Store each deprecation as a named constant:
+
+```js
+const v1 = {
+	attributes: { /* ... */ },
+	save: ( { attributes } ) => { /* ... */ }
+};
+
+const v2 = {
+	attributes: { /* ... */ },
+	migrate: ( attributes ) => { /* ... */ },
+	save: ( { attributes } ) => { /* ... */ }
+};
+
+const v3 = {
+	attributes: { /* ... */ },
+	save: ( { attributes } ) => { /* ... */ }
+};
+
+const deprecated = [ v3, v2, v1 ]; // Reverse chronological order
+```
+
+### Maintain fixtures
+
+Keep test fixtures for each version:
+
+```
+tests/
+  fixtures/
+    my-block-v1.html
+    my-block-v2.html
+    my-block-v3.html
+```
+
+### Avoid function imports
+
+Imported functions can change and break deprecations:
+
+```js
+// Bad: Imported function might change
+import { formatContent } from './utils';
+
+const deprecated = [{
+	save( { attributes } ) {
+		return <div>{ formatContent( attributes.text ) }</div>;
+	}
+}];
+
+// Good: Inline or copy the function
+const deprecated = [{
+	save( { attributes } ) {
+		const formatContent = ( text ) => text.toUpperCase();
+		return <div>{ formatContent( attributes.text ) }</div>;
+	}
+}];
+```
+
+### Update multiple deprecations
+
+If adding a migration (e.g., moving to InnerBlocks), update the `migrate` function in **all** affected deprecations:
+
+```js
+const v1 = {
+	attributes: { title: { type: 'string' } },
+	// Add migrate to v1
+	migrate( attributes, innerBlocks ) {
+		return [ {}, [ createBlock( 'core/paragraph', { content: attributes.title } ) ] ];
+	},
+	save: /* ... */
+};
+
+const v2 = {
+	attributes: { heading: { type: 'string' } },
+	// Add migrate to v2
+	migrate( attributes, innerBlocks ) {
+		return [ {}, [ createBlock( 'core/paragraph', { content: attributes.heading } ) ] ];
+	},
+	save: /* ... */
+};
+```
+
+## Common scenarios
+
+### Changing attribute source
+
+```js
+deprecated: [
+	{
+		attributes: {
+			content: {
+				type: 'string',
+				source: 'text', // Changed from 'text' to 'html'
+				selector: 'p'
+			}
+		},
+		save: /* ... */
+	}
+]
+```
+
+### Adding new attributes
+
+```js
+deprecated: [
+	{
+		attributes: {
+			// Old version didn't have 'alignment'
+			content: { type: 'string' }
+		},
+		migrate( attributes ) {
+			return {
+				...attributes,
+				alignment: 'left' // Set default
+			};
+		},
+		save: /* ... */
+	}
+]
+```
+
+### Changing supports
+
+```js
+deprecated: [
+	{
+		attributes: { /* ... */ },
+		supports: {
+			align: false // Old version didn't support align
+		},
+		save: /* ... */
+	}
+]
+```
+
+## Testing deprecations
+
+Always test that:
+
+1. Old content migrates successfully
+2. Multiple deprecation versions work
+3. The `migrate` function handles edge cases
+
+```js
+import { parse, serialize } from '@wordpress/blocks';
+
+// Parse old content
+const blocks = parse( oldContent );
+
+// Should automatically migrate
+const newContent = serialize( blocks );
+
+// Verify migration worked
+expect( blocks[0].attributes.content ).toBe( 'expected value' );
+```
+
+For real-world examples, see the [core block library](https://github.com/WordPress/gutenberg/tree/HEAD/packages/block-library/src) which contains numerous deprecation examples.

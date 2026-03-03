@@ -1,0 +1,619 @@
+---
+title: Block supports
+description: Enable features and UI controls for blocks
+---
+
+Block Supports is the API that allows blocks to declare support for certain features. When enabled, these features register additional attributes and provide UI controls in the editor.
+
+## How supports work
+
+Features enabled via `supports` automatically:
+
+1. Add attributes to the block
+2. Provide UI controls in the editor
+3. Apply generated properties to the block wrapper
+
+To apply supports, use `useBlockProps` in JavaScript or `get_block_wrapper_attributes()` in PHP.
+
+### JavaScript
+
+```js
+import { useBlockProps } from '@wordpress/block-editor';
+
+function BlockEdit() {
+	const blockProps = useBlockProps();
+	return <div { ...blockProps }>Hello World!</div>;
+}
+
+function BlockSave() {
+	const blockProps = useBlockProps.save();
+	return <div { ...blockProps }>Hello World!</div>;
+}
+```
+
+### PHP
+
+```php
+function render_block() {
+	$wrapper_attributes = get_block_wrapper_attributes();
+	return sprintf(
+		'<div %1$s>%2$s</div>',
+		$wrapper_attributes,
+		'Hello World!'
+	);
+}
+```
+
+## Available supports
+
+### align
+
+**Type:** `boolean | string[]`  
+**Default:** `false`
+
+Enables alignment controls. Options: `left`, `center`, `right`, `wide`, `full`
+
+```json
+{
+	"supports": {
+		"align": true
+	}
+}
+```
+
+Or specific alignments:
+
+```json
+{
+	"supports": {
+		"align": ["left", "right", "full"]
+	}
+}
+```
+
+### anchor
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Adds a field to define an HTML anchor ID for the block.
+
+```json
+{
+	"supports": {
+		"anchor": true
+	}
+}
+```
+
+### color
+
+**Type:** `object`  
+**Default:** `null`
+
+Enables color controls.
+
+#### color.background
+
+**Type:** `boolean`  
+**Default:** `true` (when `color` is enabled)
+
+```json
+{
+	"supports": {
+		"color": {
+			"background": true
+		}
+	}
+}
+```
+
+#### color.text
+
+**Type:** `boolean`  
+**Default:** `true` (when `color` is enabled)
+
+```json
+{
+	"supports": {
+		"color": {
+			"text": true
+		}
+	}
+}
+```
+
+#### color.gradients
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```json
+{
+	"supports": {
+		"color": {
+			"gradients": true,
+			"background": false,
+			"text": false
+		}
+	}
+}
+```
+
+#### color.link
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```json
+{
+	"supports": {
+		"color": {
+			"link": true
+		}
+	}
+}
+```
+
+#### color.button
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Since:** WordPress 6.5
+
+```json
+{
+	"supports": {
+		"color": {
+			"button": true
+		}
+	}
+}
+```
+
+#### color.heading
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Since:** WordPress 6.5
+
+```json
+{
+	"supports": {
+		"color": {
+			"heading": true
+		}
+	}
+}
+```
+
+### spacing
+
+**Type:** `object`  
+**Default:** `null`
+
+Enables spacing controls for margin, padding, and block gap.
+
+```json
+{
+	"supports": {
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		}
+	}
+}
+```
+
+Control specific sides:
+
+```json
+{
+	"supports": {
+		"spacing": {
+			"margin": ["top", "bottom"],
+			"padding": true,
+			"blockGap": ["horizontal", "vertical"]
+		}
+	}
+}
+```
+
+### typography
+
+**Type:** `object`  
+**Default:** `null`
+
+#### typography.fontSize
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```json
+{
+	"supports": {
+		"typography": {
+			"fontSize": true
+		}
+	}
+}
+```
+
+#### typography.lineHeight
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```json
+{
+	"supports": {
+		"typography": {
+			"lineHeight": true
+		}
+	}
+}
+```
+
+#### typography.textAlign
+
+**Type:** `boolean | string[]`  
+**Default:** `false`  
+**Since:** WordPress 6.6
+
+```json
+{
+	"supports": {
+		"typography": {
+			"textAlign": true
+		}
+	}
+}
+```
+
+Or specific alignments:
+
+```json
+{
+	"supports": {
+		"typography": {
+			"textAlign": ["left", "right"]
+		}
+	}
+}
+```
+
+### dimensions
+
+**Type:** `object`  
+**Default:** `null`  
+**Since:** WordPress 6.2
+
+Enables dimension controls.
+
+```json
+{
+	"supports": {
+		"dimensions": {
+			"aspectRatio": true,
+			"height": true,
+			"minHeight": true,
+			"width": true
+		}
+	}
+}
+```
+
+### background
+
+**Type:** `object`  
+**Default:** `null`  
+**Since:** WordPress 6.5
+
+```json
+{
+	"supports": {
+		"background": {
+			"backgroundImage": true,
+			"backgroundSize": true
+		}
+	}
+}
+```
+
+### shadow
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Since:** WordPress 6.5
+
+```json
+{
+	"supports": {
+		"shadow": true
+	}
+}
+```
+
+### position
+
+**Type:** `object`  
+**Default:** `null`  
+**Since:** WordPress 6.2
+
+```json
+{
+	"supports": {
+		"position": {
+			"sticky": true
+		}
+	}
+}
+```
+
+<Note>
+Sticky position only works for root-level blocks.
+</Note>
+
+### filter
+
+**Type:** `object`  
+**Default:** `null`
+
+#### filter.duotone
+
+**Type:** `boolean`  
+**Default:** `false`
+
+```json
+{
+	"supports": {
+		"filter": {
+			"duotone": true
+		}
+	},
+	"selectors": {
+		"filter": {
+			"duotone": ".wp-block-image img"
+		}
+	}
+}
+```
+
+### layout
+
+**Type:** `boolean | object`  
+**Default:** `null`
+
+Enables layout controls for container blocks.
+
+```json
+{
+	"supports": {
+		"layout": {
+			"default": {
+				"type": "flex"
+			},
+			"allowSwitching": true,
+			"allowVerticalAlignment": true
+		}
+	}
+}
+```
+
+### className
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Adds `.wp-block-{name}` class to the block wrapper.
+
+```json
+{
+	"supports": {
+		"className": false
+	}
+}
+```
+
+### customClassName
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Adds a field for users to define a custom className.
+
+```json
+{
+	"supports": {
+		"customClassName": false
+	}
+}
+```
+
+### html
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Allows editing the block's HTML markup.
+
+```json
+{
+	"supports": {
+		"html": false
+	}
+}
+```
+
+### inserter
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Shows the block in the Inserter.
+
+```json
+{
+	"supports": {
+		"inserter": false
+	}
+}
+```
+
+### multiple
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Allows inserting the block multiple times.
+
+```json
+{
+	"supports": {
+		"multiple": false
+	}
+}
+```
+
+### reusable
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Allows converting the block to a reusable block.
+
+```json
+{
+	"supports": {
+		"reusable": false
+	}
+}
+```
+
+### lock
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Allows locking/unlocking the block.
+
+```json
+{
+	"supports": {
+		"lock": false
+	}
+}
+```
+
+### renaming
+
+**Type:** `boolean`  
+**Default:** `true`  
+**Since:** WordPress 6.5
+
+Allows renaming the block.
+
+```json
+{
+	"supports": {
+		"renaming": false
+	}
+}
+```
+
+### visibility
+
+**Type:** `boolean`  
+**Default:** `true`  
+**Since:** WordPress 6.9
+
+Allows hiding the block.
+
+```json
+{
+	"supports": {
+		"visibility": false
+	}
+}
+```
+
+### interactivity
+
+**Type:** `boolean | object`  
+**Default:** `false`
+
+Indicates Interactivity API usage.
+
+```json
+{
+	"supports": {
+		"interactivity": {
+			"clientNavigation": true,
+			"interactive": true
+		}
+	}
+}
+```
+
+### autoRegister
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Enables PHP-only blocks to auto-register in the editor.
+
+```php
+register_block_type( 'my-plugin/server-block', array(
+	'render_callback' => 'render_callback',
+	'supports' => array(
+		'autoRegister' => true
+	)
+) );
+```
+
+### listView
+
+**Type:** `boolean`  
+**Default:** `false`  
+**Since:** WordPress 7.0
+
+Enables List View panel in the block inspector.
+
+```json
+{
+	"supports": {
+		"listView": true
+	}
+}
+```
+
+## Complete example
+
+```json
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "my-plugin/card",
+	"title": "Card",
+	"category": "design",
+	"supports": {
+		"align": ["wide", "full"],
+		"anchor": true,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
+		},
+		"shadow": true
+	}
+}
+```

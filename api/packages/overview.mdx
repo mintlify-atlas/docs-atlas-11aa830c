@@ -1,0 +1,58 @@
+---
+title: Core Packages Overview
+description: Overview of WordPress Block Editor core packages for building blocks and extending the editor
+---
+
+The WordPress Block Editor framework provides a comprehensive set of packages for building custom blocks and extending the editor. These packages are published to npm under the `@wordpress` namespace and are also available as WordPress script handles.
+
+## Main Package Categories
+
+### Block Development
+
+- **[@wordpress/blocks](/api/packages/blocks)** - Core block API for registering and managing block types
+- **[@wordpress/block-editor](/api/packages/block-editor)** - Standalone block editor components and hooks
+- **[@wordpress/block-library](/api/packages/block-library)** - Core WordPress blocks implementation
+
+### Editor Applications
+
+- **[@wordpress/edit-post](/api/packages/edit-post)** - Post editor screen and extensions
+- **[@wordpress/edit-site](/api/packages/edit-site)** - Site editor for full-site editing
+
+### Data Layer
+
+- **[@wordpress/data](/api/packages/data)** - State management and data stores
+- **[@wordpress/core-data](/api/packages/core-data)** - WordPress entities and REST API integration
+
+### UI Components
+
+- **[@wordpress/components](/api/packages/components)** - Reusable UI component library
+- **[@wordpress/element](/api/packages/element)** - React abstraction layer
+- **[@wordpress/compose](/api/packages/compose)** - React hooks and higher-order components
+
+### Utilities
+
+- **[@wordpress/hooks](/api/packages/hooks)** - JavaScript hooks (actions and filters)
+- **[@wordpress/i18n](/api/packages/i18n)** - Internationalization utilities
+- **[@wordpress/scripts](/api/packages/scripts)** - Build tooling and development scripts
+
+## Installation
+
+All packages are available via npm:
+
+```bash
+npm install @wordpress/blocks --save
+```
+
+## Environment Requirements
+
+These packages assume your code will run in an ES2015+ environment. If you need support for older browsers, include the polyfill from `@wordpress/babel-preset-default`.
+
+## Package Architecture
+
+The editor follows a layered architecture:
+
+1. **block-editor** - Generic, WordPress-agnostic editor
+2. **editor** - WordPress post-type-aware functionality  
+3. **edit-post/edit-site** - Complete editor screens
+
+Lower layers must not depend on higher ones, ensuring modularity and reusability.

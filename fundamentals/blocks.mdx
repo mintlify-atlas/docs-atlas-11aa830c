@@ -1,0 +1,124 @@
+---
+title: What are blocks?
+description: Learn about blocks, the fundamental building units of content in the WordPress Block Editor.
+---
+
+Blocks are the fundamental building units of content in the WordPress Block Editor. Each block is a discrete element such as a paragraph, heading, image, or embed that can be individually edited and configured.
+
+## Understanding blocks
+
+"Block" is the abstract term used to describe units of markup that, composed together, form the content or layout of a webpage. The idea combines concepts of what in WordPress today we achieve with shortcodes, custom HTML, and embed discovery into a single consistent API and user experience.
+
+<Note>
+Blocks replace the need for shortcodes, custom HTML, and widgets in WordPress, providing a unified content creation experience.
+</Note>
+
+## Block structure
+
+Every block in WordPress consists of three main components:
+
+1. **Block metadata** - Defined in `block.json`, containing the block's configuration
+2. **Edit component** - The React component that renders the block in the editor
+3. **Save function or render callback** - How the block appears on the front end
+
+## Types of blocks
+
+WordPress blocks can be categorized into several types:
+
+### Text blocks
+Paragraph, Heading, List, Quote, and other text-based content blocks.
+
+### Media blocks
+Image, Gallery, Video, Audio, and File blocks for embedding media content.
+
+### Design blocks
+Columns, Group, Separator, Spacer, and other layout and design elements.
+
+### Widget blocks
+Search, Archives, Categories, and other utility blocks.
+
+### Theme blocks
+Site Title, Navigation, Post Content, and other blocks for full-site editing.
+
+### Embed blocks
+YouTube, Twitter, and other third-party content embeds.
+
+## Block composition
+
+Blocks can contain other blocks, creating powerful nested structures:
+
+```jsx
+// A Columns block containing multiple Column blocks
+<Columns>
+  <Column>
+    <Paragraph>First column content</Paragraph>
+  </Column>
+  <Column>
+    <Image />
+  </Column>
+</Columns>
+```
+
+## Block attributes
+
+Blocks store data using attributes, which define the block's content and settings:
+
+```json
+"attributes": {
+  "content": {
+    "type": "string",
+    "source": "html",
+    "selector": "p"
+  },
+  "align": {
+    "type": "string"
+  }
+}
+```
+
+<Tip>
+Attributes are automatically serialized and stored in the block's HTML comment delimiters by default.
+</Tip>
+
+## Block markup representation
+
+Blocks are represented in the database using HTML comment delimiters:
+
+```html
+<!-- wp:paragraph {"align":"center"} -->
+<p class="has-text-align-center">This is a paragraph block</p>
+<!-- /wp:paragraph -->
+```
+
+The comment delimiters contain:
+- The block name (`wp:paragraph`)
+- The block attributes as JSON (`{"align":"center"}`)
+- The static HTML content between the tags
+
+## Benefits of blocks
+
+<CardGroup cols={2}>
+  <Card title="Consistency" icon="check">
+    Blocks provide a consistent editing experience across all content types
+  </Card>
+  <Card title="Flexibility" icon="sliders">
+    Each block can be individually customized and styled
+  </Card>
+  <Card title="Reusability" icon="recycle">
+    Blocks can be saved and reused across posts and pages
+  </Card>
+  <Card title="Extensibility" icon="puzzle-piece">
+    Developers can create custom blocks to extend WordPress functionality
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Block structure" href="/fundamentals/block-structure">
+    Learn about the file structure of a block
+  </Card>
+  <Card title="Creating blocks" href="/blocks/creating-blocks">
+    Start building your first custom block
+  </Card>
+</CardGroup>

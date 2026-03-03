@@ -1,0 +1,475 @@
+---
+title: Widget Blocks
+description: Utility blocks for common website features in the Gutenberg Block Editor
+---
+
+# Widget Blocks
+
+Widget blocks provide common website functionality including search, archives, categories, RSS feeds, and other utility features.
+
+## Search
+
+**Name:** `core/search`
+
+**Description:** Help visitors find your content.
+
+### Attributes
+
+- `label` (string) - Search label text
+- `showLabel` (boolean) - Display label
+- `placeholder` (string) - Placeholder text for input
+- `buttonText` (string) - Button text
+- `buttonPosition` (string) - Button position (button-inside, button-outside, no-button)
+- `buttonUseIcon` (boolean) - Use icon instead of text
+- `isSearchFieldHidden` (boolean) - Hide search field initially
+- `query` (object) - Search query parameters
+- `width` (number) - Search field width
+- `widthUnit` (string) - Width unit (px, %, etc.)
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, gradients, text
+- **Spacing:** margin
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** true
+
+### Usage
+
+```javascript
+// Basic search box
+wp.blocks.createBlock('core/search', {
+  label: 'Search',
+  showLabel: false,
+  placeholder: 'Search...',
+  buttonText: 'Search',
+});
+
+// Search with icon button
+wp.blocks.createBlock('core/search', {
+  buttonPosition: 'button-inside',
+  buttonUseIcon: true,
+});
+```
+
+## Archives
+
+**Name:** `core/archives`
+
+**Description:** Display a date archive of your posts.
+
+### Attributes
+
+- `displayAsDropdown` (boolean) - Display as dropdown menu
+- `showLabel` (boolean) - Show dropdown label
+- `showPostCounts` (boolean) - Show post counts
+- `type` (string) - Archive type (monthly, yearly)
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Monthly archives with post counts
+wp.blocks.createBlock('core/archives', {
+  displayAsDropdown: false,
+  showPostCounts: true,
+  type: 'monthly',
+});
+
+// Dropdown archives
+wp.blocks.createBlock('core/archives', {
+  displayAsDropdown: true,
+  showLabel: true,
+});
+```
+
+## Categories (Terms List)
+
+**Name:** `core/categories`
+
+**Description:** Display a list of all terms of a given taxonomy.
+
+### Attributes
+
+- `taxonomy` (string) - Taxonomy to display (category, post_tag, etc.)
+- `displayAsDropdown` (boolean) - Display as dropdown menu
+- `showLabel` (boolean) - Show dropdown label
+- `label` (string) - Custom label text
+- `showPostCounts` (boolean) - Show post counts
+- `showHierarchy` (boolean) - Show hierarchy
+- `showEmpty` (boolean) - Show empty categories
+- `showOnlyTopLevel` (boolean) - Show only top-level terms
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Hierarchical category list
+wp.blocks.createBlock('core/categories', {
+  showHierarchy: true,
+  showPostCounts: true,
+  showEmpty: false,
+});
+
+// Custom taxonomy dropdown
+wp.blocks.createBlock('core/categories', {
+  taxonomy: 'product_category',
+  displayAsDropdown: true,
+  label: 'Product Categories',
+});
+```
+
+## Latest Posts
+
+**Name:** `core/latest-posts`
+
+**Description:** Display a list of your most recent posts.
+
+### Attributes
+
+- `postsToShow` (number) - Number of posts to show, default: 5
+- `displayPostContent` (boolean) - Display post content
+- `displayPostContentRadio` (string) - Content type (excerpt, full_post)
+- `excerptLength` (number) - Excerpt length in words
+- `displayPostDate` (boolean) - Display post date
+- `displayAuthor` (boolean) - Display author
+- `displayFeaturedImage` (boolean) - Display featured image
+- `featuredImageAlign` (string) - Image alignment (left, right, center)
+- `featuredImageSizeSlug` (string) - Image size
+- `featuredImageSizeWidth` (number) - Image width
+- `featuredImageSizeHeight` (number) - Image height
+- `addLinkToFeaturedImage` (boolean) - Link featured image to post
+- `postLayout` (string) - Layout (list, grid)
+- `columns` (number) - Number of columns for grid
+- `order` (string) - Sort order (desc, asc)
+- `orderBy` (string) - Sort by (date, title, author)
+- `categories` (array) - Filter by category IDs
+- `selectedAuthor` (number) - Filter by author ID
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Simple post list
+wp.blocks.createBlock('core/latest-posts', {
+  postsToShow: 5,
+  displayPostDate: true,
+});
+
+// Grid layout with excerpts
+wp.blocks.createBlock('core/latest-posts', {
+  postsToShow: 6,
+  postLayout: 'grid',
+  columns: 3,
+  displayFeaturedImage: true,
+  displayPostContent: true,
+  excerptLength: 20,
+});
+```
+
+## Latest Comments
+
+**Name:** `core/latest-comments`
+
+**Description:** Display a list of your most recent comments.
+
+### Attributes
+
+- `commentsToShow` (number) - Number of comments to show, default: 5
+- `displayAvatar` (boolean) - Display commenter avatar
+- `displayDate` (boolean) - Display comment date
+- `displayContent` (boolean) - Display comment content
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/latest-comments', {
+  commentsToShow: 5,
+  displayAvatar: true,
+  displayDate: true,
+  displayContent: false,
+});
+```
+
+## RSS
+
+**Name:** `core/rss`
+
+**Description:** Display entries from any RSS or Atom feed.
+
+### Attributes
+
+- `feedURL` (string) - RSS feed URL
+- `itemsToShow` (number) - Number of items to show, default: 5
+- `displayExcerpt` (boolean) - Display excerpt
+- `excerptLength` (number) - Excerpt length in words
+- `displayAuthor` (boolean) - Display author
+- `displayDate` (boolean) - Display date
+- `openInNewTab` (boolean) - Open links in new tab
+- `rel` (string) - Link rel attribute
+- `columns` (number) - Number of columns
+- `blockLayout` (string) - Layout type (list, grid)
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/rss', {
+  feedURL: 'https://example.com/feed',
+  itemsToShow: 5,
+  displayExcerpt: true,
+  excerptLength: 50,
+  displayDate: true,
+});
+```
+
+## Calendar
+
+**Name:** `core/calendar`
+
+**Description:** A calendar of your site's posts.
+
+### Attributes
+
+- `month` (number) - Display specific month
+- `year` (number) - Display specific year
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, text, link
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+// Current month calendar
+wp.blocks.createBlock('core/calendar');
+
+// Specific month
+wp.blocks.createBlock('core/calendar', {
+  month: 12,
+  year: 2024,
+});
+```
+
+## Tag Cloud
+
+**Name:** `core/tag-cloud`
+
+**Description:** A cloud of popular keywords, each sized by how often it appears.
+
+### Attributes
+
+- `taxonomy` (string) - Taxonomy to display (post_tag, category, etc.)
+- `numberOfTags` (number) - Maximum number of tags, default: 45
+- `smallestFontSize` (number) - Smallest font size
+- `largestFontSize` (number) - Largest font size
+- `showTagCounts` (boolean) - Show post counts
+
+### Supports
+
+- **Align:** left, center, right, wide, full
+- **Spacing:** margin, padding
+- **Typography:** lineHeight
+- **Interactivity:** clientNavigation
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/tag-cloud', {
+  numberOfTags: 50,
+  smallestFontSize: 12,
+  largestFontSize: 24,
+  showTagCounts: true,
+});
+```
+
+## Page List
+
+**Name:** `core/page-list`
+
+**Description:** Display a list of all pages.
+
+### Attributes
+
+- `parentPageID` (number) - Parent page ID to list children
+- `isNested` (boolean) - Show nested pages
+
+### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **Interactivity:** clientNavigation
+- **Allowed Blocks:** core/page-list-item
+
+### Usage
+
+```javascript
+// All pages
+wp.blocks.createBlock('core/page-list', {
+  isNested: true,
+});
+
+// Child pages of specific parent
+wp.blocks.createBlock('core/page-list', {
+  parentPageID: 10,
+});
+```
+
+## Custom HTML
+
+**Name:** `core/html`
+
+**Description:** Add custom HTML code and preview it as you edit.
+
+### Attributes
+
+- `content` (string) - HTML content
+
+### Supports
+
+- **Interactivity:** clientNavigation
+- **className:** false
+- **customClassName:** false
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/html', {
+  content: '<div class="custom-widget">Custom HTML content</div>',
+});
+```
+
+## Shortcode
+
+**Name:** `core/shortcode`
+
+**Description:** Insert additional custom elements with a WordPress shortcode.
+
+### Attributes
+
+- `text` (string) - Shortcode text
+
+### Supports
+
+- **className:** false
+- **customClassName:** false
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/shortcode', {
+  text: '[gallery id="123"]',
+});
+```
+
+## Social Icons
+
+**Name:** `core/social-links`
+
+**Description:** Display icons linking to your social profiles or sites.
+
+### Attributes
+
+- `iconColor` (string) - Icon color slug
+- `iconColorValue` (string) - Custom icon color
+- `iconBackgroundColor` (string) - Icon background color slug
+- `iconBackgroundColorValue` (string) - Custom background color
+- `customIconColor` (string) - Custom icon color (deprecated)
+- `customIconBackgroundColor` (string) - Custom background color (deprecated)
+- `openInNewTab` (boolean) - Open links in new tab
+- `showLabels` (boolean) - Show text labels
+- `size` (string) - Icon size (default, large, huge)
+
+### Supports
+
+- **Align:** left, center, right
+- **Color:** background, gradients
+- **Layout:** default
+- **Spacing:** margin, padding, blockGap
+- **Allowed Blocks:** core/social-link
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/social-links', {
+  openInNewTab: true,
+  size: 'large',
+}, [
+  wp.blocks.createBlock('core/social-link', {
+    service: 'twitter',
+    url: 'https://twitter.com/username'
+  }),
+  wp.blocks.createBlock('core/social-link', {
+    service: 'facebook',
+    url: 'https://facebook.com/username'
+  })
+]);
+```
+
+## Social Icon
+
+**Name:** `core/social-link`
+
+**Description:** Display an icon linking to a social profile or site.
+
+### Attributes
+
+- `service` (string) - Social service name (twitter, facebook, instagram, etc.)
+- `url` (string) - Profile URL
+- `label` (string) - Custom label
+- `rel` (string) - Link rel attribute
+
+### Supports
+
+- **Parent:** core/social-links
+- **Interactivity:** clientNavigation
+- **Reusable:** false
+
+## Best Practices
+
+1. **Search optimization** - Use descriptive button text and labels
+2. **Widget placement** - Place widget blocks in sidebars and footer areas
+3. **Performance** - Limit number of posts/comments shown in list widgets
+4. **RSS feeds** - Validate feed URLs before adding RSS blocks
+5. **Social links** - Keep social icons consistent in size and style
+6. **Accessibility** - Ensure dropdown labels are descriptive
+7. **Custom HTML** - Validate HTML code to avoid breaking layouts
+8. **Archive organization** - Use hierarchical categories for better navigation

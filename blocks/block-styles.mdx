@@ -1,0 +1,442 @@
+---
+title: Block Styles
+description: Create alternative visual styles for existing blocks with the Block Styles API
+---
+
+Block Styles allow you to provide alternative visual styles for existing blocks without creating entirely new blocks. Styles work by adding a CSS class to the block's wrapper, which you can target with custom CSS.
+
+## How Block Styles Work
+
+When a user selects a block style:
+
+1. A className is added to the block wrapper: `is-style-{style-name}`
+2. You style this class with CSS
+3. The user can switch between styles in the block toolbar
+
+## Registering Block Styles
+
+### JavaScript Registration
+
+Use `registerBlockStyle()` to add a style to an existing block:
+
+```js
+wp.blocks.registerBlockStyle( 'core/quote', {
+	name: 'fancy-quote',
+	label: 'Fancy Quote',
+} );
+```
+
+This adds an `is-style-fancy-quote` class when selected.
+
+### PHP Registration
+
+Register styles from PHP using `register_block_style()`:
+
+```php
+register_block_style(
+	'core/quote',
+	array(
+		'name'         => 'blue-quote',
+		'label'        => __( 'Blue Quote', 'textdomain' ),
+		'inline_style' => '.wp-block-quote.is-style-blue-quote { color: blue; }',
+	)
+);
+```
+
+## Style Properties
+
+### Required Properties
+
+#### name
+
+The identifier used to compute the CSS class.
+
+```php
+'name' => 'blue-quote'  // Creates: is-style-blue-quote
+```
+
+#### label
+
+Human-readable label shown in the block toolbar.
+
+```php
+'label' => __( 'Blue Quote', 'textdomain' )
+```
+
+### Style Implementation
+
+Choose one of three methods to provide CSS:
+
+#### 1. inline_style
+
+Provide inline CSS directly:
+
+```php
+register_block_style(
+	'core/quote',
+	array(
+		'name'         => 'blue-quote',
+		'label'        => __( 'Blue Quote', 'textdomain' ),
+		'inline_style' => '.wp-block-quote.is-style-blue-quote { color: blue; }',
+	)
+);
+```
+
+#### 2. style_handle
+
+Reference an already-registered stylesheet:
+
+```php
+wp_register_style(
+	'myguten-style',
+	get_template_directory_uri() . '/custom-style.css'
+);
+
+register_block_style(
+	'core/quote',
+	array(
+		'name'         => 'fancy-quote',
+		'label'        => __( 'Fancy Quote', 'textdomain' ),
+		'style_handle' => 'myguten-style',
+	)
+);
+```
+
+#### 3. style_data
+
+Use theme.json-like notation for user-editable styles:
+
+```php
+register_block_style(
+	'core/image',
+	array(
+		'name'       => 'orange-border',
+		'label'      => __( 'Orange Border', 'textdomain' ),
+		'style_data' => array(
+			'border' => array(
+				'color'  => '#f5bc42',
+				'style'  => 'solid',
+				'width'  => '4px',
+				'radius' => '15px',
+			)
+		)
+	)
+);
+```
+
+With `style_data`, users can modify the style using the Global Styles UI.
+
+### Optional Properties
+
+#### isDefault
+
+Mark a style as the default (no custom class is added):
+
+```js
+wp.blocks.registerBlockStyle( 'core/quote', {
+	name: 'fancy-quote',
+	label: 'Fancy Quote',
+	isDefault: true,
+} );
+```
+
+## Unregistering Block Styles
+
+### JavaScript Unregistration
+
+```js
+wp.domReady( function () {
+	wp.blocks.unregisterBlockStyle( 'core/quote', 'large' );
+} );
+```
+
+<Note>
+Wrap in `wp.domReady()` and declare `wp-edit-post` as a dependency to ensure the style is registered before you unregister it.
+</Note>
+
+**PHP code to enqueue:**
+
+```php
+function myguten_enqueue() {
+	wp_enqueue_script(
+		'myguten-script',
+		plugins_url( 'myguten.js', __FILE__ ),
+		array( 'wp-blocks', 'wp-dom-ready', 'wp-edit-post' ),
+		filemtime( plugin_dir_path( __FILE__ ) . '/myguten.js' )
+	);
+}
+add_action( 'enqueue_block_editor_assets', 'myguten_enqueue' );
+```
+
+### PHP Unregistration
+
+```php
+unregister_block_style( 'core/quote', 'fancy-quote' );
+```
+
+<Note>
+PHP `unregister_block_style()` only works with styles registered on the server using `register_block_style()`. It cannot unregister client-side registered styles.
+</Note>
+
+## Complete Examples
+
+### Example 1: Simple Style with Inline CSS
+
+```php
+<?php
+function my_plugin_register_block_styles() {
+	register_block_style(
+		'core/button',
+		array(
+			'name'         => 'outline-button',
+			'label'        => __( 'Outline Button', 'my-plugin' ),
+			'inline_style' => '
+				.wp-block-button.is-style-outline-button .wp-block-button__link {
+					background: transparent;
+					border: 2px solid currentColor;
+				}
+			',
+		)
+	);
+}
+add_action( 'init', 'my_plugin_register_block_styles' );
+```
+
+### Example 2: Style with External Stylesheet
+
+**PHP:**
+
+```php
+<?php
+function my_plugin_register_block_styles() {
+	// Register the stylesheet
+	wp_register_style(
+		'my-plugin-block-styles',
+		plugins_url( 'block-styles.css', __FILE__ ),
+		array(),
+		'1.0.0'
+	);
+
+	// Register the block style
+	register_block_style(
+		'core/quote',
+		array(
+			'name'         => 'fancy-quote',
+			'label'        => __( 'Fancy Quote', 'my-plugin' ),
+			'style_handle' => 'my-plugin-block-styles',
+		)
+	);
+}
+add_action( 'init', 'my_plugin_register_block_styles' );
+```
+
+**CSS (block-styles.css):**
+
+```css
+.wp-block-quote.is-style-fancy-quote {
+	border-left: 4px solid #646970;
+	padding-left: 1em;
+	font-style: italic;
+	background: #f0f0f0;
+	padding: 1em;
+	border-radius: 4px;
+}
+
+.wp-block-quote.is-style-fancy-quote cite {
+	font-weight: bold;
+	color: #1e1e1e;
+}
+```
+
+### Example 3: Multiple Styles for One Block
+
+```php
+<?php
+function my_plugin_register_quote_styles() {
+	$quote_styles = array(
+		array(
+			'name'         => 'bordered',
+			'label'        => __( 'Bordered', 'my-plugin' ),
+			'inline_style' => '.wp-block-quote.is-style-bordered { border: 2px solid #000; padding: 1em; }',
+		),
+		array(
+			'name'         => 'highlighted',
+			'label'        => __( 'Highlighted', 'my-plugin' ),
+			'inline_style' => '.wp-block-quote.is-style-highlighted { background: yellow; padding: 1em; }',
+		),
+		array(
+			'name'       => 'rounded',
+			'label'      => __( 'Rounded', 'my-plugin' ),
+			'isDefault'  => true,
+			'inline_style' => '.wp-block-quote.is-style-rounded { border-radius: 10px; padding: 1em; }',
+		),
+	);
+
+	foreach ( $quote_styles as $style ) {
+		register_block_style( 'core/quote', $style );
+	}
+}
+add_action( 'init', 'my_plugin_register_quote_styles' );
+```
+
+### Example 4: JavaScript Registration
+
+```js
+import { registerBlockStyle } from '@wordpress/blocks';
+import domReady from '@wordpress/dom-ready';
+
+domReady( () => {
+	registerBlockStyle( 'core/paragraph', {
+		name: 'fancy-paragraph',
+		label: 'Fancy Paragraph',
+	} );
+} );
+```
+
+**CSS:**
+
+```css
+.wp-block-paragraph.is-style-fancy-paragraph {
+	font-family: 'Georgia', serif;
+	font-size: 1.2em;
+	line-height: 1.8;
+	color: #333;
+}
+```
+
+## Block Styles vs Block Variations
+
+| Feature | Block Styles | Block Variations |
+|---------|--------------|------------------|
+| What they do | Apply CSS classes | Set initial attributes/inner blocks |
+| When to use | Visual styling only | Different configurations/functionality |
+| User control | Switch via toolbar | Choose at insertion time |
+| Data storage | Just className | Full attributes |
+
+Use **Block Styles** when you only need to change appearance with CSS.
+
+Use **Block Variations** when you need to:
+- Set initial attributes
+- Configure inner blocks
+- Change block behavior
+- Override default values
+
+### Combining Styles and Variations
+
+You can use both together:
+
+```js
+registerBlockVariation( 'core/quote', {
+	name: 'testimonial',
+	title: 'Testimonial',
+	attributes: {
+		className: 'is-style-testimonial',
+		citation: 'Customer Name',
+	},
+} );
+```
+
+## Styling Best Practices
+
+1. **Use specific selectors**: Target the full class path to avoid conflicts
+
+```css
+/* Good */
+.wp-block-quote.is-style-fancy-quote { }
+
+/* Less specific - might conflict */
+.is-style-fancy-quote { }
+```
+
+2. **Respect theme styles**: Build on existing block styles rather than overriding everything
+
+```css
+.wp-block-quote.is-style-fancy-quote {
+	/* Add to existing styles */
+	border-left-width: 4px;
+	border-left-color: blue;
+}
+```
+
+3. **Provide fallbacks**: Ensure styles work across different themes
+
+4. **Test in editor and frontend**: Styles should work in both contexts
+
+5. **Consider color schemes**: Support light and dark modes when relevant
+
+```css
+.wp-block-quote.is-style-fancy-quote {
+	background: #f0f0f0;
+	color: #1e1e1e;
+}
+
+@media (prefers-color-scheme: dark) {
+	.wp-block-quote.is-style-fancy-quote {
+		background: #1e1e1e;
+		color: #f0f0f0;
+	}
+}
+```
+
+## Common Use Cases
+
+### Button Styles
+
+```php
+register_block_style(
+	'core/button',
+	array(
+		'name'  => 'pill-button',
+		'label' => __( 'Pill Button', 'my-plugin' ),
+		'inline_style' => '
+			.wp-block-button.is-style-pill-button .wp-block-button__link {
+				border-radius: 50px;
+			}
+		',
+	)
+);
+```
+
+### Image Styles
+
+```php
+register_block_style(
+	'core/image',
+	array(
+		'name'  => 'polaroid',
+		'label' => __( 'Polaroid', 'my-plugin' ),
+		'inline_style' => '
+			.wp-block-image.is-style-polaroid img {
+				padding: 10px;
+				background: white;
+				box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+			}
+		',
+	)
+);
+```
+
+### Heading Styles
+
+```php
+register_block_style(
+	'core/heading',
+	array(
+		'name'  => 'underlined',
+		'label' => __( 'Underlined', 'my-plugin' ),
+		'inline_style' => '
+			.wp-block-heading.is-style-underlined {
+				border-bottom: 3px solid currentColor;
+				padding-bottom: 0.5em;
+			}
+		',
+	)
+);
+```
+
+## Resources
+
+- [Block Style Variations (WordPress 6.6+)](https://developer.wordpress.org/news/2024/06/styling-sections-nested-elements-and-more-with-block-style-variations-in-wordpress-6-6/)
+- [Applying Styles with Stylesheets](/how-to-guides/block-tutorial/applying-styles-with-stylesheets)
+- [Block Variations API](/blocks/block-variations)
+- [Theme.json Documentation](https://developer.wordpress.org/block-editor/how-to-guides/themes/global-settings-and-styles/)

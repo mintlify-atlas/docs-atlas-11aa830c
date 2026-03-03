@@ -1,0 +1,367 @@
+---
+title: "@wordpress/edit-post"
+description: Post editor screen module for WordPress
+---
+
+The `@wordpress/edit-post` package provides the post editor interface for WordPress. It includes components and functionality for extending the post editor UI.
+
+<Note>
+This package is primarily meant for use within WordPress core. While you can use it in your projects, be aware that it may not be fully documented for external use.
+</Note>
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/edit-post --save
+```
+
+```bash yarn
+yarn add @wordpress/edit-post
+```
+</CodeGroup>
+
+## Extending the Post Editor
+
+The primary way to extend the post editor is through the `registerPlugin` API:
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginSidebar } from '@wordpress/edit-post';
+import { PanelBody } from '@wordpress/components';
+
+const MySidebarPlugin = () => (
+	<PluginSidebar
+		name="my-sidebar"
+		title="My Sidebar"
+		icon="admin-post"
+	>
+		<PanelBody>
+			<p>Sidebar content</p>
+		</PanelBody>
+	</PluginSidebar>
+);
+
+registerPlugin( 'my-plugin-sidebar', {
+	render: MySidebarPlugin,
+} );
+```
+
+## Plugin Components
+
+### PluginSidebar
+
+Adds a custom sidebar to the post editor.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginSidebar } from '@wordpress/edit-post';
+import { PanelBody, TextControl } from '@wordpress/components';
+
+const MySidebar = () => (
+	<PluginSidebar name="my-sidebar" title="Custom Settings">
+		<PanelBody title="Options">
+			<TextControl label="Custom Field" />
+		</PanelBody>
+	</PluginSidebar>
+);
+
+registerPlugin( 'my-sidebar-plugin', { render: MySidebar } );
+```
+
+### PluginSidebarMoreMenuItem
+
+Adds a menu item to open your sidebar.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import {
+	PluginSidebar,
+	PluginSidebarMoreMenuItem,
+} from '@wordpress/edit-post';
+
+const MySidebarPlugin = () => (
+	<>
+		<PluginSidebarMoreMenuItem target="my-sidebar">
+			My Sidebar
+		</PluginSidebarMoreMenuItem>
+		<PluginSidebar name="my-sidebar" title="My Sidebar">
+			<p>Sidebar content</p>
+		</PluginSidebar>
+	</>
+);
+
+registerPlugin( 'my-sidebar', { render: MySidebarPlugin } );
+```
+
+### PluginDocumentSettingPanel
+
+Adds a panel to the document settings sidebar.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
+import { TextControl } from '@wordpress/components';
+
+const MyDocumentSettingPanel = () => (
+	<PluginDocumentSettingPanel
+		name="my-panel"
+		title="Custom Settings"
+		className="my-panel-class"
+	>
+		<TextControl label="Custom Field" />
+	</PluginDocumentSettingPanel>
+);
+
+registerPlugin( 'my-document-setting', {
+	render: MyDocumentSettingPanel,
+} );
+```
+
+### PluginPostStatusInfo
+
+Adds content to the post status section.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginPostStatusInfo } from '@wordpress/edit-post';
+
+const MyPostStatusInfo = () => (
+	<PluginPostStatusInfo>
+		<p>Custom post status information</p>
+	</PluginPostStatusInfo>
+);
+
+registerPlugin( 'my-post-status-info', {
+	render: MyPostStatusInfo,
+} );
+```
+
+### PluginPrePublishPanel
+
+Adds content to the pre-publish panel.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginPrePublishPanel } from '@wordpress/edit-post';
+
+const MyPrePublishPanel = () => (
+	<PluginPrePublishPanel
+		title="Pre-Publish Checklist"
+		initialOpen={ true }
+	>
+		<p>Review these items before publishing:</p>
+		<ul>
+			<li>SEO meta description added</li>
+			<li>Featured image set</li>
+		</ul>
+	</PluginPrePublishPanel>
+);
+
+registerPlugin( 'my-pre-publish-panel', {
+	render: MyPrePublishPanel,
+} );
+```
+
+### PluginPostPublishPanel
+
+Adds content to the post-publish panel.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginPostPublishPanel } from '@wordpress/edit-post';
+
+const MyPostPublishPanel = () => (
+	<PluginPostPublishPanel
+		title="Share Your Post"
+		initialOpen={ true }
+	>
+		<p>Share on social media:</p>
+		<button>Share on Twitter</button>
+	</PluginPostPublishPanel>
+);
+
+registerPlugin( 'my-post-publish-panel', {
+	render: MyPostPublishPanel,
+} );
+```
+
+### PluginMoreMenuItem
+
+Adds an item to the more menu (three dots).
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginMoreMenuItem } from '@wordpress/edit-post';
+
+const MyMenuItem = () => (
+	<PluginMoreMenuItem
+		icon="admin-plugins"
+		onClick={ () => alert( 'Menu item clicked' ) }
+	>
+		Custom Action
+	</PluginMoreMenuItem>
+);
+
+registerPlugin( 'my-menu-item', { render: MyMenuItem } );
+```
+
+### PluginBlockSettingsMenuItem
+
+Adds an item to the block settings menu.
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginBlockSettingsMenuItem } from '@wordpress/edit-post';
+
+const MyBlockSettingsMenuItem = () => (
+	<PluginBlockSettingsMenuItem
+		allowedBlocks={ [ 'core/paragraph' ] }
+		icon="admin-plugins"
+		label="Custom Block Action"
+		onClick={ () => console.log( 'Block action clicked' ) }
+	/>
+);
+
+registerPlugin( 'my-block-settings-item', {
+	render: MyBlockSettingsMenuItem,
+} );
+```
+
+## Initializing the Editor
+
+The `initializeEditor` function sets up the post editor:
+
+```js
+import { initializeEditor } from '@wordpress/edit-post';
+
+initializeEditor(
+	'editor', // Editor ID
+	'post', // Post type
+	123, // Post ID
+	{
+		// Editor settings
+		alignWide: true,
+		availableTemplates: [],
+	},
+	{
+		// Initial edits
+		title: 'New Post',
+	}
+);
+```
+
+## Store
+
+Access the edit-post store for UI state:
+
+```js
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as editPostStore } from '@wordpress/edit-post';
+
+function MyComponent() {
+	const isFullscreenMode = useSelect(
+		( select ) => select( editPostStore ).isFeatureActive( 'fullscreenMode' ),
+		[]
+	);
+
+	const { toggleFeature } = useDispatch( editPostStore );
+
+	return (
+		<button onClick={ () => toggleFeature( 'fullscreenMode' ) }>
+			{ isFullscreenMode ? 'Exit' : 'Enter' } Fullscreen
+		</button>
+	);
+}
+```
+
+## Complete Plugin Example
+
+Here's a complete example of a post editor plugin:
+
+```js
+import { registerPlugin } from '@wordpress/plugins';
+import {
+	PluginSidebar,
+	PluginSidebarMoreMenuItem,
+	PluginDocumentSettingPanel,
+} from '@wordpress/edit-post';
+import {
+	PanelBody,
+	PanelRow,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as editorStore } from '@wordpress/editor';
+
+const MyPlugin = () => {
+	const postMeta = useSelect(
+		( select ) =>
+			select( editorStore ).getEditedPostAttribute( 'meta' ),
+		[]
+	);
+
+	const { editPost } = useDispatch( editorStore );
+
+	const updateMeta = ( key, value ) => {
+		editPost( {
+			meta: {
+				...postMeta,
+				[ key ]: value,
+			},
+		} );
+	};
+
+	return (
+		<>
+			<PluginSidebarMoreMenuItem target="my-plugin-sidebar">
+				My Plugin
+			</PluginSidebarMoreMenuItem>
+			<PluginSidebar
+				name="my-plugin-sidebar"
+				title="My Plugin Settings"
+			>
+				<PanelBody>
+					<PanelRow>
+						<TextControl
+							label="Custom Field"
+							value={ postMeta?.custom_field || '' }
+							onChange={ ( value ) =>
+								updateMeta( 'custom_field', value )
+							}
+						/>
+					</PanelRow>
+				</PanelBody>
+			</PluginSidebar>
+			<PluginDocumentSettingPanel
+				name="my-plugin-panel"
+				title="Additional Settings"
+			>
+				<ToggleControl
+					label="Enable Feature"
+					checked={ postMeta?.feature_enabled || false }
+					onChange={ ( value ) =>
+						updateMeta( 'feature_enabled', value )
+					}
+				/>
+			</PluginDocumentSettingPanel>
+		</>
+	);
+};
+
+registerPlugin( 'my-plugin', { render: MyPlugin } );
+```
+
+## Best Practices
+
+1. **Use the Plugin API** - Always use `registerPlugin` for extensions
+2. **Unique Names** - Ensure plugin and component names are unique
+3. **Proper Icons** - Use WordPress dashicons for consistency
+4. **Conditional Rendering** - Show controls only when relevant
+5. **Persist Settings** - Save custom data in post meta or options
+
+## Learn More
+
+- [Plugin API Documentation](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-plugins/)
+- [Post Meta Documentation](https://developer.wordpress.org/block-editor/how-to-guides/metabox/)

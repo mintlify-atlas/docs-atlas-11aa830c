@@ -1,0 +1,312 @@
+---
+title: Curating the Editor Experience
+description: Learn how to streamline and customize the WordPress Block Editor for your users through locking, patterns, and configuration.
+---
+
+Curating the editing experience allows you to streamline workflows, ensure consistency, and align content with your site's style and branding guidelines. This guide covers the essential tools for customizing the editor.
+
+## Why Curate?
+
+A curated editor experience provides:
+
+- Streamlined editing process for users
+- Consistency in design and content
+- Prevention of accidental modifications
+- Alignment with branding guidelines
+- Efficient content management
+
+<Tip>
+Think about how you want to both open up creative possibilities and provide helpful guardrails for your users.
+</Tip>
+
+## Core Curation Tools
+
+### Block Locking
+
+Restrict user interactions with specific blocks to maintain layout integrity:
+
+```jsx
+// Lock a block to prevent removal and movement
+{
+  "lock": {
+    "move": true,
+    "remove": true
+  }
+}
+```
+
+You can lock blocks at different levels:
+
+```jsx
+// Content-only editing - users can edit text but not modify structure
+{
+  "templateLock": "contentOnly",
+  "lock": {
+    "move": true,
+    "remove": true
+  }
+}
+```
+
+<Tip>
+Use block locking to protect critical layout elements while allowing content updates.
+</Tip>
+
+### Patterns
+
+Create predefined block layouts for design consistency:
+
+```php
+register_block_pattern(
+  'my-theme/hero-section',
+  [
+    'title' => 'Hero Section',
+    'description' => 'A hero section with heading and CTA',
+    'categories' => [ 'featured' ],
+    'content' => '
+      <!-- wp:group {"align":"full"} -->
+      <div class="wp-block-group alignfull">
+        <!-- wp:heading {"level":1} -->
+        <h1>Welcome</h1>
+        <!-- /wp:heading -->
+        
+        <!-- wp:buttons -->
+        <div class="wp-block-buttons">
+          <!-- wp:button -->
+          <div class="wp-block-button">
+            <a class="wp-block-button__link">Get Started</a>
+          </div>
+          <!-- /wp:button -->
+        </div>
+        <!-- /wp:buttons -->
+      </div>
+      <!-- /wp:group -->
+    ',
+  ]
+);
+```
+
+### theme.json Configuration
+
+Configure global styles and settings:
+
+```json
+{
+  "version": 2,
+  "settings": {
+    "color": {
+      "palette": [
+        {
+          "name": "Primary",
+          "slug": "primary",
+          "color": "#0073aa"
+        },
+        {
+          "name": "Secondary",
+          "slug": "secondary",
+          "color": "#23282d"
+        }
+      ]
+    },
+    "typography": {
+      "fontSizes": [
+        {
+          "name": "Small",
+          "slug": "small",
+          "size": "14px"
+        },
+        {
+          "name": "Medium",
+          "slug": "medium",
+          "size": "18px"
+        }
+      ]
+    },
+    "blocks": {
+      "core/paragraph": {
+        "color": {
+          "palette": [
+            {
+              "name": "Text Primary",
+              "slug": "text-primary",
+              "color": "#333333"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+<Tip>
+Use theme.json to provide a curated color palette and typography scale that matches your brand.
+</Tip>
+
+### Filters and Hooks
+
+Modify editor behavior programmatically:
+
+```jsx
+import { addFilter } from '@wordpress/hooks';
+
+// Restrict available block types
+addFilter(
+  'blocks.registerBlockType',
+  'my-plugin/restrict-blocks',
+  ( settings, name ) => {
+    const allowedBlocks = [
+      'core/paragraph',
+      'core/heading',
+      'core/image',
+      'core/list',
+    ];
+
+    if ( ! allowedBlocks.includes( name ) ) {
+      return {
+        ...settings,
+        supports: {
+          ...settings.supports,
+          inserter: false,
+        },
+      };
+    }
+
+    return settings;
+  }
+);
+```
+
+### Disabling Editor Features
+
+Selectively disable features for a streamlined experience:
+
+```php
+// Disable specific editor features
+function my_theme_editor_settings( $settings ) {
+  $settings['__experimentalFeatures']['typography']['customFontSize'] = false;
+  $settings['__experimentalFeatures']['color']['custom'] = false;
+  $settings['__experimentalFeatures']['spacing']['padding'] = false;
+  
+  return $settings;
+}
+add_filter( 'block_editor_settings_all', 'my_theme_editor_settings' );
+```
+
+```jsx
+// Disable specific block supports
+import { unregisterBlockType } from '@wordpress/blocks';
+
+// Remove blocks entirely
+unregisterBlockType( 'core/verse' );
+unregisterBlockType( 'core/pullquote' );
+```
+
+## Combining Approaches
+
+You can combine multiple curation techniques:
+
+```php
+// Register a locked pattern with specific colors
+register_block_pattern(
+  'my-theme/locked-header',
+  [
+    'title' => 'Site Header',
+    'blockTypes' => [ 'core/template-part/header' ],
+    'content' => '
+      <!-- wp:group {
+        "backgroundColor":"primary",
+        "lock":{"move":true,"remove":true}
+      } -->
+      <div class="wp-block-group has-primary-background-color">
+        <!-- wp:site-title /-->
+        <!-- wp:navigation /-->
+      </div>
+      <!-- /wp:group -->
+    ',
+  ]
+);
+```
+
+## Practical Examples
+
+### Restrict Block Types by Post Type
+
+```php
+function restrict_blocks_by_post_type( $allowed_blocks, $editor_context ) {
+  if ( ! empty( $editor_context->post ) ) {
+    if ( 'page' === $editor_context->post->post_type ) {
+      return [
+        'core/paragraph',
+        'core/heading',
+        'core/image',
+        'core/columns',
+      ];
+    }
+  }
+  
+  return $allowed_blocks;
+}
+add_filter( 'allowed_block_types_all', 'restrict_blocks_by_post_type', 10, 2 );
+```
+
+### Limit Color Choices
+
+```json
+{
+  "settings": {
+    "color": {
+      "custom": false,
+      "customGradient": false,
+      "palette": [
+        { "name": "Brand Blue", "slug": "brand-blue", "color": "#0073aa" },
+        { "name": "Brand Gray", "slug": "brand-gray", "color": "#23282d" }
+      ]
+    }
+  }
+}
+```
+
+<Tip>
+Disable custom colors with `"custom": false` to ensure users only select from your brand palette.
+</Tip>
+
+### Create Role-Based Experiences
+
+```php
+function role_based_blocks( $allowed_blocks, $editor_context ) {
+  $user = wp_get_current_user();
+  
+  if ( in_array( 'contributor', $user->roles ) ) {
+    // Contributors get basic blocks only
+    return [
+      'core/paragraph',
+      'core/heading',
+      'core/list',
+      'core/image',
+    ];
+  }
+  
+  // Editors and admins get all blocks
+  return $allowed_blocks;
+}
+add_filter( 'allowed_block_types_all', 'role_based_blocks', 10, 2 );
+```
+
+## Best Practices
+
+<Tip>
+- Start with minimal restrictions and add more as needed
+- Test your curation with actual users
+- Document any custom patterns or restrictions
+- Provide clear labels and descriptions for custom patterns
+- Balance control with creative flexibility
+</Tip>
+
+## Resources
+
+- [Block Locking Documentation](/guides/block-locking)
+- [Patterns Guide](/guides/patterns)
+- [theme.json Reference](/reference/theme-json)
+- [Filters and Hooks Guide](/guides/filters-hooks)
+- [Learn WordPress: Curating the Editor Experience](https://wordpress.tv/2022/07/22/nick-diego-curating-the-editor-experience/)

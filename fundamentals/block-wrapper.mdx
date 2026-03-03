@@ -1,0 +1,297 @@
+---
+title: Block wrapper
+description: How to apply proper attributes to the block's markup wrapper.
+---
+
+Every block in the Block Editor must be contained within an HTML wrapper with specific attributes to function correctly. WordPress provides `useBlockProps()` to manage these wrapper attributes.
+
+<Warning>
+Proper wrapper attributes are essential when using custom styling or block supports.
+</Warning>
+
+## Types of block markup
+
+A block can have three distinct types of markup:
+
+1. **Editor markup**: Visual representation in the Block Editor (via `Edit` component)
+2. **Save markup**: HTML saved to the database (via `save` function)  
+3. **Dynamic render markup**: Server-generated content (via `render_callback` or `render.php`)
+
+## Editor markup
+
+Use the `useBlockProps()` hook in your `Edit` component to define the wrapper:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+function Edit() {
+    const blockProps = useBlockProps();
+    
+    return (
+        <p { ...blockProps }>
+            Hello World - Block Editor
+        </p>
+    );
+}
+```
+
+### What useBlockProps() provides
+
+The `useBlockProps()` hook automatically adds:
+
+- Unique `id` attribute
+- Accessibility attributes (`role`, `aria-label`, `tabindex`)
+- Data attributes for block identification
+- The `wp-block` class
+- Block-specific class (e.g., `wp-block-my-plugin-my-block`)
+- Classes and styles from block supports (color, spacing, etc.)
+
+### Generated editor markup
+
+```html
+<p
+    tabindex="0"
+    id="block-4462939a-b918-44bb-9b7c-35a0db5ab8fe"
+    role="document"
+    aria-label="Block: My Block"
+    data-block="4462939a-b918-44bb-9b7c-35a0db5ab8fe"
+    data-type="my-plugin/my-block"
+    class="block-editor-block-list__block wp-block wp-block-my-plugin-my-block"
+>
+    Hello World - Block Editor
+</p>
+```
+
+### Adding custom attributes
+
+Pass additional classes and attributes to `useBlockProps()`:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+function Edit( { attributes } ) {
+    const blockProps = useBlockProps( {
+        className: 'my-custom-class',
+        style: { color: attributes.textColor },
+    } );
+    
+    return <div { ...blockProps }>Content</div>;
+}
+```
+
+<Tip>
+Block supports automatically add their classes and styles to the `useBlockProps()` return value.
+</Tip>
+
+## Save markup
+
+Use `useBlockProps.save()` in your `save` function to ensure proper wrapper attributes:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+function save() {
+    const blockProps = useBlockProps.save();
+    
+    return (
+        <p { ...blockProps }>
+            Hello World - Frontend
+        </p>
+    );
+}
+```
+
+### What useBlockProps.save() provides
+
+- Block-specific class name
+- Classes and inline styles from block supports
+- Any custom attributes passed as arguments
+
+### Generated save markup
+
+```html
+<p class="wp-block-my-plugin-my-block">
+    Hello World - Frontend
+</p>
+```
+
+With block supports enabled:
+
+```html
+<p class="wp-block-my-plugin-my-block has-accent-color has-contrast-background-color has-text-color has-background">
+    Hello World - Frontend
+</p>
+```
+
+### Adding custom save attributes
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+function save( { attributes } ) {
+    const blockProps = useBlockProps.save( {
+        className: 'custom-save-class',
+    } );
+    
+    return <div { ...blockProps }>{ attributes.content }</div>;
+}
+```
+
+## Dynamic render markup (PHP)
+
+For server-rendered blocks, use `get_block_wrapper_attributes()` in PHP:
+
+```php
+function render_my_block( $attributes, $content, $block ) {
+    $wrapper_attributes = get_block_wrapper_attributes();
+    
+    return sprintf(
+        '<div %1$s><p>%2$s</p></div>',
+        $wrapper_attributes,
+        esc_html( $attributes['content'] ?? '' )
+    );
+}
+```
+
+### Adding custom PHP attributes
+
+Pass an array of custom attributes:
+
+```php
+$wrapper_attributes = get_block_wrapper_attributes(
+    array(
+        'class' => 'my-custom-class',
+        'data-custom' => 'value',
+    )
+);
+```
+
+<Note>
+`get_block_wrapper_attributes()` automatically includes classes from block supports like color, spacing, and typography.
+</Note>
+
+## Wrapper requirements
+
+For both `Edit` and `save`, the wrapper must be:
+
+✅ A standard DOM element (e.g., `<div>`, `<p>`, `<section>`)  
+✅ A React component that forwards all props to native DOM elements
+
+❌ Not a React Fragment (`<Fragment>`)  
+❌ Not `<ServerSideRender>` component
+
+### Valid wrappers
+
+```jsx
+// Standard DOM element
+<div { ...useBlockProps() }>Content</div>
+
+// React component that forwards props
+import { Button } from '@wordpress/components';
+<Button { ...useBlockProps() }>Click me</Button>
+```
+
+### Invalid wrappers
+
+```jsx
+// Fragment (will not work)
+<>
+    <div { ...useBlockProps() }>Content</div>
+</>
+
+// ServerSideRender (will not work)
+<ServerSideRender { ...useBlockProps() } />
+```
+
+## Complete example
+
+### Edit component
+
+```jsx
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+
+export default function Edit( { attributes, setAttributes } ) {
+    const blockProps = useBlockProps( {
+        className: 'my-editor-class',
+    } );
+    
+    return (
+        <RichText
+            { ...blockProps }
+            tagName="p"
+            value={ attributes.content }
+            onChange={ ( content ) => setAttributes( { content } ) }
+        />
+    );
+}
+```
+
+### Save function
+
+```jsx
+import { useBlockProps, RichText } from '@wordpress/block-editor';
+
+export default function save( { attributes } ) {
+    const blockProps = useBlockProps.save();
+    
+    return (
+        <p { ...blockProps }>
+            <RichText.Content value={ attributes.content } />
+        </p>
+    );
+}
+```
+
+### Render callback (PHP)
+
+```php
+function render_my_block( $attributes ) {
+    $wrapper_attributes = get_block_wrapper_attributes(
+        array( 'class' => 'my-custom-class' )
+    );
+    
+    ob_start();
+    ?>
+    <div <?php echo $wrapper_attributes; ?>>
+        <p><?php echo esc_html( $attributes['content'] ?? '' ); ?></p>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+```
+
+## Block supports integration
+
+When you enable block supports in `block.json`, the wrapper automatically receives the generated classes:
+
+```json
+"supports": {
+  "color": {
+    "text": true,
+    "background": true
+  },
+  "spacing": {
+    "padding": true,
+    "margin": true
+  }
+}
+```
+
+Resulting markup:
+
+```html
+<div class="wp-block-my-plugin-my-block has-text-color has-background has-padding has-margin">
+    Content
+</div>
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Block supports" href="/api/block-api/supports">
+    Learn about available block supports
+  </Card>
+  <Card title="Rendering" href="/fundamentals/rendering">
+    Understand static vs dynamic rendering
+  </Card>
+</CardGroup>

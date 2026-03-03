@@ -1,0 +1,109 @@
+---
+title: Block API
+description: Reference guide for the Block API in the Gutenberg Block Editor framework
+---
+
+Blocks are the fundamental element of the editor. They are the primary way in which plugins and themes can register their own functionality and extend the capabilities of the editor.
+
+## What is a block?
+
+"Block" is the abstract term used to describe units of markup that, composed together, form the content or layout of a webpage. The idea combines concepts of what in WordPress today we achieve with shortcodes, custom HTML, and embed discovery into a single consistent API and user experience.
+
+## Block registration
+
+Every block starts by registering a new block type definition. The recommended method is to register blocks with both PHP (server-side) and JavaScript (client-side) using the `block.json` metadata file.
+
+### Basic registration
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import metadata from './block.json';
+
+registerBlockType( metadata, {
+	edit: Edit,
+	save,
+} );
+```
+
+### Server-side registration
+
+```php
+register_block_type( __DIR__ . '/build' );
+```
+
+## Block structure
+
+A block consists of several key components:
+
+- **Metadata** - Block configuration defined in `block.json`
+- **Attributes** - Structured data that defines the block's content
+- **Edit function** - React component for the editor interface
+- **Save function** - Defines how the block is saved to post content
+- **Supports** - Features and capabilities enabled for the block
+
+## Key concepts
+
+### Block names
+
+The name for a block is a unique string that identifies a block. Names must be structured as `namespace/block-name`, where namespace is the name of your plugin or theme.
+
+```json
+{
+	"name": "my-plugin/notice"
+}
+```
+
+### Block attributes
+
+Attributes provide the structured data needs of a block. They can exist in different forms when serialized, but are declared together under a common interface.
+
+```json
+{
+	"attributes": {
+		"message": {
+			"type": "string",
+			"source": "html",
+			"selector": ".message"
+		}
+	}
+}
+```
+
+### Block context
+
+Block context allows ancestor blocks to provide values that descendent blocks can consume without explicit awareness of the provider.
+
+```json
+{
+	"providesContext": {
+		"my-plugin/recordId": "recordId"
+	},
+	"usesContext": ["my-plugin/recordId"]
+}
+```
+
+## Benefits of using block.json
+
+Registering blocks with the `block.json` metadata file provides multiple benefits:
+
+- **Performance** - Lazy loading of assets when blocks are present on the page
+- **Server-side registration** - Blocks are available via the Block Type REST API
+- **Block Directory** - Metadata can be extracted for the WordPress Plugins Directory
+- **Development tooling** - Schema validation and autocomplete in supported editors
+
+## API reference
+
+The Block API consists of several key areas:
+
+- [Metadata](/api/block-api/metadata) - Block configuration in block.json
+- [Registration](/api/block-api/registration) - Registering blocks with JavaScript
+- [Attributes](/api/block-api/attributes) - Defining block data structure
+- [Context](/api/block-api/context) - Sharing data between blocks
+- [Supports](/api/block-api/supports) - Enabling block features
+- [Selectors](/api/block-api/selectors) - Customizing CSS selectors
+- [Deprecation](/api/block-api/deprecation) - Handling block updates
+- [Annotations](/api/block-api/annotations) - Highlighting content
+
+## Core block library
+
+For real-world examples of block implementation, check the [core block library](https://github.com/WordPress/gutenberg/tree/HEAD/packages/block-library/src) which contains simple and complex block examples with various features and deprecations.

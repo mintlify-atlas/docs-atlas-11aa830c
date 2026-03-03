@@ -1,0 +1,560 @@
+---
+title: Block Supports
+description: Enable editor features and UI controls for your blocks with the Block Supports API
+---
+
+Block Supports is the API that allows a block to declare support for certain features. Opting into these features automatically registers additional attributes on the block and provides UI controls to manipulate them.
+
+## How Block Supports Work
+
+When you enable a support feature:
+
+1. Additional attributes are automatically registered on your block
+2. UI controls appear in the block toolbar or sidebar
+3. Generated properties are added to the block wrapper
+4. You must apply these properties using `useBlockProps`
+
+## Applying Block Supports
+
+### In JavaScript (Edit Function)
+
+```js
+import { useBlockProps } from '@wordpress/block-editor';
+
+function BlockEdit() {
+	const blockProps = useBlockProps();
+	return <div { ...blockProps }>Hello World!</div>;
+}
+```
+
+### In JavaScript (Save Function)
+
+```js
+function BlockSave() {
+	const blockProps = useBlockProps.save();
+	return <div { ...blockProps }>Hello World!</div>;
+}
+```
+
+### In PHP (Dynamic Blocks)
+
+```php
+function render_block() {
+	$wrapper_attributes = get_block_wrapper_attributes();
+	return sprintf(
+		'<div %1$s>%2$s</div>',
+		$wrapper_attributes,
+		'Hello World!'
+	);
+}
+```
+
+## Common Block Supports
+
+### Align
+
+Adds block alignment controls (left, center, right, wide, full).
+
+```js
+supports: {
+	// Enable all alignment options
+	align: true
+}
+```
+
+```js
+supports: {
+	// Enable specific alignment options
+	align: [ 'left', 'right', 'full' ]
+}
+```
+
+When declared, the `align` attribute is added with a `string` type. Apply a default:
+
+```js
+attributes: {
+	align: {
+		type: 'string',
+		default: 'right'
+	}
+}
+```
+
+### Anchor
+
+Adds a field to define an HTML anchor (id) for the block.
+
+```js
+supports: {
+	anchor: true
+}
+```
+
+Allows users to link directly to a specific block on a page.
+
+### Color
+
+Enables color controls for text, background, gradients, links, headings, and buttons.
+
+```js
+supports: {
+	color: {
+		background: true,  // Background color picker
+		text: true,        // Text color picker
+		gradients: true,   // Gradient picker
+		link: true,        // Link color picker
+		heading: true,     // Heading color picker
+		button: true,      // Button color picker
+	}
+}
+```
+
+**Note:** `background` and `text` default to `true` when `color` is declared.
+
+Disable specific color controls:
+
+```js
+supports: {
+	color: {
+		background: false, // Disable background color
+		text: true,        // Keep text color enabled
+	}
+}
+```
+
+#### Color Attributes
+
+When color support is declared, these attributes are added:
+
+- `backgroundColor` (string) - Preset background color slug
+- `textColor` (string) - Preset text color slug
+- `gradient` (string) - Preset gradient slug
+- `style.color.background` (string) - Custom background color
+- `style.color.text` (string) - Custom text color
+- `style.color.gradient` (string) - Custom gradient
+
+### Typography
+
+Enables typography controls for font size, line height, and text alignment.
+
+```js
+supports: {
+	typography: {
+		fontSize: true,
+		lineHeight: true,
+		textAlign: true,
+	}
+}
+```
+
+Limit text alignment options:
+
+```js
+supports: {
+	typography: {
+		textAlign: [ 'left', 'right' ]
+	}
+}
+```
+
+### Spacing
+
+Enables spacing controls for margin, padding, and block gap.
+
+```js
+supports: {
+	spacing: {
+		margin: true,
+		padding: true,
+		blockGap: true,
+	}
+}
+```
+
+Control specific sides:
+
+```js
+supports: {
+	spacing: {
+		margin: [ 'top', 'bottom' ],  // Only top and bottom
+		padding: true,                // All sides
+		blockGap: [ 'horizontal', 'vertical' ],
+	}
+}
+```
+
+### Dimensions
+
+Enables dimension controls for width, height, min-height, and aspect ratio.
+
+```js
+supports: {
+	dimensions: {
+		aspectRatio: true,
+		height: true,
+		minHeight: true,
+		width: true,
+	}
+}
+```
+
+Stores values in the `style` attribute:
+
+```js
+style: {
+	dimensions: {
+		aspectRatio: "16/9",
+		height: "40vh",
+		minHeight: "50vh",
+		width: "400px",
+	}
+}
+```
+
+### Background
+
+Enables background image and size controls.
+
+```js
+supports: {
+	background: {
+		backgroundImage: true,
+		backgroundSize: true,
+	}
+}
+```
+
+Stores image data in `style.background.backgroundImage`.
+
+## Layout Support
+
+For blocks that contain inner blocks, layout support enables layout controls.
+
+```js
+supports: {
+	layout: {
+		default: {
+			type: 'flex',
+			flexWrap: 'wrap',
+		},
+		allowSwitching: true,
+		allowEditing: true,
+		allowInheriting: true,
+	}
+}
+```
+
+### Layout Options
+
+- `default` - Default layout type and settings
+- `allowSwitching` - Allow toggling between layout types
+- `allowEditing` - Show layout controls in sidebar
+- `allowInheriting` - Show "Inner blocks use content width" toggle
+- `allowSizingOnChildren` - Show sizing controls on child blocks (flex)
+- `allowVerticalAlignment` - Show vertical alignment control (flex)
+- `allowJustification` - Show justification control
+- `allowOrientation` - Show orientation control (flex)
+- `allowWrap` - Show wrap toggle (flex)
+
+## Visibility and Behavior
+
+### ClassName
+
+By default, `wp-block-your-block-name` is added to the block wrapper. Disable this:
+
+```js
+supports: {
+	className: false
+}
+```
+
+### Custom ClassName
+
+Allow users to add a custom CSS class:
+
+```js
+supports: {
+	customClassName: true  // Default
+}
+```
+
+Disable the custom class field:
+
+```js
+supports: {
+	customClassName: false
+}
+```
+
+### HTML Mode
+
+Allow editing block markup as HTML:
+
+```js
+supports: {
+	html: true  // Default
+}
+```
+
+Disable HTML editing:
+
+```js
+supports: {
+	html: false
+}
+```
+
+### Inserter
+
+Control block visibility in the inserter:
+
+```js
+supports: {
+	inserter: false  // Hide from inserter
+}
+```
+
+### Multiple
+
+Allow multiple instances of the block per post:
+
+```js
+supports: {
+	multiple: true  // Default
+}
+```
+
+Restrict to one instance:
+
+```js
+supports: {
+	multiple: false
+}
+```
+
+### Reusable
+
+Allow converting the block to a reusable block:
+
+```js
+supports: {
+	reusable: true  // Default
+}
+```
+
+Prevent conversion:
+
+```js
+supports: {
+	reusable: false
+}
+```
+
+### Lock
+
+Allow users to lock/unlock the block:
+
+```js
+supports: {
+	lock: true  // Default
+}
+```
+
+### Renaming
+
+Allow users to rename the block:
+
+```js
+supports: {
+	renaming: true  // Default
+}
+```
+
+Disable renaming:
+
+```js
+supports: {
+	renaming: false
+}
+```
+
+## Advanced Supports
+
+### Position
+
+Enable position controls (sticky):
+
+```js
+supports: {
+	position: {
+		sticky: true
+	}
+}
+```
+
+Stores values in:
+
+```js
+style: {
+	position: {
+		type: "sticky",
+		top: "0px"
+	}
+}
+```
+
+### Shadow
+
+Enable box shadow controls:
+
+```js
+supports: {
+	shadow: true
+}
+```
+
+Stores shadow value in `style.shadow`.
+
+### Filter (Duotone)
+
+Enable duotone filter controls:
+
+```js
+supports: {
+	filter: {
+		duotone: true
+	}
+},
+selectors: {
+	filter: {
+		duotone: '.wp-block-image img'
+	}
+}
+```
+
+### Interactivity API
+
+Indicate if the block uses the Interactivity API:
+
+```js
+supports: {
+	interactivity: {
+		clientNavigation: true,
+		interactive: true,
+	}
+}
+```
+
+Or simply:
+
+```js
+supports: {
+	interactivity: true
+}
+```
+
+## Complete Example
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+
+registerBlockType( 'my-plugin/feature-box', {
+	title: 'Feature Box',
+	category: 'design',
+	supports: {
+		// Alignment
+		align: [ 'wide', 'full' ],
+		
+		// Colors
+		color: {
+			background: true,
+			text: true,
+			gradients: true,
+			link: true,
+		},
+		
+		// Typography
+		typography: {
+			fontSize: true,
+			lineHeight: true,
+		},
+		
+		// Spacing
+		spacing: {
+			margin: true,
+			padding: true,
+		},
+		
+		// Dimensions
+		dimensions: {
+			minHeight: true,
+		},
+		
+		// Other
+		anchor: true,
+		customClassName: true,
+	},
+	edit: () => {
+		const blockProps = useBlockProps();
+		return (
+			<div { ...blockProps }>
+				<h3>Feature Title</h3>
+				<p>Feature description goes here.</p>
+			</div>
+		);
+	},
+	save: () => {
+		const blockProps = useBlockProps.save();
+		return (
+			<div { ...blockProps }>
+				<h3>Feature Title</h3>
+				<p>Feature description goes here.</p>
+			</div>
+		);
+	},
+} );
+```
+
+## Theme Support
+
+Some block supports require theme opt-in via `theme.json` or `add_theme_support()`:
+
+```json
+{
+	"version": 2,
+	"settings": {
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	}
+}
+```
+
+## Best Practices
+
+1. **Always use useBlockProps**: Block supports only work if you spread `useBlockProps()` on your wrapper element
+
+2. **Start minimal**: Add supports as needed rather than enabling everything
+
+3. **Consider theme compatibility**: Some supports require theme opt-in
+
+4. **Test thoroughly**: Verify that generated classes and styles work correctly
+
+5. **Document choices**: Comment why certain supports are enabled or disabled
+
+## Related Documentation
+
+- [Block Attributes](/blocks/block-attributes) - Understanding block data
+- [Block Styles](/blocks/block-styles) - Alternative visual styles
+- [Theme.json](https://developer.wordpress.org/block-editor/how-to-guides/themes/global-settings-and-styles/) - Global settings and styles

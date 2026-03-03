@@ -1,0 +1,169 @@
+---
+title: Data Flow and Data Format
+description: Understanding how blocks are represented in memory, serialized to HTML, and parsed back to the block tree
+---
+
+## The Format
+
+A block editor post is the proper block-aware representation of a post: a collection of semantically consistent descriptions of what each block is and what its essential data is. **This representation only ever exists in memory.**
+
+The block editor post is not the artifact it produces, namely the `post_content`. The latter is the saved HTML, optimized for the reader but retaining invisible markings for later editing.
+
+The input and output of the block editor is a tree of block objects:
+
+```js
+const value = [ block1, block2, block3 ];
+```
+
+## The Block Object
+
+Each block object has an ID, a set of attributes, and potentially a list of child blocks:
+
+```js
+const block = {
+  clientId,      // unique string identifier
+  type,          // The block type (paragraph, image...)
+  attributes,    // (key, value) set of attributes
+  innerBlocks,   // Array of child blocks
+};
+```
+
+The attributes keys and types, and allowed inner blocks are defined by the block type. For example:
+- The core quote block has a `cite` string attribute
+- A heading block has a numeric `level` attribute (1 to 6)
+
+### Metadata During Editing
+
+During the block's lifecycle in the editor, the block object receives extra metadata:
+- `isValid` - Boolean representing whether the block is valid
+- `originalContent` - The original HTML serialization of the block
+
+### Examples
+
+**Simple paragraph block:**
+```js
+const paragraphBlock = {
+  clientId: '51828be1-5f0d-4a6b-8099-f4c6f897e0a3',
+  type: 'core/paragraph',
+  attributes: {
+    content: 'This is the <strong>content</strong> of the paragraph block',
+    dropCap: true,
+  },
+};
+```
+
+**Columns block with nested paragraphs:**
+```js
+const columnsBlock = {
+  clientId: '51828be1-5f0d-4a6b-8099-f4c6f897e0a7',
+  type: 'core/columns',
+  attributes: {},
+  innerBlocks: [
+    {
+      clientId: '51828be1-5f0d-4a6b-8099-f4c6f897e0a5',
+      type: 'core/column',
+      attributes: {},
+      innerBlocks: [ paragraphBlock1 ],
+    },
+    {
+      clientId: '51828be1-5f0d-4a6b-8099-f4c6f897e0a6',
+      type: 'core/column',
+      attributes: {},
+      innerBlocks: [ paragraphBlock2 ],
+    },
+  ],
+};
+```
+
+## Serialization and Parsing
+
+The block tree lives in memory while editing. To save it, the editor transforms it into HTML that can be stored in `post_content` through **serialization**.
+
+### Why HTML Storage?
+
+The WordPress ecosystem expects HTML when rendering or editing posts. Serialization ensures:
+- Single source of truth for content
+- Content remains readable and compatible with all WordPress tools
+- No risk of data duplication or sync issues
+- Backward compatibility with blocks-unaware themes
+
+### The Serialization Process
+
+Serialization converts the block tree into HTML using **HTML comments as explicit block delimiters**. These comments can contain attributes in JSON form.
+
+This creates invisible marks on the saved page that leave a trace of the original structured intention.
+
+## Delimiters and Parsing
+
+HTML comments were chosen as delimiters because:
+- They don't break the rest of the HTML document
+- Browsers ignore them
+- They simplify parsing
+- They cannot exist in ambiguous places (like inside HTML attributes)
+- They're permissive—we only need to escape double-hyphen sequences
+
+### Comment Structure
+
+Comments are easily described by:
+- Leading `<!--`
+- Any content except `--`
+- Closing `-->`
+
+This simplicity means the parser can be implemented without understanding full HTML, and we can use convenient JSON syntax inside comments for block attributes.
+
+### Benefits of This Approach
+
+- **Simple and performant parsing**
+- **Damage isolation** - Errors in one block don't bleed into others
+- **Unrecognized block identification** - System can identify blocks before rendering
+- **No dependency on valid HTML** - Top-level blocks can be extracted in a first pass
+
+## The Anatomy of a Serialized Block
+
+When blocks are saved, their attributes are serialized to explicit comment delimiters.
+
+**Static block with content:**
+```html
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="source.jpg" alt="" /></figure>
+<!-- /wp:image -->
+```
+
+**Dynamic block (server-rendered):**
+```html
+<!-- wp:latest-posts {"postsToShow":4,"displayPostDate":true} /-->
+```
+
+## The Data Lifecycle
+
+The complete workflow:
+
+1. **Parsing** - Parse saved document to in-memory block tree using token delimiters
+2. **Editing** - All manipulations happen within the block tree
+3. **Serialization** - Serialize blocks back to `post_content`
+
+### Flexibility
+
+The workflow relies on a serialization/parser pair to persist posts. Hypothetically:
+- Post data could be stored via a plugin
+- Data could be retrieved from a remote JSON file
+- Alternative storage mechanisms could be used
+
+The key is maintaining the block tree as the editing format, regardless of storage mechanism.
+
+## Important Notes
+
+**Architectural Decision:**
+> Blocks are in-memory tree structures during editing, serialized as HTML with comment delimiters. Work with the block tree via APIs, not the serialized HTML.
+
+**Block Identity:**
+The defining aspects of blocks are:
+- Their semantics
+- The isolation mechanism they provide
+- Their identity
+
+Where their data is stored is more flexible. Blocks support:
+- Static local data (JSON in HTML comments)
+- Data within the block's HTML
+- Global/reusable blocks
+- Storage in complementary `WP_Post` objects

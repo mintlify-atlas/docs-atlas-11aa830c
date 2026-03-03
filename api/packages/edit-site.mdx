@@ -1,0 +1,284 @@
+---
+title: "@wordpress/edit-site"
+description: Site editor module for full-site editing in WordPress
+---
+
+The `@wordpress/edit-site` package provides the site editor interface for WordPress full-site editing. It enables editing of templates, template parts, and global styles.
+
+<Note>
+This package is primarily meant for use within WordPress core. While you can use it in your projects, be aware that it may not be fully documented for external use.
+</Note>
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/edit-site --save
+```
+
+```bash yarn
+yarn add @wordpress/edit-site
+```
+</CodeGroup>
+
+## Basic Usage
+
+Initialize the site editor:
+
+```js
+import { initialize } from '@wordpress/edit-site';
+import blockEditorSettings from './block-editor-settings';
+
+initialize( '#editor-root', blockEditorSettings );
+```
+
+## What is the Site Editor?
+
+The site editor allows users to:
+
+- Edit theme templates
+- Manage template parts (header, footer, etc.)
+- Customize global styles
+- Create and edit patterns
+- Design full pages and sites
+
+## Key Features
+
+### Template Editing
+
+Edit WordPress theme templates:
+
+- Single post templates
+- Archive templates
+- Page templates
+- 404 templates
+- Search results templates
+
+### Template Parts
+
+Reusable template components:
+
+- Headers
+- Footers
+- Sidebars
+- Navigation menus
+
+### Global Styles
+
+Customize theme-wide styles:
+
+- Typography settings
+- Color palettes
+- Layout settings
+- Spacing controls
+
+## Using with Block Themes
+
+The site editor requires a block theme. Here's a minimal theme structure:
+
+```
+my-theme/
+├── theme.json
+├── templates/
+│   ├── index.html
+│   └── single.html
+├── parts/
+│   ├── header.html
+│   └── footer.html
+└── style.css
+```
+
+### theme.json Example
+
+```json
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 2,
+	"settings": {
+		"color": {
+			"palette": [
+				{
+					"slug": "primary",
+					"color": "#007cba",
+					"name": "Primary"
+				}
+			]
+		},
+		"typography": {
+			"fontSizes": [
+				{
+					"slug": "small",
+					"size": "14px",
+					"name": "Small"
+				}
+			]
+		}
+	}
+}
+```
+
+## Extending the Site Editor
+
+While the site editor is less extensible than the post editor, you can still add customizations:
+
+### Register Custom Template Types
+
+```php
+function my_custom_template() {
+	$post_type_object = get_post_type_object( 'my_cpt' );
+	$post_type_object->template = [
+		[ 'core/paragraph', [
+			'placeholder' => 'Add content...'
+		] ],
+	];
+}
+add_action( 'init', 'my_custom_template' );
+```
+
+### Add Custom Block Patterns
+
+```php
+function my_register_patterns() {
+	register_block_pattern(
+		'my-theme/hero',
+		[
+			'title' => __( 'Hero Section', 'my-theme' ),
+			'categories' => [ 'featured' ],
+			'content' => '<!-- wp:group --><!-- wp:heading --><!-- /wp:heading --><!-- /wp:group -->',
+		]
+	);
+}
+add_action( 'init', 'my_register_patterns' );
+```
+
+## Template Parts in Code
+
+Insert template parts in your templates:
+
+```html
+<!-- wp:template-part {"slug":"header","theme":"my-theme"} /-->
+
+<!-- wp:group -->
+<div class="wp-block-group">
+	<!-- Your content -->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","theme":"my-theme"} /-->
+```
+
+## Working with Global Styles
+
+Access global styles in your theme:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as editSiteStore } from '@wordpress/edit-site';
+
+function MyComponent() {
+	const globalStyles = useSelect( ( select ) => {
+		return select( editSiteStore ).getSettings();
+	}, [] );
+
+	return <div>{ /* Use global styles */ }</div>;
+}
+```
+
+## Site Editor Store
+
+Access the edit-site store:
+
+```js
+import { useSelect } from '@wordpress/data';
+import { store as editSiteStore } from '@wordpress/edit-site';
+
+function MyComponent() {
+	const { canvasMode, editedPost } = useSelect(
+		( select ) => ( {
+			canvasMode: select( editSiteStore ).getCanvasMode(),
+			editedPost: select( editSiteStore ).getEditedPostId(),
+		} ),
+		[]
+	);
+
+	return (
+		<div>
+			<p>Canvas Mode: { canvasMode }</p>
+			<p>Edited Post: { editedPost }</p>
+		</div>
+	);
+}
+```
+
+## Editor Settings
+
+Configure the site editor with settings:
+
+```js
+const editorSettings = {
+	alignWide: true,
+	supportsLayout: true,
+	availableTemplates: {},
+	defaultTemplateTypes: [
+		{
+			slug: 'index',
+			title: 'Index',
+			description: 'Main template',
+		},
+	],
+	__experimentalBlockPatterns: [],
+	__experimentalBlockPatternCategories: [],
+};
+```
+
+## Creating Custom Navigation
+
+Add custom navigation to the site editor:
+
+```html
+<!-- wp:navigation {"layout":{"type":"flex"}} -->
+<nav class="wp-block-navigation">
+	<!-- wp:page-list /-->
+</nav>
+<!-- /wp:navigation -->
+```
+
+## Query Loop Blocks
+
+Display dynamic content in templates:
+
+```html
+<!-- wp:query -->
+<div class="wp-block-query">
+	<!-- wp:post-template -->
+		<!-- wp:post-title /-->
+		<!-- wp:post-excerpt /-->
+	<!-- /wp:post-template -->
+	
+	<!-- wp:query-pagination -->
+	<!-- /wp:query-pagination -->
+</div>
+<!-- /wp:query -->
+```
+
+## Best Practices
+
+1. **Use theme.json** - Define styles in theme.json for consistency
+2. **Template Hierarchy** - Follow WordPress template hierarchy
+3. **Reusable Parts** - Create template parts for common sections
+4. **Block Patterns** - Provide pre-designed layouts for users
+5. **Test Responsiveness** - Ensure templates work on all devices
+
+## Environment Requirements
+
+This package requires:
+
+- WordPress 5.9 or later
+- A block theme
+- ES2015+ JavaScript environment
+
+## Learn More
+
+- [Block Theme Documentation](https://developer.wordpress.org/themes/block-themes/)
+- [theme.json Reference](https://developer.wordpress.org/themes/advanced-topics/theme-json/)
+- [Full Site Editing](https://developer.wordpress.org/block-editor/how-to-guides/themes/)

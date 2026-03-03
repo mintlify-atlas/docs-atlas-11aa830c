@@ -1,0 +1,506 @@
+---
+title: "@wordpress/scripts"
+description: Build tooling and development scripts for WordPress block development
+---
+
+The `@wordpress/scripts` package provides a collection of reusable scripts and configurations for WordPress development, eliminating the need to manage complex build tooling.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/scripts --save-dev
+```
+
+```bash yarn
+yarn add --dev @wordpress/scripts
+```
+</CodeGroup>
+
+<Note>
+Requires Node.js LTS version (Active or Maintenance LTS).
+</Note>
+
+## Setup
+
+Add scripts to your `package.json`:
+
+```json
+{
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"format": "wp-scripts format",
+		"lint:js": "wp-scripts lint-js",
+		"lint:style": "wp-scripts lint-style",
+		"test:unit": "wp-scripts test-unit-js"
+	}
+}
+```
+
+## Build Scripts
+
+### build
+
+Builds code for production.
+
+```bash
+npm run build
+```
+
+**Features:**
+- Minifies JavaScript
+- Optimizes CSS
+- Generates source maps
+- Extracts CSS from JS
+- Creates asset manifests
+
+**Options:**
+- `--webpack-bundle-analyzer` - Visualize bundle sizes
+- `--webpack-copy-php` - Copy PHP files to output
+- `--webpack-no-externals` - Disable externals
+- `--source-path=src` - Custom source directory
+- `--output-path=build` - Custom output directory
+
+```bash
+npm run build -- --webpack-bundle-analyzer
+```
+
+### start
+
+Starts development build with watch mode.
+
+```bash
+npm start
+```
+
+**Features:**
+- Auto-rebuilds on file changes
+- Fast incremental builds
+- Development source maps
+
+**Options:**
+- `--hot` - Enable Fast Refresh
+- `--webpack-devtool` - Custom source map type
+- `--no-watch` - Build once without watching
+
+```bash
+npm start -- --hot
+```
+
+## Block Development
+
+### Automatic Entry Points
+
+Scans for `block.json` files and builds their scripts:
+
+```
+src/
+├── block-one/
+│   ├── block.json
+│   ├── index.js
+│   └── style.scss
+└── block-two/
+    ├── block.json
+    └── index.js
+```
+
+**block.json:**
+```json
+{
+	"editorScript": "file:./index.js",
+	"style": "file:./style.scss"
+}
+```
+
+Run `npm run build` and get:
+
+```
+build/
+├── block-one/
+│   ├── index.js
+│   ├── index.asset.php
+│   └── style-index.css
+└── block-two/
+    ├── index.js
+    └── index.asset.php
+```
+
+### Custom Entry Points
+
+```bash
+wp-scripts build entry-one.js entry-two.js
+```
+
+### Styling
+
+Import styles in JavaScript:
+
+```js
+// Editor-only styles
+import './editor.scss';
+
+// Frontend and editor styles
+import './style.scss';
+```
+
+Output:
+- `index.css` - Editor styles
+- `style-index.css` - Frontend & editor styles
+
+## Code Quality
+
+### format
+
+Formats code with Prettier.
+
+```bash
+npm run format
+```
+
+Formats all supported files (JS, JSON, TypeScript, YAML).
+
+**Custom paths:**
+```bash
+npm run format ./src
+```
+
+### lint-js
+
+Lints JavaScript and TypeScript with ESLint.
+
+```bash
+npm run lint:js
+```
+
+**Auto-fix:**
+```bash
+npm run lint:js -- --fix
+```
+
+### lint-style
+
+Lints CSS/SCSS with Stylelint.
+
+```bash
+npm run lint:style
+```
+
+**Auto-fix:**
+```bash
+npm run lint:style -- --fix
+```
+
+### lint-pkg-json
+
+Lints `package.json` files.
+
+```bash
+npm run lint:pkg-json
+```
+
+### lint-md-docs
+
+Lints markdown documentation.
+
+```bash
+npm run lint:md
+```
+
+## Testing
+
+### test-unit-js
+
+Runs Jest unit tests.
+
+```bash
+npm run test:unit
+```
+
+**Watch mode:**
+```bash
+npm run test:unit -- --watch
+```
+
+**Coverage:**
+```bash
+npm run test:unit -- --coverage
+```
+
+**Specific tests:**
+```bash
+npm run test:unit -- MyComponent.test.js
+```
+
+### test-e2e
+
+Runs Puppeteer end-to-end tests.
+
+```bash
+npm run test:e2e
+```
+
+**Interactive mode:**
+```bash
+npm run test:e2e -- --puppeteer-interactive
+```
+
+### test-playwright
+
+Runs Playwright tests.
+
+```bash
+npm run test:playwright
+```
+
+**Debug mode:**
+```bash
+npm run test:playwright -- --debug
+```
+
+## Utilities
+
+### check-engines
+
+Verifies Node.js and npm versions.
+
+```bash
+npm run check-engines
+```
+
+### check-licenses
+
+Validates dependency licenses.
+
+```bash
+npm run check-licenses -- --prod --gpl2
+```
+
+**Options:**
+- `--prod` - Check production dependencies only
+- `--dev` - Check development dependencies only
+- `--gpl2` - Validate GPL2 compatibility
+- `--ignore=package1,package2` - Ignore specific packages
+
+### packages-update
+
+Updates WordPress packages.
+
+```bash
+npm run packages-update
+```
+
+**Specific version:**
+```bash
+npm run packages-update -- --dist-tag=wp-6.0
+```
+
+### plugin-zip
+
+Creates a plugin zip file.
+
+```bash
+npm run plugin-zip
+```
+
+**Custom root folder:**
+```bash
+npm run plugin-zip -- --root-folder=my-plugin
+```
+
+## Configuration
+
+### Custom Webpack Config
+
+Create `webpack.config.js`:
+
+```js
+const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
+
+module.exports = {
+	...defaultConfig,
+	// Your customizations
+};
+```
+
+### Extending Webpack Config
+
+```js
+const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
+
+module.exports = {
+	...defaultConfig,
+	module: {
+		...defaultConfig.module,
+		rules: [
+			...defaultConfig.module.rules,
+			{
+				test: /\.svg$/,
+				use: [ '@svgr/webpack' ],
+			},
+		],
+	},
+};
+```
+
+### Custom Babel Config
+
+Create `.babelrc.js`:
+
+```js
+module.exports = {
+	presets: [ '@wordpress/babel-preset-default' ],
+	plugins: [
+		// Your plugins
+	],
+};
+```
+
+### ESLint Config
+
+Create `.eslintrc.js`:
+
+```js
+module.exports = {
+	extends: [ 'plugin:@wordpress/eslint-plugin/recommended' ],
+	rules: {
+		// Your custom rules
+	},
+};
+```
+
+### Prettier Config
+
+Create `.prettierrc.js`:
+
+```js
+module.exports = {
+	...require( '@wordpress/prettier-config' ),
+	// Your overrides
+};
+```
+
+## Environment Variables
+
+### Development
+
+```bash
+NODE_ENV=development npm start
+```
+
+### Production
+
+```bash
+NODE_ENV=production npm run build
+```
+
+### Custom Variables
+
+```bash
+WP_ARTIFACTS_PATH=custom/path npm run test:e2e
+```
+
+## WordPress Integration
+
+### Enqueue Built Assets
+
+```php
+function my_plugin_enqueue_assets() {
+	$asset_file = include plugin_dir_path( __FILE__ ) . 'build/index.asset.php';
+	
+	wp_enqueue_script(
+		'my-plugin',
+		plugins_url( 'build/index.js', __FILE__ ),
+		$asset_file['dependencies'],
+		$asset_file['version']
+	);
+	
+	wp_enqueue_style(
+		'my-plugin',
+		plugins_url( 'build/style-index.css', __FILE__ ),
+		array(),
+		$asset_file['version']
+	);
+}
+add_action( 'enqueue_block_editor_assets', 'my_plugin_enqueue_assets' );
+```
+
+### Asset File Format
+
+```php
+<?php
+return array(
+	'dependencies' => array(
+		'wp-blocks',
+		'wp-element',
+		'wp-i18n',
+	),
+	'version' => '1.0.0'
+);
+```
+
+## Debugging
+
+### Debug Build
+
+```bash
+DEBUG=* npm start
+```
+
+### Debug Tests
+
+```bash
+wp-scripts --inspect-brk test-unit-js --runInBand --no-cache
+```
+
+### Chrome DevTools
+
+1. Run debug command
+2. Open `chrome://inspect`
+3. Click "inspect" on your process
+
+## Best Practices
+
+1. **Use Default Configs** - Only customize when necessary
+2. **Keep Scripts Updated** - Regular updates bring improvements
+3. **Test Before Build** - Run linters and tests before production builds
+4. **Use Source Maps** - Enable for easier debugging
+5. **Optimize Assets** - Use production builds for deployment
+6. **Version Control** - Commit `package-lock.json`
+7. **CI Integration** - Run checks in continuous integration
+
+## Common Issues
+
+### Build Errors
+
+Clear cache and rebuild:
+```bash
+rm -rf node_modules build
+npm install
+npm run build
+```
+
+### Style Not Loading
+
+Check import statement:
+```js
+// Frontend styles
+import './style.scss';
+
+// Editor styles
+import './editor.scss';
+```
+
+### Dependencies Not Found
+
+Ensure asset file is enqueued:
+```php
+$asset_file = include 'build/index.asset.php';
+wp_enqueue_script( ..., $asset_file['dependencies'], ... );
+```
+
+## Learn More
+
+- [Block Editor Handbook](https://developer.wordpress.org/block-editor/)
+- [JavaScript in the Block Editor](https://developer.wordpress.org/block-editor/how-to-guides/javascript/)
+- [Create a Block Tutorial](https://developer.wordpress.org/block-editor/getting-started/create-block/)

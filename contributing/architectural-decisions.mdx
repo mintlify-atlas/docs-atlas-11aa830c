@@ -1,0 +1,339 @@
+---
+title: Architectural Decisions
+description: Understand the core architectural principles and design decisions that shape the Gutenberg Block Editor framework.
+---
+
+This document outlines the key architectural decisions and design principles that guide the Gutenberg project. Understanding these principles will help you make implementation decisions that align with the project's architecture.
+
+## Package Layering
+
+Gutenberg follows a strict three-layer architecture for editor packages:
+
+### Layer Hierarchy
+
+1. **`@wordpress/block-editor`** (Bottom Layer)
+   - Generic, WordPress-agnostic block editor
+   - No WordPress-specific dependencies
+   - Can be used in any application
+
+2. **`@wordpress/editor`** (Middle Layer)
+   - WordPress post-type-aware functionality
+   - Depends on `@wordpress/block-editor`
+   - Handles WordPress entities (posts, pages)
+
+3. **`@wordpress/edit-post` / `@wordpress/edit-site`** (Top Layer)
+   - Complete editor screens
+   - Depends on `@wordpress/editor` and `@wordpress/block-editor`
+   - Full WordPress integration
+
+### Critical Rule
+
+**Lower layers MUST NOT depend on higher layers.**
+
+This ensures:
+- Code reusability
+- Clear separation of concerns
+- WordPress-agnostic editor core
+
+**Example Violations to Avoid**:
+
+```javascript
+// ❌ BAD: block-editor depending on editor
+import { useEntityProp } from '@wordpress/editor';
+
+// ❌ BAD: block-editor depending on core-data
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+```
+
+**Correct Approach**:
+
+```javascript
+// ✅ GOOD: block-editor stays agnostic
+// Pass data via props from higher layers
+function BlockComponent({ value, onChange }) {
+  // Implementation
+}
+```
+
+## Block Data Model
+
+Understand how blocks are represented and manipulated:
+
+### In-Memory Structure
+
+During editing, blocks exist as **in-memory tree structures**:
+
+```javascript
+{
+  name: 'core/paragraph',
+  clientId: 'abc123',
+  attributes: {
+    content: 'Hello world',
+    align: 'left'
+  },
+  innerBlocks: []
+}
+```
+
+### Serialized Format
+
+Blocks are saved as **HTML with comment delimiters**:
+
+```html
+<!-- wp:paragraph {"align":"left"} -->
+<p class="has-text-align-left">Hello world</p>
+<!-- /wp:paragraph -->
+```
+
+### Key Principle
+
+**Always work with the block tree via APIs, not the serialized HTML.**
+
+```javascript
+// ✅ GOOD: Use block APIs
+import { select, dispatch } from '@wordpress/data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
+
+const blocks = select(blockEditorStore).getBlocks();
+dispatch(blockEditorStore).insertBlock(newBlock);
+
+// ❌ BAD: Don't parse/manipulate HTML comments directly
+const html = '<!-- wp:paragraph -->...';
+```
+
+## Data Layer Architecture
+
+Gutenberg uses `@wordpress/data` for state management, following a Redux-like pattern.
+
+### State Management Principles
+
+**Use data stores for all state**:
+
+```javascript
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+
+function MyComponent() {
+  const post = useSelect((select) =>
+    select(coreStore).getEntityRecord('postType', 'post', postId)
+  );
+
+  const { editEntityRecord, saveEditedEntityRecord } = useDispatch(coreStore);
+
+  // Update entity
+  editEntityRecord('postType', 'post', postId, { title: 'New Title' });
+
+  // Save changes
+  saveEditedEntityRecord('postType', 'post', postId);
+}
+```
+
+### Critical Rules
+
+**Edit entities through `core-data` actions**:
+
+```javascript
+// ✅ GOOD: Use core-data actions
+editEntityRecord('postType', 'post', id, changes);
+saveEditedEntityRecord('postType', 'post', id);
+
+// ❌ BAD: Direct state manipulation
+store.dispatch({ type: 'UPDATE_POST', post });
+```
+
+**Don't mutate state directly**:
+
+```javascript
+// ❌ BAD: Direct mutation
+post.title = 'New Title';
+
+// ✅ GOOD: Use actions
+editEntityRecord('postType', 'post', id, { title: 'New Title' });
+```
+
+## Styles System
+
+Gutenberg's styling follows a three-layer merge system:
+
+### Style Layer Hierarchy
+
+1. **WordPress Defaults** (Base)
+   - Core WordPress styles
+   - Block default styles
+
+2. **`theme.json`** (Theme Layer)
+   - Theme-defined styles and settings
+   - Global style variations
+
+3. **User Preferences** (Top Layer)
+   - User customizations
+   - Site-specific overrides
+
+Each layer overrides the previous, creating a cascade.
+
+### Implementation Guidelines
+
+**Use Block Supports API**:
+
+```json
+// block.json
+{
+  "supports": {
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    }
+  }
+}
+```
+
+**Use CSS Custom Properties**:
+
+```scss
+// ✅ GOOD: Use preset variables
+.my-block {
+  color: var(--wp--preset--color--primary);
+  font-size: var(--wp--preset--font-size--large);
+}
+
+// ❌ BAD: Hardcoded values
+.my-block {
+  color: #007cba;
+  font-size: 24px;
+}
+```
+
+**Respect theme.json settings**:
+
+```javascript
+import { useSettings } from '@wordpress/block-editor';
+
+function MyBlock() {
+  const [colors] = useSettings('color.palette');
+
+  // Use theme colors, not hardcoded values
+}
+```
+
+## Modularity and Distribution
+
+Gutenberg packages work in multiple contexts:
+
+### Dual Distribution
+
+Production packages are available as:
+
+1. **npm packages**: `@wordpress/components`
+   - Used by third-party developers
+   - Bundled into plugins and themes
+
+2. **WordPress scripts**: `wp-components`
+   - Loaded via `wp_enqueue_script()`
+   - Available as global `wp.components`
+
+### Critical Requirement
+
+**Production packages must work in both contexts.**
+
+```javascript
+// ✅ GOOD: Works in both npm and WordPress context
+import { Button } from '@wordpress/components';
+// or
+const { Button } = wp.components;
+
+// ❌ BAD: Assumes specific bundling
+import Button from '@wordpress/components/build/button';
+```
+
+## WordPress-Agnostic Core
+
+The `@wordpress/block-editor` package is designed to be WordPress-agnostic:
+
+### What This Means
+
+**No WordPress-specific dependencies**:
+
+```javascript
+// ❌ BAD in @wordpress/block-editor
+import { useEntityProp } from '@wordpress/core-data';
+import apiFetch from '@wordpress/api-fetch';
+
+// ✅ GOOD in @wordpress/block-editor
+import { useRegistry } from '@wordpress/data';
+// Accept data via props from higher layers
+```
+
+**Generic, reusable components**:
+
+```javascript
+// block-editor package
+export function BlockToolbar({ children }) {
+  // Generic toolbar, no WordPress coupling
+}
+
+// editor package wraps with WordPress features
+export function PostToolbar() {
+  return (
+    <BlockToolbar>
+      <PostSaveButton />
+      <PostPreviewButton />
+    </BlockToolbar>
+  );
+}
+```
+
+## Development Tools Separation
+
+The `@wordpress/scripts` package has special constraints:
+
+### Special Case: `@wordpress/scripts`
+
+**Purpose**: Generic build tool for:
+- Gutenberg plugin development
+- WordPress Core contributions
+- Third-party plugin development
+
+**Critical Rule**: Avoid Gutenberg-specific changes in `@wordpress/scripts`
+
+```javascript
+// ❌ BAD: Gutenberg-specific in @wordpress/scripts
+if (isGutenbergProject) {
+  // Special handling
+}
+
+// ✅ GOOD: Generic, configurable approach
+if (config.customOption) {
+  // Configurable behavior
+}
+```
+
+## Key Takeaways
+
+When contributing to Gutenberg:
+
+1. **Respect package layering** - Lower layers don't depend on higher layers
+2. **Use block APIs** - Don't manipulate serialized HTML directly
+3. **Use data stores** - Follow Redux patterns via `@wordpress/data`
+4. **Use CSS custom properties** - Don't hardcode style values
+5. **Keep `block-editor` agnostic** - No `core-data` or WordPress-specific code
+6. **Make packages portable** - Work in both npm and WordPress contexts
+7. **Keep build tools generic** - `@wordpress/scripts` serves multiple use cases
+
+## Further Reading
+
+For detailed architecture documentation:
+
+- [Architecture Documentation](https://github.com/WordPress/gutenberg/tree/trunk/docs/explanations/architecture)
+- [Block API Reference](https://developer.wordpress.org/block-editor/reference-guides/block-api/)
+- [Data Module Reference](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-data/)
+
+## Next Steps
+
+- Review [Common Pitfalls](/contributing/common-pitfalls) to avoid architectural mistakes
+- Check [Coding Guidelines](/contributing/coding-guidelines) for implementation patterns
+- See [Folder Structure](/contributing/folder-structure) to understand package organization

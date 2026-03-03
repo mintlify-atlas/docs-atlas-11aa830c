@@ -1,0 +1,459 @@
+---
+title: Data Display Components
+description: Components for presenting information and displaying data in the block editor
+---
+
+Data display components are used to present information to users in various visual formats, from simple text and icons to complex data visualizations.
+
+## Loading States
+
+### Spinner
+
+Notifies users that their action is being processed.
+
+```jsx
+import { Spinner } from '@wordpress/components';
+
+function LoadingExample() {
+  return (
+    <div>
+      <Spinner />
+      <p>Loading content...</p>
+    </div>
+  );
+}
+```
+
+The Spinner displays an animated circular loading indicator. It automatically uses theme colors and is accessible with proper ARIA attributes.
+
+**Usage:**
+- Loading initial content
+- Processing actions
+- Waiting for API responses
+
+[Storybook: Spinner](https://wordpress.github.io/gutenberg/?path=/docs/components-spinner--docs)
+
+### ProgressBar
+
+Shows determinate progress for long-running operations.
+
+```jsx
+import { __experimentalProgressBar as ProgressBar } from '@wordpress/components';
+import { useState, useEffect } from '@wordpress/element';
+
+function UploadProgress() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => Math.min(prev + 10, 100));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <ProgressBar value={progress} />;
+}
+```
+
+**Props:**
+- `value?: number` - Progress percentage (0-100)
+
+## Icons & Avatars
+
+### Icon
+
+Displays SVG icons from the WordPress icon library or custom SVGs.
+
+```jsx
+import { Icon } from '@wordpress/components';
+import { check, closeSmall, wordpress } from '@wordpress/icons';
+
+function IconExamples() {
+  return (
+    <>
+      <Icon icon={check} />
+      <Icon icon={wordpress} size={48} />
+      <Icon icon={closeSmall} size={24} />
+    </>
+  );
+}
+```
+
+**Props:**
+- `icon: IconType | SVGElement` - Icon component or SVG
+- `size?: number` - Icon size in pixels
+
+[Storybook: Icon](https://wordpress.github.io/gutenberg/?path=/docs/components-icon--docs)
+
+### Dashicon
+
+Legacy icon component for WordPress Dashicons.
+
+```jsx
+import { Dashicon } from '@wordpress/components';
+
+function DashiconExample() {
+  return <Dashicon icon="admin-users" size={20} />;
+}
+```
+
+<Note>
+  **Deprecated:** Use `Icon` with `@wordpress/icons` instead. Dashicon is maintained for backward compatibility.
+</Note>
+
+### Avatar
+
+Displays user profile images or initials.
+
+```jsx
+import { Avatar } from '@wordpress/components';
+
+function UserAvatar() {
+  return (
+    <>
+      <Avatar
+        name="John Doe"
+        src="https://example.com/avatar.jpg"
+        size={48}
+      />
+      <Avatar
+        name="Jane Smith"
+        size={32}
+      />
+    </>
+  );
+}
+```
+
+**Props:**
+- `name?: string` - User name (shows initials if no image)
+- `src?: string` - Avatar image URL
+- `size?: number` - Avatar size in pixels
+
+### AvatarGroup
+
+Displays multiple avatars in a group.
+
+```jsx
+import { AvatarGroup } from '@wordpress/components';
+
+function TeamAvatars() {
+  return (
+    <AvatarGroup
+      avatars={[
+        { name: 'Alice', src: 'https://example.com/alice.jpg' },
+        { name: 'Bob', src: 'https://example.com/bob.jpg' },
+        { name: 'Charlie', src: 'https://example.com/charlie.jpg' },
+        { name: 'Diana' },
+        { name: 'Eve' },
+      ]}
+      maxAvatars={3}
+    />
+  );
+}
+```
+
+**Props:**
+- `avatars: Array<AvatarProps>` - Array of avatar objects
+- `maxAvatars?: number` - Maximum visible avatars (shows +N for overflow)
+
+## Status Indicators
+
+### Badge
+
+Small label for status, counts, or categories.
+
+```jsx
+import { __experimentalBadge as Badge } from '@wordpress/components';
+
+function StatusBadges() {
+  return (
+    <>
+      <Badge>New</Badge>
+      <Badge intent="info">Beta</Badge>
+      <Badge intent="success">Published</Badge>
+      <Badge intent="warning">Draft</Badge>
+      <Badge intent="error">Error</Badge>
+    </>
+  );
+}
+```
+
+**Props:**
+- `intent?: 'default' | 'info' | 'success' | 'warning' | 'error'` - Badge color scheme
+- `children: ReactNode` - Badge content
+
+### Indicator
+
+Simple colored dot for status indication.
+
+```jsx
+import { __experimentalIndicator as Indicator } from '@wordpress/components';
+
+function OnlineStatus() {
+  return (
+    <div>
+      <Indicator isPrimary />
+      <span>User is online</span>
+    </div>
+  );
+}
+```
+
+## Text Display
+
+### Text
+
+Typography component for consistent text styling.
+
+```jsx
+import { __experimentalText as Text } from '@wordpress/components';
+
+function TextExamples() {
+  return (
+    <>
+      <Text size="body">Regular body text</Text>
+      <Text size="caption" isBlock>
+        Caption text
+      </Text>
+      <Text weight={600}>Bold text</Text>
+      <Text variant="muted">Muted text</Text>
+    </>
+  );
+}
+```
+
+**Props:**
+- `size?: 'body' | 'caption' | 'footnote' | 'largeTitle' | 'title'` - Text size
+- `weight?: number` - Font weight (100-900)
+- `variant?: 'default' | 'muted'` - Text style variant
+- `isBlock?: boolean` - Display as block element
+- `truncate?: boolean` - Truncate with ellipsis
+
+### Heading
+
+Semantic heading component with consistent styling.
+
+```jsx
+import { __experimentalHeading as Heading } from '@wordpress/components';
+
+function HeadingExamples() {
+  return (
+    <>
+      <Heading level={1}>Main Title</Heading>
+      <Heading level={2}>Subtitle</Heading>
+      <Heading level={3} weight={400}>Section</Heading>
+    </>
+  );
+}
+```
+
+**Props:**
+- `level: 1 | 2 | 3 | 4 | 5 | 6` - Heading level (required)
+- `weight?: number` - Font weight
+- `color?: string` - Text color
+
+### Truncate
+
+Truncates text with ellipsis.
+
+```jsx
+import { __experimentalTruncate as Truncate } from '@wordpress/components';
+
+function TruncatedText() {
+  return (
+    <Truncate numberOfLines={2}>
+      This is a very long text that will be truncated after two lines.
+      Any content beyond the specified number of lines will be hidden
+      and replaced with an ellipsis.
+    </Truncate>
+  );
+}
+```
+
+**Props:**
+- `numberOfLines?: number` - Maximum number of lines (default: 1)
+- `limit?: number` - Maximum character count
+- `ellipsizeMode?: 'auto' | 'head' | 'tail' | 'middle'` - Ellipsis position
+
+## Color Display
+
+### ColorIndicator
+
+Displays a color swatch.
+
+```jsx
+import { ColorIndicator } from '@wordpress/components';
+
+function ColorDisplay() {
+  return (
+    <div>
+      <ColorIndicator colorValue="#ff0000" />
+      <span>Primary Red</span>
+    </div>
+  );
+}
+```
+
+**Props:**
+- `colorValue: string` - Color value (hex, rgb, named)
+
+### GradientPicker
+
+Displays gradient previews and allows gradient selection.
+
+```jsx
+import { GradientPicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyGradientPicker() {
+  const [gradient, setGradient] = useState(
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  );
+
+  return (
+    <GradientPicker
+      value={gradient}
+      onChange={setGradient}
+      gradients={[
+        {
+          name: 'Purple',
+          gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          slug: 'purple',
+        },
+        {
+          name: 'Blue',
+          gradient: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)',
+          slug: 'blue',
+        },
+      ]}
+    />
+  );
+}
+```
+
+## Media Display
+
+### ExternalLink
+
+Link that opens in a new tab with proper accessibility.
+
+```jsx
+import { ExternalLink } from '@wordpress/components';
+
+function DocumentationLink() {
+  return (
+    <ExternalLink href="https://wordpress.org/gutenberg/">
+      Visit Gutenberg Docs
+    </ExternalLink>
+  );
+}
+```
+
+Automatically adds:
+- `target="_blank"`
+- `rel="noopener noreferrer"`
+- External link icon
+- Screen reader text
+
+[Storybook: ExternalLink](https://wordpress.github.io/gutenberg/?path=/docs/components-externallink--docs)
+
+### FocalPointPicker
+
+Interactive control for selecting image focal point.
+
+```jsx
+import { FocalPointPicker } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function ImageFocalPoint() {
+  const [focalPoint, setFocalPoint] = useState({ x: 0.5, y: 0.5 });
+
+  return (
+    <FocalPointPicker
+      url="https://example.com/image.jpg"
+      value={focalPoint}
+      onChange={setFocalPoint}
+    />
+  );
+}
+```
+
+**Props:**
+- `url: string` - Image URL
+- `value: { x: number, y: number }` - Focal point (0-1 range)
+- `onChange: (value) => void` - Change handler
+
+## Placeholder
+
+Placeholder component for empty states.
+
+```jsx
+import { Placeholder } from '@wordpress/components';
+import { wordpress } from '@wordpress/icons';
+
+function EmptyState() {
+  return (
+    <Placeholder
+      icon={wordpress}
+      label="No content yet"
+      instructions="Add your first item to get started"
+    >
+      <Button variant="primary">Add Item</Button>
+    </Placeholder>
+  );
+}
+```
+
+**Props:**
+- `icon?: IconType` - Placeholder icon
+- `label?: string` - Main label
+- `instructions?: string` - Instructional text
+- `children?: ReactNode` - Actions or additional content
+
+[Storybook: Placeholder](https://wordpress.github.io/gutenberg/?path=/docs/components-placeholder--docs)
+
+## Sandbox
+
+Safely renders HTML content in an iframe.
+
+```jsx
+import { SandBox } from '@wordpress/components';
+
+function HTMLPreview() {
+  const html = '<h1>Hello World</h1><p>This is sandboxed HTML</p>';
+
+  return <SandBox html={html} />;
+}
+```
+
+**Props:**
+- `html: string` - HTML content to render
+- `title?: string` - Iframe title
+- `styles?: string` - Additional CSS styles
+
+<Note>
+  The Sandbox component isolates potentially unsafe HTML in an iframe, preventing it from affecting the parent page.
+</Note>
+
+## Data Visualization
+
+For complex data visualization and tables, consider using:
+
+- **DataViews** from `@wordpress/dataviews` - Table and grid views with sorting, filtering, and actions
+- **FormTokenField** - Token/tag input for displaying multiple items
+
+## Accessibility
+
+All data display components include proper ARIA labels and roles:
+
+- Spinner includes `role="presentation"` and `focusable="false"`
+- Avatar includes fallback to initials with proper contrast
+- ColorIndicator uses accessible color contrast checking
+- ExternalLink announces external destination to screen readers
+
+## Resources
+
+- [Storybook: All Display Components](https://wordpress.github.io/gutenberg/)
+- [@wordpress/icons](https://wordpress.github.io/gutenberg/?path=/docs/icons-icon--docs) - Icon library
+- [Web Content Accessibility Guidelines (WCAG)](https://www.w3.org/WAI/WCAG21/quickref/)

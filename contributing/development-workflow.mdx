@@ -1,0 +1,368 @@
+---
+title: Development Workflow
+description: Learn the Git workflow, branching strategy, and pull request process for contributing to Gutenberg.
+---
+
+This guide covers the Git workflow and pull request process for contributing to the Gutenberg project.
+
+## Workflow Overview
+
+The standard contribution workflow:
+
+1. Fork the Gutenberg repository
+2. Clone your forked repository
+3. Create a new branch
+4. Make code changes
+5. Confirm tests pass
+6. Commit your changes
+7. Push the branch to your fork
+8. Submit a pull request
+
+## Fork and Clone
+
+### Step 1: Fork the Repository
+
+Go to [github.com/WordPress/gutenberg](https://github.com/WordPress/gutenberg) and click the "Fork" button. This creates a copy of the repository under your account.
+
+### Step 2: Clone Your Fork
+
+Clone the forked repository to your local machine:
+
+```bash
+git clone https://github.com/YOUR-USER-NAME/gutenberg.git
+cd gutenberg
+```
+
+### Step 3: Add Upstream Remote
+
+Add the main Gutenberg repository as the upstream remote:
+
+```bash
+git remote add upstream https://github.com/WordPress/gutenberg.git
+```
+
+Verify your remotes:
+
+```bash
+git remote -v
+# origin    https://github.com/YOUR-USER-NAME/gutenberg.git (fetch)
+# origin    https://github.com/YOUR-USER-NAME/gutenberg.git (push)
+# upstream  https://github.com/WordPress/gutenberg.git (fetch)
+# upstream  https://github.com/WordPress/gutenberg.git (push)
+```
+
+## Branch Naming
+
+Create descriptive branch names using this format: `[type]/[description]`
+
+### Branch Prefixes
+
+- `add/` - Add a new feature
+- `try/` - Experimental feature, tentatively add
+- `update/` - Update an existing feature
+- `remove/` - Remove an existing feature
+- `fix/` - Fix an existing issue
+
+### Examples
+
+```bash
+git switch -c add/gallery-block
+git switch -c fix/block-toolbar-alignment
+git switch -c update/color-picker-api
+```
+
+## Making Changes
+
+### Step 1: Create a Branch
+
+Create a new branch from `trunk`:
+
+```bash
+git switch -c add/my-feature
+```
+
+### Step 2: Make Code Changes
+
+Make your changes following the [Coding Guidelines](/contributing/coding-guidelines).
+
+### Step 3: Build and Test
+
+Build the project and run tests:
+
+```bash
+# Development build with watch
+npm run dev
+
+# Run tests
+npm test
+
+# Run specific tests
+npm run test:unit -- --testNamePattern="MyTest"
+```
+
+### Step 4: Check Code Quality
+
+Ensure code passes linting and formatting:
+
+```bash
+# Auto-fix JavaScript
+npm run format
+
+# Check JavaScript linting
+npm run lint:js
+
+# Check PHP standards
+npm run lint:php
+# or
+vendor/bin/phpcs
+
+# Auto-fix PHP standards
+vendor/bin/phpcbf
+```
+
+## Committing Changes
+
+### Writing Commit Messages
+
+Write clear, descriptive commit messages following [WordPress best practices](https://make.wordpress.org/core/handbook/best-practices/commit-messages/):
+
+```bash
+git commit -m "Add color picker to gallery block settings"
+```
+
+**Good commit messages**:
+- Use present tense ("Add feature" not "Added feature")
+- Be descriptive but concise
+- Focus on the "why" rather than the "what"
+
+**Example**:
+
+```bash
+# Good
+git commit -m "Fix block toolbar position in nested blocks"
+
+# Not ideal
+git commit -m "Update CSS"
+```
+
+### Staging and Committing
+
+```bash
+# Stage specific files
+git add path/to/file.js
+
+# Stage all changes
+git add .
+
+# Commit with message
+git commit -m "Your commit message"
+```
+
+## Pushing Changes
+
+Push your branch to your forked repository:
+
+```bash
+git push -u origin add/my-feature
+```
+
+The `-u` flag sets up tracking, so future pushes can use just `git push`.
+
+## Creating a Pull Request
+
+### Step 1: Open Pull Request
+
+After pushing, GitHub will show a banner on your fork with a "Compare & pull request" button. Click it to create a pull request.
+
+Alternatively, go to the [Gutenberg repository](https://github.com/WordPress/gutenberg) and click "New pull request".
+
+### Step 2: Fill Out PR Details
+
+Provide a clear title and description:
+
+**Title**: Concise summary of the change
+
+**Description**:
+- What does this change do?
+- Why is this change needed?
+- How has it been tested?
+- Screenshots (for UI changes)
+- Related issues (use `Fixes #123` or `Closes #123`)
+
+### Step 3: Review Checklist
+
+Before submitting, ensure:
+- [ ] Tests pass (`npm test`)
+- [ ] Code follows style guidelines
+- [ ] No linting errors (`npm run lint:js` and `npm run lint:php`)
+- [ ] Changes are documented (if needed)
+- [ ] Accessibility has been tested (for UI changes)
+
+## Updating a Pull Request
+
+If changes are requested:
+
+### Make Additional Changes
+
+```bash
+# Make your changes
+# Stage and commit
+git add .
+git commit -m "Address review feedback"
+
+# Push to the same branch
+git push
+```
+
+The pull request will automatically update with your new commits.
+
+### Important Notes
+
+- **Don't create a new PR** for updates - the existing PR will update automatically
+- Keep commits focused and atomic
+- Respond to review comments
+
+## Keeping Your Branch Updated
+
+### Rebasing on Trunk
+
+Keep your branch up to date with the main repository:
+
+```bash
+# Fetch latest changes
+git fetch upstream
+
+# Rebase your branch on trunk
+git rebase upstream/trunk
+
+# Force push (with safety)
+git push --force-with-lease origin your-branch-name
+```
+
+**Why rebase?**
+- Keeps commit history clean and linear
+- Avoids merge commits
+- Makes it easier to review changes
+
+### Resolving Conflicts
+
+If conflicts occur during rebase:
+
+1. Git will pause and show conflicted files
+2. Open the files and resolve conflicts
+3. Stage the resolved files: `git add path/to/file`
+4. Continue rebasing: `git rebase --continue`
+5. Force push: `git push --force-with-lease`
+
+## Keeping Your Fork Updated
+
+### Update Trunk Branch
+
+Regularly sync your fork with upstream:
+
+```bash
+# Fetch upstream changes
+git fetch upstream
+
+# Switch to trunk
+git switch trunk
+
+# Merge upstream changes
+git merge upstream/trunk
+
+# Push to your fork
+git push
+```
+
+**Best Practice**: Always update your fork before creating a new branch.
+
+## Development Environment Commands
+
+### Setup
+
+```bash
+# Initial setup
+npm install && composer install
+
+# Check wp-env status
+npm run wp-env status
+
+# Start wp-env (if not running)
+npm run wp-env start
+```
+
+### Development
+
+```bash
+# Development build with watch
+npm start
+# or
+npm run dev
+
+# Production build
+npm run build
+```
+
+### Testing
+
+```bash
+# JavaScript tests
+npm run test:unit
+
+# PHP tests (requires wp-env)
+npm run test:php
+
+# E2E tests (requires wp-env)
+npm run test:e2e
+
+# Code quality
+npm run format        # Fix JS formatting
+npm run lint:js       # Check JS linting
+vendor/bin/phpcbf     # Fix PHP standards
+vendor/bin/phpcs      # Check PHP standards
+```
+
+## Pull Request Best Practices
+
+### Keep PRs Focused
+
+- One feature or fix per PR
+- Avoid mixing unrelated changes
+- Split large changes into smaller PRs
+
+### Ensure Build Passes
+
+The CI system checks:
+- All tests pass
+- No linting errors
+- No formatting issues
+
+Fix any CI failures before requesting review.
+
+### Accessibility Testing
+
+For UI changes, test with:
+- Keyboard navigation
+- Screen readers
+- High contrast mode
+- Reduced motion preferences
+
+See the [accessibility testing guide](https://github.com/WordPress/gutenberg/blob/trunk/docs/contributors/accessibility-testing.md).
+
+### React Native Compatibility
+
+If changes affect function/class/variable names, update corresponding `.native.js` files to maintain React Native compatibility.
+
+## Getting Help
+
+### Where to Ask Questions
+
+- **Slack**: `#core-editor` and `#core-js` channels on [Make WordPress Slack](https://make.wordpress.org/chat)
+- **GitHub**: Comment on issues or pull requests
+- **Make/Core**: [Make WordPress Core blog](https://make.wordpress.org/core/)
+
+## Next Steps
+
+- Review [Testing Guide](/contributing/testing) for testing requirements
+- Check [Common Pitfalls](/contributing/common-pitfalls) to avoid mistakes
+- Read [Architectural Decisions](/contributing/architectural-decisions) to understand design principles

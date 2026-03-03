@@ -1,0 +1,573 @@
+---
+title: Block Variations
+description: Create multiple versions of a block with different initial configurations using the Block Variations API
+---
+
+Block Variations allow you to define multiple versions of a block that differ by initial attributes or inner blocks. They provide a way to create iterations of existing blocks without building entirely new blocks from scratch.
+
+## What are Block Variations?
+
+Variations differ from the original block by:
+
+- **Initial attributes**: Pre-configured settings when inserted
+- **Inner blocks**: Pre-populated nested content
+- **Visual appearance**: Different icons and titles in the inserter
+
+They share the same underlying edit, save, and functionality as the base block.
+
+## Example: Embed Block
+
+The core Embed block uses variations for each embed type (YouTube, Twitter, WordPress, etc.):
+
+```js
+variations: [
+	{
+		name: 'wordpress',
+		title: 'WordPress',
+		description: __( 'Embed a WordPress post.' ),
+		attributes: { providerNameSlug: 'wordpress' },
+	},
+	{
+		name: 'youtube',
+		title: 'YouTube',
+		description: __( 'Embed a YouTube video.' ),
+		attributes: { providerNameSlug: 'youtube' },
+	},
+]
+```
+
+Each variation appears as a separate option in the inserter, but they're all the same block type.
+
+## Defining Block Variations
+
+### During Block Registration
+
+Define variations in the block configuration:
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+
+registerBlockType( 'my-plugin/alert', {
+	title: 'Alert',
+	category: 'widgets',
+	attributes: {
+		type: {
+			type: 'string',
+			default: 'info',
+		},
+	},
+	variations: [
+		{
+			name: 'info',
+			title: 'Info Alert',
+			description: 'An informational alert',
+			isDefault: true,
+			attributes: {
+				type: 'info',
+			},
+			icon: 'info',
+		},
+		{
+			name: 'warning',
+			title: 'Warning Alert',
+			description: 'A warning alert',
+			attributes: {
+				type: 'warning',
+			},
+			icon: 'warning',
+		},
+		{
+			name: 'error',
+			title: 'Error Alert',
+			description: 'An error alert',
+			attributes: {
+				type: 'error',
+			},
+			icon: 'dismiss',
+		},
+	],
+	edit: ( { attributes } ) => {
+		const { type } = attributes;
+		return (
+			<div { ...useBlockProps() } className={ `alert-${ type }` }>
+				Alert content
+			</div>
+		);
+	},
+	save: ( { attributes } ) => {
+		const { type } = attributes;
+		return (
+			<div { ...useBlockProps.save() } className={ `alert-${ type }` }>
+				Alert content
+			</div>
+		);
+	},
+} );
+```
+
+### Registering for Existing Blocks
+
+Add variations to existing blocks (including core blocks):
+
+```js
+import { registerBlockVariation } from '@wordpress/blocks';
+
+registerBlockVariation( 'core/media-text', {
+	name: 'media-text-image-right',
+	title: 'Media & Text (Image Right)',
+	description: 'Display media and text with the image on the right',
+	attributes: {
+		mediaPosition: 'right',
+	},
+	isDefault: true,
+} );
+```
+
+## Variation Properties
+
+### Required Properties
+
+#### name
+
+Unique identifier for the variation.
+
+```js
+name: 'media-right'
+```
+
+<Note>
+While technically optional, always provide a unique `name` to allow unregistering and distinguish variations.
+</Note>
+
+### Optional Properties
+
+#### title
+
+Human-readable title displayed in the inserter.
+
+```js
+title: 'Alert Warning'
+```
+
+#### description
+
+Description shown in the inserter.
+
+```js
+description: 'Display a warning message to users'
+```
+
+#### category
+
+Override the block's category for this variation.
+
+```js
+category: 'widgets'
+```
+
+#### keywords
+
+Search terms to help users find the variation.
+
+```js
+keywords: [ 'caution', 'alert', 'notice' ]
+```
+
+#### icon
+
+Icon for the variation (Dashicon or custom SVG).
+
+```js
+icon: 'warning'
+
+// Or custom SVG
+icon: <svg>...</svg>
+```
+
+#### attributes
+
+Initial attribute values for the variation.
+
+```js
+attributes: {
+	align: 'wide',
+	backgroundColor: 'primary',
+}
+```
+
+#### innerBlocks
+
+Initial nested blocks configuration.
+
+```js
+innerBlocks: [
+	[ 'core/heading', { content: 'Featured Content' } ],
+	[ 'core/paragraph', { content: 'Description here...' } ],
+]
+```
+
+#### example
+
+Preview data for the variation (shown on hover).
+
+```js
+example: {
+	attributes: {
+		content: 'Sample alert text',
+	},
+}
+```
+
+#### scope
+
+Where the variation appears. Array of:
+
+- `inserter` - Shows in the block inserter (default)
+- `block` - Available for block-level variation picker
+- `transform` - Shows in block transformations
+
+```js
+scope: [ 'inserter', 'transform' ]
+```
+
+#### isDefault
+
+Mark this variation as the default (replaces the base block in inserter).
+
+```js
+isDefault: true
+```
+
+#### isActive
+
+Determines which variation is active when a block is selected.
+
+```js
+// String array - compare these attributes
+isActive: [ 'type' ]
+
+// For nested attributes
+isActive: [ 'query.postType' ]
+
+// Function - custom comparison
+isActive: ( blockAttributes, variationAttributes ) =>
+	blockAttributes.type === variationAttributes.type
+```
+
+## Registering in PHP
+
+Register variations server-side using the `get_block_type_variations` filter:
+
+```php
+function my_plugin_register_variations( $variations, $block_type ) {
+	if ( 'core/image' !== $block_type->name ) {
+		return $variations;
+	}
+
+	$variations[] = array(
+		'name'        => 'wide-image',
+		'title'       => __( 'Wide Image', 'my-plugin' ),
+		'description' => __( 'A wide image block', 'my-plugin' ),
+		'scope'       => array( 'inserter' ),
+		'attributes'  => array(
+			'align' => 'wide',
+		),
+	);
+
+	return $variations;
+}
+add_filter( 'get_block_type_variations', 'my_plugin_register_variations', 10, 2 );
+```
+
+<Note>
+Variations registered through PHP are merged with JavaScript-registered variations.
+</Note>
+
+## Unregistering Variations
+
+Remove variations using `unregisterBlockVariation()`:
+
+```js
+import { unregisterBlockVariation } from '@wordpress/blocks';
+
+unregisterBlockVariation( 'core/embed', 'youtube' );
+```
+
+## Complete Examples
+
+### Social Links Variations
+
+```js
+registerBlockVariation( 'core/social-links', {
+	name: 'social-links-centered',
+	title: 'Social Links (Centered)',
+	description: 'Social media links centered horizontally',
+	attributes: {
+		layout: {
+			type: 'flex',
+			justifyContent: 'center',
+		},
+	},
+	innerBlocks: [
+		[ 'core/social-link', { service: 'twitter' } ],
+		[ 'core/social-link', { service: 'facebook' } ],
+		[ 'core/social-link', { service: 'instagram' } ],
+	],
+	scope: [ 'inserter' ],
+} );
+```
+
+### Query Loop Variations
+
+```js
+registerBlockVariation( 'core/query', {
+	name: 'featured-posts',
+	title: 'Featured Posts',
+	description: 'Display posts marked as featured',
+	attributes: {
+		query: {
+			postType: 'post',
+			perPage: 3,
+			meta_query: [
+				{
+					key: 'featured',
+					value: '1',
+				},
+			],
+		},
+	},
+	innerBlocks: [
+		[ 'core/post-template', {}, [
+			[ 'core/post-featured-image' ],
+			[ 'core/post-title' ],
+			[ 'core/post-excerpt' ],
+		] ],
+	],
+	isActive: [ 'query' ],
+} );
+```
+
+### Button Variations
+
+```js
+registerBlockVariation( 'core/button', {
+	name: 'cta-button',
+	title: 'Call to Action Button',
+	description: 'Large, prominent call-to-action button',
+	attributes: {
+		backgroundColor: 'primary',
+		textColor: 'white',
+		fontSize: 'large',
+		width: 100,
+	},
+	icon: 'megaphone',
+} );
+```
+
+## Using isDefault
+
+The `isDefault` property makes a variation replace the base block in the inserter:
+
+```js
+registerBlockVariation( 'core/media-text', {
+	name: 'media-text-right',
+	title: 'Media & Text',
+	isDefault: true,
+	attributes: {
+		mediaPosition: 'right',
+	},
+} );
+```
+
+### Caveats
+
+1. **Only first isDefault wins**: If multiple variations use `isDefault`, the first registered one takes precedence
+
+2. **Unregister conflicts**: Unregister competing default variations before registering yours:
+
+```js
+// Unregister the default variation first
+unregisterBlockVariation( 'core/media-text', 'default' );
+
+// Then register your default
+registerBlockVariation( 'core/media-text', {
+	name: 'my-default',
+	isDefault: true,
+	attributes: { mediaPosition: 'right' },
+} );
+```
+
+## Using isActive
+
+The `isActive` property helps the editor identify which variation is selected.
+
+### String Array Method (Recommended)
+
+```js
+{
+	name: 'twitter',
+	attributes: { providerNameSlug: 'twitter' },
+	isActive: [ 'providerNameSlug' ],
+}
+```
+
+The editor compares `blockAttributes.providerNameSlug` with `variationAttributes.providerNameSlug`.
+
+### Nested Attributes
+
+For nested object attributes:
+
+```js
+{
+	name: 'post-query',
+	attributes: {
+		query: {
+			postType: 'post',
+		},
+	},
+	isActive: [ 'query.postType' ],
+}
+```
+
+### Function Method
+
+For complex logic:
+
+```js
+{
+	name: 'blue-quote',
+	attributes: {
+		color: 'blue',
+		style: 'fancy',
+	},
+	isActive: ( blockAttributes, variationAttributes ) => {
+		return (
+			blockAttributes.color === variationAttributes.color &&
+			blockAttributes.style === variationAttributes.style
+		);
+	},
+}
+```
+
+### Specificity
+
+When multiple variations match, the most specific wins:
+
+```js
+// Less specific (1 attribute)
+{
+	name: 'red-paragraph',
+	attributes: { textColor: 'red' },
+	isActive: [ 'textColor' ],
+}
+
+// More specific (2 attributes) - this wins
+{
+	name: 'red-gray-paragraph',
+	attributes: {
+		textColor: 'red',
+		backgroundColor: 'gray',
+	},
+	isActive: [ 'textColor', 'backgroundColor' ],
+}
+```
+
+<Note>
+Specificity only works with string array `isActive`. Function-based `isActive` always returns the first match.
+</Note>
+
+## Block Variations vs Block Styles
+
+| Feature | Block Variation | Block Style |
+|---------|----------------|-------------|
+| Purpose | Different configurations | Visual styling only |
+| Changes | Attributes, inner blocks | CSS className |
+| When set | At insertion time | After insertion (can switch) |
+| Implementation | JavaScript | JavaScript or PHP |
+
+**Use Variations when you need:**
+- Different initial attributes
+- Different inner blocks
+- Different functionality
+
+**Use Styles when you need:**
+- Only visual changes
+- Users can switch styles after insertion
+- Simple CSS modifications
+
+### Combining Both
+
+You can use variations and styles together:
+
+```js
+registerBlockVariation( 'core/quote', {
+	name: 'testimonial',
+	title: 'Testimonial',
+	attributes: {
+		className: 'is-style-testimonial',
+		citation: 'Customer Name',
+	},
+} );
+```
+
+## Dynamic Variations from WordPress Data
+
+Create variations based on post types, taxonomies, etc.:
+
+```php
+function my_plugin_post_type_variations( $variations, $block_type ) {
+	if ( 'core/query' !== $block_type->name ) {
+		return $variations;
+	}
+
+	$post_types = get_post_types( array(
+		'public' => true,
+	), 'objects' );
+
+	foreach ( $post_types as $post_type ) {
+		$variations[] = array(
+			'name'        => $post_type->name . '-query',
+			'title'       => sprintf(
+				__( '%s Query', 'my-plugin' ),
+				$post_type->label
+			),
+			'description' => sprintf(
+				__( 'Display a list of %s', 'my-plugin' ),
+				strtolower( $post_type->label )
+			),
+			'attributes'  => array(
+				'query' => array(
+					'postType' => $post_type->name,
+				),
+			),
+			'isActive'    => array( 'query.postType' ),
+		);
+	}
+
+	return $variations;
+}
+add_filter( 'get_block_type_variations', 'my_plugin_post_type_variations', 10, 2 );
+```
+
+## Best Practices
+
+1. **Always provide a name**: Makes variations unregisterable and identifiable
+
+2. **Use isActive**: Helps the editor show the correct variation info when selected
+
+3. **Prefer string arrays for isActive**: Better specificity handling than functions
+
+4. **Provide good titles/descriptions**: Help users choose the right variation
+
+5. **Use appropriate scope**: Not all variations need to be in the inserter
+
+6. **Test specificity**: Ensure the correct variation is identified as active
+
+7. **Document variations**: Comment why each variation exists
+
+## Related Documentation
+
+- [Block Styles](/blocks/block-styles) - Alternative visual styles
+- [Block Patterns](/blocks/block-patterns) - Predefined block layouts
+- [Block Transforms](/blocks/block-transforms) - Converting between block types
+- [PHP Registration](https://developer.wordpress.org/news/2024/03/how-to-register-block-variations-with-php/) - Detailed PHP guide

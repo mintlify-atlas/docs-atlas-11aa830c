@@ -1,0 +1,597 @@
+---
+title: Theme JSON
+description: Understanding theme.json as the central configuration system for themes, styles, and editor settings
+---
+
+Theme JSON (`theme.json`) is the central configuration file for block themes, providing a unified way to define theme settings, styles, and editor capabilities.
+
+## Overview
+
+Introduced in WordPress 5.8, `theme.json` consolidates theme configuration that was previously scattered across multiple `add_theme_support()` calls, providing:
+
+- Editor settings and capabilities
+- Style presets (colors, fonts, spacing)
+- Default styles for blocks and elements
+- Layout configuration
+- Responsive design controls
+
+## Three-Layer System
+
+**Architectural Decision:**
+> Styles system: Three-layer merge — WordPress defaults < `theme.json` < user preferences. Use Block Supports API and CSS custom properties (`--wp--preset--*`), not hardcoded values.
+
+### The Three Sources
+
+**1. WordPress Core**
+Base `theme.json` bundled with WordPress providing default settings and styles.
+
+**2. Active Theme**
+`theme.json` file in the theme directory (optional but recommended for block themes).
+
+**3. User Preferences**
+User customizations made via the Global Styles interface in the Site Editor.
+
+### Merge Priority
+
+```
+WordPress Defaults → Theme Config → User Preferences
+(lowest priority)                    (highest priority)
+```
+
+User preferences override theme settings, which override WordPress defaults.
+
+## File Location
+
+```
+theme-directory/
+├── theme.json          ← Main theme configuration
+├── templates/
+├── parts/
+└── style.css
+```
+
+## File Structure
+
+```json
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 2,
+  "settings": {
+    // Editor settings and presets
+  },
+  "styles": {
+    // Default styles for the site
+  },
+  "templateParts": {
+    // Template part definitions
+  },
+  "customTemplates": {
+    // Custom template definitions
+  },
+  "patterns": []
+}
+```
+
+## Settings Section
+
+The `settings` section configures the editor and defines style presets.
+
+### Top-Level Settings
+
+```json
+{
+  "settings": {
+    "layout": {
+      "contentSize": "640px",
+      "wideSize": "1200px"
+    },
+    "color": {
+      "palette": [],
+      "custom": true,
+      "link": true
+    },
+    "typography": {
+      "fontSizes": [],
+      "customFontSize": true,
+      "lineHeight": true
+    },
+    "spacing": {
+      "units": ["px", "em", "rem", "%"],
+      "padding": true,
+      "margin": true
+    }
+  }
+}
+```
+
+### Color Settings
+
+**Palette Definition:**
+```json
+{
+  "settings": {
+    "color": {
+      "palette": [
+        {
+          "slug": "primary",
+          "color": "#007cba",
+          "name": "Primary"
+        },
+        {
+          "slug": "secondary",
+          "color": "#23282d",
+          "name": "Secondary"
+        }
+      ]
+    }
+  }
+}
+```
+
+Generates CSS custom properties:
+```css
+body {
+  --wp--preset--color--primary: #007cba;
+  --wp--preset--color--secondary: #23282d;
+}
+```
+
+And CSS classes:
+```css
+.has-primary-color { color: var(--wp--preset--color--primary) !important; }
+.has-primary-background-color { background-color: var(--wp--preset--color--primary) !important; }
+```
+
+### Typography Settings
+
+**Font Families:**
+```json
+{
+  "settings": {
+    "typography": {
+      "fontFamilies": [
+        {
+          "slug": "system",
+          "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          "name": "System Font"
+        },
+        {
+          "slug": "heading",
+          "fontFamily": "'Playfair Display', serif",
+          "name": "Playfair Display"
+        }
+      ]
+    }
+  }
+}
+```
+
+**Font Sizes:**
+```json
+{
+  "settings": {
+    "typography": {
+      "fontSizes": [
+        {
+          "slug": "small",
+          "size": "14px",
+          "name": "Small"
+        },
+        {
+          "slug": "medium",
+          "size": "18px",
+          "name": "Medium"
+        },
+        {
+          "slug": "large",
+          "size": "24px",
+          "name": "Large"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Spacing Settings
+
+```json
+{
+  "settings": {
+    "spacing": {
+      "spacingScale": {
+        "steps": 0
+      },
+      "spacingSizes": [
+        {
+          "slug": "30",
+          "size": "clamp(1.5rem, 5vw, 2rem)",
+          "name": "1"
+        },
+        {
+          "slug": "40",
+          "size": "clamp(1.8rem, 1.8rem + ((1vw - 0.48rem) * 2.885), 3rem)",
+          "name": "2"
+        }
+      ],
+      "blockGap": true
+    }
+  }
+}
+```
+
+### Block-Level Settings
+
+Settings can be applied to specific blocks:
+
+```json
+{
+  "settings": {
+    "blocks": {
+      "core/paragraph": {
+        "color": {
+          "palette": [
+            {
+              "slug": "paragraph-primary",
+              "color": "#333",
+              "name": "Paragraph Primary"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+Block-specific settings override top-level settings for that block.
+
+## Styles Section
+
+The `styles` section defines default styles for the site.
+
+### Top-Level Styles
+
+```json
+{
+  "styles": {
+    "color": {
+      "background": "#ffffff",
+      "text": "#000000"
+    },
+    "typography": {
+      "fontFamily": "var(--wp--preset--font-family--system)",
+      "fontSize": "var(--wp--preset--font-size--medium)",
+      "lineHeight": "1.6"
+    },
+    "spacing": {
+      "padding": {
+        "top": "0",
+        "right": "1.5rem",
+        "bottom": "0",
+        "left": "1.5rem"
+      }
+    }
+  }
+}
+```
+
+Generates:
+```css
+body {
+  background-color: #ffffff;
+  color: #000000;
+  font-family: var(--wp--preset--font-family--system);
+  font-size: var(--wp--preset--font-size--medium);
+  line-height: 1.6;
+  padding-top: 0;
+  padding-right: 1.5rem;
+  padding-bottom: 0;
+  padding-left: 1.5rem;
+}
+```
+
+### Element Styles
+
+```json
+{
+  "styles": {
+    "elements": {
+      "h1": {
+        "typography": {
+          "fontSize": "2.5rem",
+          "lineHeight": "1.2"
+        }
+      },
+      "link": {
+        "color": {
+          "text": "var(--wp--preset--color--primary)"
+        },
+        ":hover": {
+          "color": {
+            "text": "var(--wp--preset--color--secondary)"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Available Elements:**
+- `h1`, `h2`, `h3`, `h4`, `h5`, `h6`
+- `link`
+- `button`
+- `caption`
+- `cite`
+
+### Block Styles
+
+```json
+{
+  "styles": {
+    "blocks": {
+      "core/paragraph": {
+        "color": {
+          "text": "#333"
+        },
+        "typography": {
+          "fontSize": "1rem",
+          "lineHeight": "1.7"
+        }
+      },
+      "core/heading": {
+        "color": {
+          "text": "#000"
+        },
+        "typography": {
+          "fontWeight": "700"
+        }
+      }
+    }
+  }
+}
+```
+
+### Elements Within Blocks
+
+```json
+{
+  "styles": {
+    "blocks": {
+      "core/group": {
+        "elements": {
+          "h1": {
+            "color": {
+              "text": "var(--wp--preset--color--primary)"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Generates:
+```css
+.wp-block-group h1 {
+  color: var(--wp--preset--color--primary);
+}
+```
+
+## CSS Custom Properties
+
+All presets generate CSS custom properties with a consistent naming structure:
+
+```
+--wp--preset--{category}--{slug}
+```
+
+**Examples:**
+- `--wp--preset--color--primary`
+- `--wp--preset--font-size--large`
+- `--wp--preset--font-family--heading`
+- `--wp--preset--spacing--50`
+
+### Using Custom Properties
+
+**In theme.json:**
+```json
+{
+  "styles": {
+    "color": {
+      "text": "var(--wp--preset--color--primary)"
+    }
+  }
+}
+```
+
+**In CSS:**
+```css
+.custom-element {
+  color: var(--wp--preset--color--primary);
+  font-size: var(--wp--preset--font-size--large);
+}
+```
+
+## Version System
+
+Theme JSON uses versioning to maintain backward compatibility.
+
+**Current Version: 2**
+```json
+{
+  "version": 2
+}
+```
+
+**Version 1:**
+Original format from WordPress 5.8.
+
+**Version 2:**
+Introduced in WordPress 5.9, adds:
+- Block-level settings and styles
+- Element styles
+- Template part areas
+- Custom templates
+
+## Template Parts
+
+```json
+{
+  "templateParts": [
+    {
+      "name": "header",
+      "title": "Header",
+      "area": "header"
+    },
+    {
+      "name": "footer",
+      "title": "Footer",
+      "area": "footer"
+    }
+  ]
+}
+```
+
+## Custom Templates
+
+```json
+{
+  "customTemplates": [
+    {
+      "name": "blank",
+      "title": "Blank",
+      "postTypes": ["page"]
+    },
+    {
+      "name": "page-wide",
+      "title": "Page (Wide)",
+      "postTypes": ["page"]
+    }
+  ]
+}
+```
+
+## User Customization Storage
+
+User customizations via Global Styles UI are stored:
+- In the database as a special CPT: `wp_global_styles`
+- One record per theme
+- Follows the same theme.json structure
+- Merged with highest priority during stylesheet generation
+
+## Output: Global Styles Stylesheet
+
+The three-layer merge produces a single stylesheet:
+
+```html
+<style id="global-styles-inline-css">
+  /* CSS custom properties from presets */
+  body {
+    --wp--preset--color--primary: #007cba;
+    --wp--preset--font-size--medium: 18px;
+  }
+  
+  /* Styles from theme.json */
+  body {
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  /* Block-specific styles */
+  p {
+    line-height: 1.7;
+  }
+  
+  /* Preset classes */
+  .has-primary-color {
+    color: var(--wp--preset--color--primary) !important;
+  }
+</style>
+```
+
+## Best Practices
+
+### Use Semantic Slugs
+
+Use meaningful slug names:
+```json
+{"slug": "primary"}  // Good
+{"slug": "color-1"}  // Less clear
+```
+
+### Reference Presets via Custom Properties
+
+Always use CSS custom properties:
+```json
+{
+  "color": {
+    "text": "var(--wp--preset--color--primary)"
+  }
+}
+```
+
+Not:
+```json
+{
+  "color": {
+    "text": "#007cba"
+  }
+}
+```
+
+### Provide Comprehensive Presets
+
+Include sufficient presets for common use cases:
+- 5-7 colors minimum
+- 4-5 font sizes
+- Multiple font families if custom fonts used
+
+### Test User Overrides
+
+Ensure theme works well when users customize via Global Styles UI.
+
+### Document Custom Properties
+
+Document available custom properties for theme users and developers.
+
+## Migration from add_theme_support
+
+Theme JSON replaces many `add_theme_support()` calls:
+
+**Before:**
+```php
+add_theme_support('editor-color-palette', [...]);
+add_theme_support('editor-font-sizes', [...]);
+add_theme_support('align-wide');
+```
+
+**After (theme.json):**
+```json
+{
+  "settings": {
+    "color": { "palette": [...] },
+    "typography": { "fontSizes": [...] },
+    "layout": { "wideSize": "1200px" }
+  }
+}
+```
+
+## Benefits
+
+**Centralized Configuration:**
+All theme settings in one file.
+
+**Editor-Frontend Consistency:**
+Styles automatically apply in both editor and frontend.
+
+**User Customization:**
+Users can override theme styles without editing code.
+
+**Performance:**
+Generated stylesheet is optimized and cached.
+
+**Maintainability:**
+Easier to update and maintain than scattered PHP calls.

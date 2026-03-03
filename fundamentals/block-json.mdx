@@ -1,0 +1,278 @@
+---
+title: block.json metadata
+description: How blocks are defined using block.json and its key properties.
+---
+
+The `block.json` file simplifies defining and registering blocks by using the same JSON format to register the block on both the server and client (Block Editor).
+
+## Benefits of using block.json
+
+Using a `block.json` file provides several benefits:
+
+- **Performance**: Block metadata is cached server-side, reducing overhead
+- **Consistency**: Same definition used for both server and client registration  
+- **Schema validation**: JSON schema provides IDE autocomplete and validation
+- **Tooling**: Build tools can automatically detect and process blocks
+- **Translation**: Internationalization is handled automatically
+
+## Basic structure
+
+```json
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "my-plugin/my-block",
+  "title": "My Custom Block",
+  "category": "widgets",
+  "icon": "smiley",
+  "description": "A custom block for my site",
+  "keywords": ["custom", "example"],
+  "textdomain": "my-plugin",
+  "attributes": {},
+  "supports": {},
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}
+```
+
+## Basic metadata properties
+
+### API version
+
+<ParamField path="apiVersion" type="number" required>
+  Specifies the Block API version. Use `3` for the latest version unless you have specific requirements.
+</ParamField>
+
+### Block name
+
+<ParamField path="name" type="string" required>
+  The unique identifier for the block, including namespace (e.g., `my-plugin/my-custom-block`). Must contain a namespace prefix followed by a slash.
+</ParamField>
+
+### Display title
+
+<ParamField path="title" type="string" required>
+  The display title shown in the Block Inserter and block editor interface.
+</ParamField>
+
+### Category
+
+<ParamField path="category" type="string" required>
+  The category under which the block appears in the Inserter. Common categories:
+  - `text` - Text-based content
+  - `media` - Images, video, audio
+  - `design` - Layout and design elements
+  - `widgets` - Utility blocks
+  - `theme` - Theme-related blocks
+</ParamField>
+
+### Icon
+
+<ParamField path="icon" type="string" default="smiley">
+  Icon representing the block. Can be a [Dashicon](https://developer.wordpress.org/resource/dashicons) slug or custom SVG.
+</ParamField>
+
+```json
+"icon": "heart"
+```
+
+Or with custom SVG:
+
+```json
+"icon": "<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' /></svg>"
+```
+
+### Description
+
+<ParamField path="description" type="string">
+  A short description providing context beyond the title.
+</ParamField>
+
+### Keywords
+
+<ParamField path="keywords" type="array">
+  Array of keywords to help users find the block when searching.
+</ParamField>
+
+```json
+"keywords": ["gallery", "images", "photos"]
+```
+
+### Text domain
+
+<ParamField path="textdomain" type="string">
+  The text domain for internationalization, typically matching your plugin slug.
+</ParamField>
+
+## File references
+
+Specify the files that control block behavior and appearance:
+
+### Editor script
+
+<ParamField path="editorScript" type="string|array">
+  JavaScript file(s) loaded only in the Block Editor. Typically points to the bundled `index.js`.
+</ParamField>
+
+```json
+"editorScript": "file:./index.js"
+```
+
+### Editor style
+
+<ParamField path="editorStyle" type="string|array">
+  CSS file(s) for styling within the Block Editor only.
+</ParamField>
+
+```json
+"editorStyle": "file:./index.css"
+```
+
+### Script
+
+<ParamField path="script" type="string|array">
+  JavaScript file(s) loaded in both the Block Editor and front end.
+</ParamField>
+
+### Style
+
+<ParamField path="style" type="string|array">
+  CSS file(s) applied in both the Block Editor and front end.
+</ParamField>
+
+```json
+"style": "file:./style-index.css"
+```
+
+### View script
+
+<ParamField path="viewScript" type="string|array">
+  JavaScript file(s) loaded solely on the front end.
+</ParamField>
+
+```json
+"viewScript": "file:./view.js"
+```
+
+### Render template
+
+<ParamField path="render" type="string">
+  Path to a PHP template file for server-side rendering (dynamic blocks).
+</ParamField>
+
+```json
+"render": "file:./render.php"
+```
+
+<Note>
+For file paths, use the `file:` prefix. You can also reference handles registered via `wp_register_script` or `wp_register_style`.
+</Note>
+
+## Block attributes
+
+Attributes define data storage for the block:
+
+```json
+"attributes": {
+  "content": {
+    "type": "string",
+    "source": "html",
+    "selector": "p"
+  },
+  "alignment": {
+    "type": "string",
+    "default": "left"
+  },
+  "showDate": {
+    "type": "boolean",
+    "default": true
+  }
+}
+```
+
+### Attribute properties
+
+- **type**: Data type (`string`, `number`, `boolean`, `array`, `object`)
+- **default**: Default value if not set
+- **source**: How to extract value from saved content
+- **selector**: CSS selector for source extraction
+
+<Tip>
+Attributes are automatically serialized and stored in block delimiters by default.
+</Tip>
+
+## Block supports
+
+The `supports` property enables common features:
+
+```json
+"supports": {
+  "align": true,
+  "color": {
+    "text": true,
+    "background": true,
+    "link": true
+  },
+  "typography": {
+    "fontSize": true,
+    "lineHeight": true
+  },
+  "spacing": {
+    "padding": true,
+    "margin": true
+  }
+}
+```
+
+<Warning>
+When using block supports, you must apply the generated attributes to your block wrapper using `useBlockProps()` in the edit component and `useBlockProps.save()` in the save function.
+</Warning>
+
+## Complete example
+
+Here's a complete `block.json` for a copyright block:
+
+```json
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "my-plugin/copyright",
+  "title": "Copyright Date",
+  "category": "widgets",
+  "icon": "universal-access",
+  "description": "Display copyright with date range",
+  "keywords": ["copyright", "date", "footer"],
+  "textdomain": "my-plugin",
+  "attributes": {
+    "fallbackCurrentYear": {
+      "type": "string"
+    },
+    "showStartingYear": {
+      "type": "boolean"
+    },
+    "startingYear": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "color": {
+      "text": true,
+      "background": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Block attributes" href="/api/block-api/attributes">
+    Deep dive into attribute configuration
+  </Card>
+  <Card title="Block supports" href="/api/block-api/supports">
+    Learn about all available supports
+  </Card>
+</CardGroup>

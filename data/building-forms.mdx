@@ -1,0 +1,653 @@
+---
+title: Building Forms
+description: Learn how to build data-driven forms with entity records, including create, edit, and delete operations
+---
+
+This guide demonstrates how to build complete forms that interact with WordPress entity records using the data module. You'll learn patterns for creating, editing, and deleting records with proper state management, error handling, and user feedback.
+
+## Edit Form Pattern
+
+An edit form allows users to modify existing entity records. Here's the complete pattern:
+
+```js
+import { useState } from 'react';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { Button, Modal, TextControl, Spinner } from '@wordpress/components';
+
+function EditPageButton( { pageId } ) {
+  const [ isOpen, setOpen ] = useState( false );
+  
+  return (
+    <>
+      <Button onClick={ () => setOpen( true ) } variant="primary">
+        Edit
+      </Button>
+      { isOpen && (
+        <Modal onRequestClose={ () => setOpen( false ) } title="Edit page">
+          <EditPageForm
+            pageId={ pageId }
+            onCancel={ () => setOpen( false ) }
+            onSaveFinished={ () => setOpen( false ) }
+          />
+        </Modal>
+      ) }
+    </>
+  );
+}
+
+function EditPageForm( { pageId, onCancel, onSaveFinished } ) {
+  const { page, lastError, isSaving, hasEdits } = useSelect(
+    ( select ) => ({
+      page: select( coreDataStore ).getEditedEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+      lastError: select( coreDataStore ).getLastEntitySaveError(
+        'postType',
+        'page',
+        pageId
+      ),
+      isSaving: select( coreDataStore ).isSavingEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+      hasEdits: select( coreDataStore ).hasEditsForEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+    }),
+    [ pageId ]
+  );
+
+  const { saveEditedEntityRecord, editEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleSave = async () => {
+    const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+    if ( savedRecord ) {
+      onSaveFinished();
+    }
+  };
+  
+  const handleChange = ( title ) => {
+    editEntityRecord( 'postType', 'page', pageId, { title } );
+  };
+
+  return (
+    <div className="my-gutenberg-form">
+      <TextControl
+        label="Page title:"
+        value={ page.title }
+        onChange={ handleChange }
+      />
+      { lastError && (
+        <div className="form-error">Error: { lastError.message }</div>
+      ) }
+      <div className="form-buttons">
+        <Button
+          onClick={ handleSave }
+          variant="primary"
+          disabled={ ! hasEdits || isSaving }
+        >
+          { isSaving ? (
+            <>
+              <Spinner />
+              Saving
+            </>
+          ) : 'Save' }
+        </Button>
+        <Button
+          onClick={ onCancel }
+          variant="tertiary"
+          disabled={ isSaving }
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Key Edit Form Concepts
+
+**Use `getEditedEntityRecord`**: Always use the edited version to reflect user changes:
+
+```js
+// ✅ Correct - shows user edits
+page: select( coreDataStore ).getEditedEntityRecord( 'postType', 'page', pageId )
+
+// ❌ Wrong - ignores user edits
+page: select( coreDataStore ).getEntityRecord( 'postType', 'page', pageId )
+```
+
+**Track Edit State**: Use `hasEditsForEntityRecord` to disable save when unchanged:
+
+```js
+hasEdits: select( coreDataStore ).hasEditsForEntityRecord(
+  'postType',
+  'page',
+  pageId
+)
+```
+
+**Handle Async Saves**: Check the promise result to close the form only on success:
+
+```js
+const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+if ( savedRecord ) {
+  // Success - savedRecord contains updated data
+  onSaveFinished();
+} else {
+  // Failed - check lastError for details
+}
+```
+
+<Note>
+The save operation returns the updated record on success, or undefined on failure. Never close the form modal before checking the result.
+</Note>
+
+## Create Form Pattern
+
+A create form builds new entity records without a pre-existing ID:
+
+```js
+import { useState } from 'react';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { Button, TextControl, Spinner } from '@wordpress/components';
+
+function CreatePageForm( { onCancel, onSaveFinished } ) {
+  const [ title, setTitle ] = useState( '' );
+  
+  const { lastError, isSaving } = useSelect(
+    ( select ) => ({
+      // No pageId argument - refers to unsaved record
+      lastError: select( coreDataStore ).getLastEntitySaveError(
+        'postType',
+        'page'
+      ),
+      isSaving: select( coreDataStore ).isSavingEntityRecord(
+        'postType',
+        'page'
+      ),
+    }),
+    []
+  );
+
+  const { saveEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleSave = async () => {
+    const savedRecord = await saveEntityRecord(
+      'postType',
+      'page',
+      { title, status: 'publish' }
+    );
+    if ( savedRecord ) {
+      onSaveFinished();
+    }
+  };
+
+  return (
+    <div className="my-gutenberg-form">
+      <TextControl
+        label="Page title:"
+        value={ title }
+        onChange={ setTitle }
+      />
+      { lastError && (
+        <div className="form-error">Error: { lastError.message }</div>
+      ) }
+      <div className="form-buttons">
+        <Button
+          onClick={ handleSave }
+          variant="primary"
+          disabled={ ! title || isSaving }
+        >
+          { isSaving ? (
+            <>
+              <Spinner />
+              Creating...
+            </>
+          ) : 'Create' }
+        </Button>
+        <Button onClick={ onCancel } variant="tertiary" disabled={ isSaving }>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+### Key Create Form Concepts
+
+**Use `saveEntityRecord`** (not `saveEditedEntityRecord`):
+
+```js
+// ✅ Correct for new records
+saveEntityRecord( 'postType', 'page', { title: 'New Page' } )
+
+// ❌ Wrong - requires existing record ID
+saveEditedEntityRecord( 'postType', 'page', pageId )
+```
+
+**Local State for Draft Data**: Use React `useState` for fields since there's no entity record yet:
+
+```js
+const [ title, setTitle ] = useState( '' );
+const [ content, setContent ] = useState( '' );
+```
+
+**No ID in Selectors**: Omit the ID parameter when checking status:
+
+```js
+// ✅ Correct - no ID for unsaved record
+isSaving: select( coreDataStore ).isSavingEntityRecord( 'postType', 'page' )
+
+// ❌ Wrong - would check a specific existing record
+isSaving: select( coreDataStore ).isSavingEntityRecord( 'postType', 'page', pageId )
+```
+
+## Delete Operation Pattern
+
+```js
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { store as noticesStore } from '@wordpress/notices';
+import { Button, Spinner } from '@wordpress/components';
+
+function DeletePageButton( { pageId } ) {
+  const { isDeleting } = useSelect(
+    ( select ) => ({
+      isDeleting: select( coreDataStore ).isDeletingEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+    }),
+    [ pageId ]
+  );
+
+  const { deleteEntityRecord } = useDispatch( coreDataStore );
+  const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+  const { getLastEntityDeleteError } = useSelect( coreDataStore );
+
+  const handleDelete = async () => {
+    const success = await deleteEntityRecord( 'postType', 'page', pageId );
+    
+    if ( success ) {
+      createSuccessNotice( 'The page was deleted!', {
+        type: 'snackbar',
+      } );
+    } else {
+      const lastError = getLastEntityDeleteError( 'postType', 'page', pageId );
+      const message = ( lastError?.message || 'There was an error.' ) +
+        ' Please refresh the page and try again.';
+      createErrorNotice( message, {
+        type: 'snackbar',
+      } );
+    }
+  };
+
+  return (
+    <Button
+      variant="primary"
+      onClick={ handleDelete }
+      disabled={ isDeleting }
+    >
+      { isDeleting ? (
+        <>
+          <Spinner />
+          Deleting...
+        </>
+      ) : 'Delete' }
+    </Button>
+  );
+}
+```
+
+### Delete Error Handling
+
+Deletes can fail for many reasons:
+- Entity already deleted
+- User lacks permissions
+- Network errors
+- Invalid ID
+
+Always check the result and provide feedback:
+
+```js
+const success = await deleteEntityRecord( 'postType', 'page', pageId );
+
+if ( ! success ) {
+  const error = getLastEntityDeleteError( 'postType', 'page', pageId );
+  // error.message: Human-readable message
+  // error.code: String error code (e.g., 'rest_post_invalid_id')
+  // error.data: Additional details (optional)
+}
+```
+
+## Reusable Form Component
+
+Extract common form UI into a reusable component:
+
+```js
+function PageForm( {
+  title,
+  onChangeTitle,
+  hasEdits,
+  lastError,
+  isSaving,
+  onCancel,
+  onSave,
+} ) {
+  return (
+    <div className="my-gutenberg-form">
+      <TextControl
+        label="Page title:"
+        value={ title }
+        onChange={ onChangeTitle }
+      />
+      { lastError && (
+        <div className="form-error">Error: { lastError.message }</div>
+      ) }
+      <div className="form-buttons">
+        <Button
+          onClick={ onSave }
+          variant="primary"
+          disabled={ ! hasEdits || isSaving }
+        >
+          { isSaving ? (
+            <>
+              <Spinner />
+              Saving
+            </>
+          ) : 'Save' }
+        </Button>
+        <Button onClick={ onCancel } variant="tertiary" disabled={ isSaving }>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+Then use it in both edit and create forms:
+
+```js
+function EditPageForm( { pageId, onCancel, onSaveFinished } ) {
+  const { page, lastError, isSaving, hasEdits } = useSelect(
+    ( select ) => ({
+      page: select( coreDataStore ).getEditedEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+      lastError: select( coreDataStore ).getLastEntitySaveError(
+        'postType',
+        'page',
+        pageId
+      ),
+      isSaving: select( coreDataStore ).isSavingEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+      hasEdits: select( coreDataStore ).hasEditsForEntityRecord(
+        'postType',
+        'page',
+        pageId
+      ),
+    }),
+    [ pageId ]
+  );
+
+  const { saveEditedEntityRecord, editEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleSave = async () => {
+    const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+    if ( savedRecord ) {
+      onSaveFinished();
+    }
+  };
+  
+  const handleChange = ( title ) => {
+    editEntityRecord( 'postType', 'page', pageId, { title } );
+  };
+
+  return (
+    <PageForm
+      title={ page.title }
+      onChangeTitle={ handleChange }
+      hasEdits={ hasEdits }
+      lastError={ lastError }
+      isSaving={ isSaving }
+      onCancel={ onCancel }
+      onSave={ handleSave }
+    />
+  );
+}
+
+function CreatePageForm( { onCancel, onSaveFinished } ) {
+  const [ title, setTitle ] = useState( '' );
+  
+  const { lastError, isSaving } = useSelect(
+    ( select ) => ({
+      lastError: select( coreDataStore ).getLastEntitySaveError(
+        'postType',
+        'page'
+      ),
+      isSaving: select( coreDataStore ).isSavingEntityRecord(
+        'postType',
+        'page'
+      ),
+    }),
+    []
+  );
+
+  const { saveEntityRecord } = useDispatch( coreDataStore );
+  
+  const handleSave = async () => {
+    const savedRecord = await saveEntityRecord(
+      'postType',
+      'page',
+      { title, status: 'publish' }
+    );
+    if ( savedRecord ) {
+      onSaveFinished();
+    }
+  };
+
+  return (
+    <PageForm
+      title={ title }
+      onChangeTitle={ setTitle }
+      hasEdits={ !! title }
+      lastError={ lastError }
+      isSaving={ isSaving }
+      onCancel={ onCancel }
+      onSave={ handleSave }
+    />
+  );
+}
+```
+
+## User Notifications
+
+Use WordPress notices for user feedback:
+
+```js
+import { SnackbarNotices } from '@wordpress/notices';
+
+function MyApp() {
+  return (
+    <div>
+      {/* Your app content */}
+      <SnackbarNotices className="notifications__snackbar" />
+    </div>
+  );
+}
+```
+
+Dispatch notifications from your forms:
+
+```js
+import { useDispatch } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
+
+function MyForm() {
+  const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+  
+  const handleSave = async () => {
+    const result = await saveEntityRecord( 'postType', 'page', data );
+    
+    if ( result ) {
+      createSuccessNotice( 'Page saved successfully!', {
+        type: 'snackbar',
+      } );
+    } else {
+      createErrorNotice( 'Failed to save page.', {
+        type: 'snackbar',
+      } );
+    }
+  };
+}
+```
+
+## Complete Example
+
+Here's a complete list view with create, edit, and delete:
+
+```js
+import { useState } from 'react';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
+import { SearchControl, Button, Spinner } from '@wordpress/components';
+import { SnackbarNotices } from '@wordpress/notices';
+
+function PagesManager() {
+  const [ searchTerm, setSearchTerm ] = useState( '' );
+  
+  const { pages, hasResolved } = useSelect(
+    ( select ) => {
+      const query = {};
+      if ( searchTerm ) {
+        query.search = searchTerm;
+      }
+      const selectorArgs = [ 'postType', 'page', query ];
+      
+      return {
+        pages: select( coreDataStore ).getEntityRecords( ...selectorArgs ),
+        hasResolved: select( coreDataStore ).hasFinishedResolution(
+          'getEntityRecords',
+          selectorArgs
+        ),
+      };
+    },
+    [ searchTerm ]
+  );
+
+  return (
+    <div>
+      <div className="list-controls">
+        <SearchControl onChange={ setSearchTerm } value={ searchTerm } />
+        <CreatePageButton />
+      </div>
+      
+      { ! hasResolved ? (
+        <Spinner />
+      ) : ! pages?.length ? (
+        <div>No results</div>
+      ) : (
+        <table className="wp-list-table widefat fixed striped">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th style={ { width: 190 } }>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            { pages.map( ( page ) => (
+              <tr key={ page.id }>
+                <td>{ page.title.rendered }</td>
+                <td>
+                  <PageEditButton pageId={ page.id } />
+                  <DeletePageButton pageId={ page.id } />
+                </td>
+              </tr>
+            ) ) }
+          </tbody>
+        </table>
+      ) }
+      
+      <SnackbarNotices />
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### Always Disable Actions During Operations
+
+```js
+<Button
+  onClick={ handleSave }
+  disabled={ ! hasEdits || isSaving }
+>
+  { isSaving ? 'Saving...' : 'Save' }
+</Button>
+```
+
+### Provide Clear Visual Feedback
+
+Use spinners during async operations:
+
+```js
+{ isSaving ? (
+  <>
+    <Spinner />
+    Saving
+  </>
+) : 'Save' }
+```
+
+### Always Handle Errors
+
+```js
+const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+
+if ( ! savedRecord ) {
+  const error = select( 'core' ).getLastEntitySaveError(
+    'postType',
+    'page',
+    pageId
+  );
+  createErrorNotice( error.message, { type: 'snackbar' } );
+}
+```
+
+### Prevent Form Closure on Errors
+
+Only close the form modal when the operation succeeds:
+
+```js
+const handleSave = async () => {
+  const savedRecord = await saveEditedEntityRecord( 'postType', 'page', pageId );
+  if ( savedRecord ) {
+    onSaveFinished(); // Only call on success
+  }
+  // On error, form stays open and shows error message
+};
+```
+
+## Next Steps
+
+- [Data Layer Overview](/data/data-layer-overview) - Understand the architecture
+- [Working with Data](/data/working-with-data) - Master useSelect and useDispatch
+- [Entities & Undo/Redo](/data/entities-undo-redo) - Deep dive into entities

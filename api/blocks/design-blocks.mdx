@@ -1,0 +1,445 @@
+---
+title: Design Blocks
+description: Layout and structural blocks for organizing content in the Gutenberg Block Editor
+---
+
+# Design Blocks
+
+Design blocks provide the structural foundation for your content layouts. These blocks help you organize, group, and style your content with precision.
+
+## Group
+
+**Name:** `core/group`
+
+**Description:** Gather blocks in a layout container.
+
+### Attributes
+
+- `tagName` (string) - HTML tag (div, section, article, etc.)
+- `templateLock` (string|false) - Template locking (all, insert, contentOnly)
+
+### Supports
+
+- **Align:** wide, full
+- **Anchor:** true
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, text, link, heading, button, gradients
+- **Dimensions:** minHeight
+- **Layout:** allowSizingOnChildren
+- **Position:** sticky
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+- **ariaLabel:** true
+
+### Usage
+
+```javascript
+// Basic group container
+wp.blocks.createBlock('core/group', {
+  tagName: 'section',
+});
+
+// Group with background
+wp.blocks.createBlock('core/group', {
+  tagName: 'div',
+  style: {
+    color: {
+      background: '#f0f0f0'
+    }
+  }
+});
+```
+
+## Columns
+
+**Name:** `core/columns`
+
+**Description:** Display content in multiple columns, with blocks added to each column.
+
+### Attributes
+
+- `verticalAlignment` (string) - Vertical alignment (top, center, bottom)
+- `isStackedOnMobile` (boolean) - Stack columns on mobile, default: true
+- `templateLock` (string|false) - Template locking
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, text, link, heading, button, gradients
+- **Layout:** default
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+- **Allowed Blocks:** core/column
+
+### Usage
+
+```javascript
+// Two-column layout
+wp.blocks.createBlock('core/columns', {}, [
+  wp.blocks.createBlock('core/column', {}, [
+    wp.blocks.createBlock('core/paragraph', { content: 'Left column' })
+  ]),
+  wp.blocks.createBlock('core/column', {}, [
+    wp.blocks.createBlock('core/paragraph', { content: 'Right column' })
+  ])
+]);
+```
+
+## Column
+
+**Name:** `core/column`
+
+**Description:** A single column within a columns block.
+
+### Attributes
+
+- `verticalAlignment` (string) - Vertical alignment
+- `width` (string) - Column width (%, px, or flexible)
+- `templateLock` (string|false) - Template locking
+
+### Supports
+
+- **Parent:** core/columns
+- **Color:** background, text, link, heading, button, gradients
+- **Layout:** true
+- **Spacing:** padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+- **Reusable:** false
+
+### Usage
+
+```javascript
+// Column with specific width
+wp.blocks.createBlock('core/column', {
+  width: '66.66%'
+});
+```
+
+## Buttons
+
+**Name:** `core/buttons`
+
+**Description:** Prompt visitors to take action with a group of button-style links.
+
+### Supports
+
+- **Align:** wide, full
+- **Color:** background, gradients
+- **Layout:** default
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Allowed Blocks:** core/button
+
+### Usage
+
+```javascript
+// Button group
+wp.blocks.createBlock('core/buttons', {}, [
+  wp.blocks.createBlock('core/button', { text: 'Learn More', url: '/about' }),
+  wp.blocks.createBlock('core/button', { text: 'Contact Us', url: '/contact' })
+]);
+```
+
+## Button
+
+**Name:** `core/button`
+
+**Description:** Prompt visitors to take action with a button-style link.
+
+### Attributes
+
+- `text` (string) - Button text
+- `url` (string) - Link URL
+- `title` (string) - Link title attribute
+- `linkTarget` (string) - Link target (_blank, _self)
+- `rel` (string) - Link rel attribute
+- `placeholder` (string) - Placeholder text
+- `backgroundColor` (string) - Background color slug
+- `textColor` (string) - Text color slug
+- `gradient` (string) - Gradient preset slug
+- `type` (string) - Button type (submit, button)
+- `tagName` (string) - HTML tag (a, button)
+
+### Supports
+
+- **Parent:** core/buttons
+- **Color:** background, text, gradients
+- **Dimensions:** width
+- **Spacing:** padding
+- **Typography:** fontSize, lineHeight, textAlign
+- **Shadow:** true
+- **Splitting:** true
+- **Reusable:** false
+
+### Usage
+
+```javascript
+// Primary button
+wp.blocks.createBlock('core/button', {
+  text: 'Get Started',
+  url: 'https://example.com/signup',
+  linkTarget: '_blank',
+});
+
+// Button with custom styling
+wp.blocks.createBlock('core/button', {
+  text: 'Download Now',
+  url: '/download',
+  backgroundColor: 'vivid-red',
+  textColor: 'white',
+});
+```
+
+## Separator
+
+**Name:** `core/separator`
+
+**Description:** Create a break between ideas or sections with a horizontal separator.
+
+### Attributes
+
+- `opacity` (string) - Opacity level (default, css)
+- `tagName` (string) - HTML tag (hr)
+
+### Supports
+
+- **Align:** center, wide, full
+- **Color:** background, gradients
+- **Spacing:** margin
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/separator', {
+  opacity: 'css',
+});
+```
+
+## Spacer
+
+**Name:** `core/spacer`
+
+**Description:** Add white space between blocks and customize its height.
+
+### Attributes
+
+- `height` (string) - Spacer height (px, vh, etc.)
+- `width` (string) - Spacer width
+
+### Supports
+
+- **Spacing:** margin
+
+### Usage
+
+```javascript
+// 50px spacer
+wp.blocks.createBlock('core/spacer', {
+  height: '50px',
+});
+
+// Viewport height spacer
+wp.blocks.createBlock('core/spacer', {
+  height: '20vh',
+});
+```
+
+## Accordion
+
+**Name:** `core/accordion`
+
+**Description:** Displays a foldable layout that groups content in collapsible sections.
+
+### Attributes
+
+- `autoclose` (boolean) - Auto-close other items when one opens
+- `headingLevel` (number) - Heading level for accordion headings
+- `levelOptions` (array) - Available heading levels
+- `iconPosition` (string) - Icon position (start, end)
+- `showIcon` (boolean) - Show expand/collapse icon
+
+### Supports
+
+- **Align:** wide, full
+- **Background:** backgroundImage, backgroundSize
+- **Color:** background, text, gradients
+- **Layout:** true
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+- **Allowed Blocks:** core/accordion-item
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/accordion', {
+  autoclose: true,
+  showIcon: true,
+}, [
+  wp.blocks.createBlock('core/accordion-item'),
+  wp.blocks.createBlock('core/accordion-item')
+]);
+```
+
+## Accordion Item
+
+**Name:** `core/accordion-item`
+
+**Description:** Wraps the heading and panel in one unit.
+
+### Attributes
+
+- `openByDefault` (boolean) - Initially expanded state
+
+### Supports
+
+- **Parent:** core/accordion
+- **Color:** background, text, gradients
+- **Spacing:** margin, blockGap
+- **Typography:** fontSize, lineHeight
+- **Shadow:** true
+- **Allowed Blocks:** core/accordion-heading, core/accordion-panel
+
+## More
+
+**Name:** `core/more`
+
+**Description:** Content before this block will be shown in the excerpt on your archives page.
+
+### Attributes
+
+- `customText` (string) - Custom "Read more" text
+- `noTeaser` (boolean) - Hide excerpt before more tag
+
+### Supports
+
+- **Multiple:** false (only one instance allowed)
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/more', {
+  customText: 'Continue reading...',
+});
+```
+
+## Page Break
+
+**Name:** `core/nextpage`
+
+**Description:** Separate your content into a multi-page experience.
+
+### Supports
+
+- **Parent:** core/post-content
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/nextpage');
+```
+
+## Tabs (Experimental)
+
+**Name:** `core/tabs`
+
+**Description:** Display content in a tabbed interface to help users navigate detailed content with ease.
+
+### Attributes
+
+- `activeTabIndex` (number) - Active tab index
+- `editorActiveTabIndex` (number) - Editor active tab index
+
+### Supports
+
+- **Align:** true
+- **Color:** background, text
+- **Layout:** allowJustification, allowOrientation, allowSizingOnChildren, allowVerticalAlignment
+- **Spacing:** margin, padding, blockGap
+- **Typography:** fontSize
+- **Interactivity:** true
+- **Renaming:** true
+- **Allowed Blocks:** core/tabs-menu, core/tab-panel
+
+## Table of Contents (Experimental)
+
+**Name:** `core/table-of-contents`
+
+**Description:** Summarize your post with a list of headings. Add HTML anchors to Heading blocks to link them here.
+
+### Attributes
+
+- `headings` (array) - List of headings to include
+- `ordered` (boolean) - Use ordered list
+- `maxLevel` (number) - Maximum heading level to include
+- `onlyIncludeCurrentPage` (boolean) - Only include headings from current page
+
+### Supports
+
+- **Color:** background, text, link, gradients
+- **Spacing:** margin, padding
+- **Typography:** fontSize, lineHeight
+- **ariaLabel:** true
+
+## Home Link
+
+**Name:** `core/home-link`
+
+**Description:** Create a link that always points to the homepage of the site.
+
+### Attributes
+
+- `label` (string) - Link text
+
+### Supports
+
+- **Parent:** core/navigation
+- **Typography:** fontSize, lineHeight
+- **Reusable:** false
+
+### Usage
+
+```javascript
+wp.blocks.createBlock('core/home-link', {
+  label: 'Home',
+});
+```
+
+## Navigation Submenu
+
+**Name:** `core/navigation-submenu`
+
+**Description:** Add a submenu to your navigation.
+
+### Attributes
+
+- `label` (string) - Submenu label
+- `url` (string) - Link URL
+- `title` (string) - Link title
+- `kind` (string) - Link kind (post-type, custom, taxonomy)
+- `type` (string) - Link type
+- `id` (number) - Referenced object ID
+- `opensInNewTab` (boolean) - Open in new tab
+- `rel` (string) - Link rel attribute
+- `description` (string) - Link description
+- `isTopLevelItem` (boolean) - Top-level menu item
+
+### Supports
+
+- **Parent:** core/navigation
+- **Typography:** fontSize, lineHeight
+- **Reusable:** false
+
+## Best Practices
+
+1. **Semantic structure** - Use Group with appropriate tagName (section, article, aside)
+2. **Responsive layouts** - Use Columns with isStackedOnMobile for mobile devices
+3. **Consistent spacing** - Use Spacer blocks for vertical rhythm
+4. **Accessibility** - Ensure button text is descriptive, use proper heading levels in accordions
+5. **Visual hierarchy** - Use separators to break up long content sections
+6. **Navigation** - Use Table of Contents for long-form content
+7. **Performance** - Avoid excessive nesting of Group blocks
+8. **Layout patterns** - Combine Columns, Group, and Cover for rich layouts

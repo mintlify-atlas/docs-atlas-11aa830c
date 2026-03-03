@@ -1,0 +1,575 @@
+---
+title: "@wordpress/element"
+description: React abstraction layer and utilities for WordPress development
+---
+
+The `@wordpress/element` package provides a React abstraction layer for WordPress, re-exporting React components and hooks with WordPress-specific enhancements.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @wordpress/element --save
+```
+
+```bash yarn
+yarn add @wordpress/element
+```
+</CodeGroup>
+
+## Why Use @wordpress/element?
+
+This package:
+
+- Provides consistent React imports across WordPress
+- Adds WordPress-specific utilities
+- Simplifies React version management
+- Ensures compatibility with WordPress core
+
+## Basic Usage
+
+```js
+import { createElement, useState } from '@wordpress/element';
+
+function MyComponent() {
+	const [ count, setCount ] = useState( 0 );
+
+	return createElement(
+		'button',
+		{ onClick: () => setCount( count + 1 ) },
+		`Count: ${ count }`
+	);
+}
+```
+
+With JSX:
+
+```jsx
+import { useState } from '@wordpress/element';
+
+function MyComponent() {
+	const [ count, setCount ] = useState( 0 );
+
+	return (
+		<button onClick={ () => setCount( count + 1 ) }>
+			Count: { count }
+		</button>
+	);
+}
+```
+
+## React Hooks
+
+All standard React hooks are available:
+
+### useState
+
+```jsx
+import { useState } from '@wordpress/element';
+
+function Counter() {
+	const [ count, setCount ] = useState( 0 );
+
+	return (
+		<div>
+			<p>Count: { count }</p>
+			<button onClick={ () => setCount( count + 1 ) }>
+				Increment
+			</button>
+		</div>
+	);
+}
+```
+
+### useEffect
+
+```jsx
+import { useState, useEffect } from '@wordpress/element';
+
+function DataFetcher() {
+	const [ data, setData ] = useState( null );
+
+	useEffect( () => {
+		fetch( '/api/data' )
+			.then( ( res ) => res.json() )
+			.then( setData );
+	}, [] );
+
+	return <div>{ data ? JSON.stringify( data ) : 'Loading...' }</div>;
+}
+```
+
+### useContext
+
+```jsx
+import { createContext, useContext } from '@wordpress/element';
+
+const ThemeContext = createContext( 'light' );
+
+function ThemedButton() {
+	const theme = useContext( ThemeContext );
+	return <button className={ theme }>Themed Button</button>;
+}
+```
+
+### useRef
+
+```jsx
+import { useRef, useEffect } from '@wordpress/element';
+
+function FocusInput() {
+	const inputRef = useRef();
+
+	useEffect( () => {
+		inputRef.current.focus();
+	}, [] );
+
+	return <input ref={ inputRef } />;
+}
+```
+
+### useMemo
+
+```jsx
+import { useMemo } from '@wordpress/element';
+
+function ExpensiveComponent( { items } ) {
+	const processedItems = useMemo(
+		() => items.map( ( item ) => expensiveOperation( item ) ),
+		[ items ]
+	);
+
+	return <ul>{ /* Render processed items */ }</ul>;
+}
+```
+
+### useCallback
+
+```jsx
+import { useCallback, useState } from '@wordpress/element';
+
+function Parent() {
+	const [ count, setCount ] = useState( 0 );
+
+	const handleClick = useCallback( () => {
+		setCount( ( c ) => c + 1 );
+	}, [] );
+
+	return <Child onClick={ handleClick } />;
+}
+```
+
+## Components
+
+### Fragment
+
+Render multiple elements without a wrapper.
+
+```jsx
+import { Fragment } from '@wordpress/element';
+
+function List() {
+	return (
+		<Fragment>
+			<li>Item 1</li>
+			<li>Item 2</li>
+			<li>Item 3</li>
+		</Fragment>
+	);
+}
+
+// Short syntax
+function List() {
+	return (
+		<>
+			<li>Item 1</li>
+			<li>Item 2</li>
+		</>
+	);
+}
+```
+
+### StrictMode
+
+Enables additional checks and warnings.
+
+```jsx
+import { StrictMode } from '@wordpress/element';
+
+function App() {
+	return (
+		<StrictMode>
+			<MyComponent />
+		</StrictMode>
+	);
+}
+```
+
+### Suspense
+
+Handles loading states for lazy components.
+
+```jsx
+import { Suspense, lazy } from '@wordpress/element';
+
+const LazyComponent = lazy( () => import( './LazyComponent' ) );
+
+function App() {
+	return (
+		<Suspense fallback={ <div>Loading...</div> }>
+			<LazyComponent />
+		</Suspense>
+	);
+}
+```
+
+## WordPress-Specific Components
+
+### RawHTML
+
+Renders unescaped HTML safely.
+
+```jsx
+import { RawHTML } from '@wordpress/element';
+
+function HTMLContent( { html } ) {
+	return <RawHTML>{ html }</RawHTML>;
+}
+```
+
+### Platform
+
+Detects the current platform.
+
+```jsx
+import { Platform } from '@wordpress/element';
+
+const styles = Platform.select( {
+	web: { padding: 20 },
+	native: { padding: 10 },
+} );
+
+function MyComponent() {
+	const isWeb = Platform.OS === 'web';
+	return <div style={ styles }>Platform-specific content</div>;
+}
+```
+
+## String Utilities
+
+### createInterpolateElement
+
+Creates elements from interpolated strings.
+
+```jsx
+import { createInterpolateElement } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+
+function Notice() {
+	return createInterpolateElement(
+		__( 'Read the <a>documentation</a> for more info.' ),
+		{
+			a: <a href="/docs" />,
+		}
+	);
+}
+```
+
+### concatChildren
+
+Concatenates multiple children arrays.
+
+```jsx
+import { concatChildren } from '@wordpress/element';
+
+const combined = concatChildren( children1, children2 );
+```
+
+### switchChildrenNodeName
+
+Changes the element type of children.
+
+```jsx
+import { switchChildrenNodeName } from '@wordpress/element';
+
+const updated = switchChildrenNodeName( children, 'div' );
+```
+
+## Element Creation
+
+### createElement
+
+Creates React elements.
+
+```js
+import { createElement } from '@wordpress/element';
+
+const element = createElement(
+	'div',
+	{ className: 'container' },
+	'Hello World'
+);
+```
+
+### cloneElement
+
+Clones an element with new props.
+
+```jsx
+import { cloneElement } from '@wordpress/element';
+
+function EnhancedComponent( { children } ) {
+	return cloneElement( children, {
+		className: 'enhanced',
+	} );
+}
+```
+
+## Refs
+
+### createRef
+
+Creates a ref object.
+
+```jsx
+import { createRef, Component } from '@wordpress/element';
+
+class MyComponent extends Component {
+	constructor( props ) {
+		super( props );
+		this.inputRef = createRef();
+	}
+
+	componentDidMount() {
+		this.inputRef.current.focus();
+	}
+
+	render() {
+		return <input ref={ this.inputRef } />;
+	}
+}
+```
+
+### forwardRef
+
+Forwards refs to child components.
+
+```jsx
+import { forwardRef } from '@wordpress/element';
+
+const FancyButton = forwardRef( ( props, ref ) => (
+	<button ref={ ref } className="fancy">
+		{ props.children }
+	</button>
+) );
+```
+
+## Rendering
+
+### createRoot (React 18)
+
+Creates a root for rendering.
+
+```js
+import { createRoot } from '@wordpress/element';
+
+const root = createRoot( document.getElementById( 'root' ) );
+root.render( <App /> );
+```
+
+### hydrateRoot (React 18)
+
+Hydrates server-rendered markup.
+
+```js
+import { hydrateRoot } from '@wordpress/element';
+
+hydrateRoot( document.getElementById( 'root' ), <App /> );
+```
+
+### render (Legacy)
+
+```js
+import { render } from '@wordpress/element';
+
+render( <App />, document.getElementById( 'root' ) );
+```
+
+## Class Components
+
+### Component
+
+Base class for components.
+
+```jsx
+import { Component } from '@wordpress/element';
+
+class Counter extends Component {
+	constructor( props ) {
+		super( props );
+		this.state = { count: 0 };
+	}
+
+	increment = () => {
+		this.setState( ( state ) => ( {
+			count: state.count + 1,
+		} ) );
+	};
+
+	render() {
+		return (
+			<button onClick={ this.increment }>
+				Count: { this.state.count }
+			</button>
+		);
+	}
+}
+```
+
+### PureComponent
+
+Component with shallow prop/state comparison.
+
+```jsx
+import { PureComponent } from '@wordpress/element';
+
+class OptimizedComponent extends PureComponent {
+	render() {
+		return <div>{ this.props.data }</div>;
+	}
+}
+```
+
+## Portals
+
+### createPortal
+
+Renders children into a different DOM node.
+
+```jsx
+import { createPortal } from '@wordpress/element';
+import { useState } from '@wordpress/element';
+
+function Modal( { children } ) {
+	return createPortal(
+		<div className="modal">{ children }</div>,
+		document.body
+	);
+}
+```
+
+## Context
+
+### createContext
+
+Creates a context object.
+
+```jsx
+import { createContext, useContext } from '@wordpress/element';
+
+const UserContext = createContext();
+
+function App() {
+	return (
+		<UserContext.Provider value={ { name: 'John' } }>
+			<UserProfile />
+		</UserContext.Provider>
+	);
+}
+
+function UserProfile() {
+	const user = useContext( UserContext );
+	return <div>{ user.name }</div>;
+}
+```
+
+## Advanced Hooks
+
+### useLayoutEffect
+
+Runs synchronously after DOM mutations.
+
+```jsx
+import { useLayoutEffect, useState } from '@wordpress/element';
+
+function Component() {
+	const [ width, setWidth ] = useState( 0 );
+
+	useLayoutEffect( () => {
+		setWidth( window.innerWidth );
+	}, [] );
+
+	return <div>Width: { width }</div>;
+}
+```
+
+### useImperativeHandle
+
+Customizes ref value.
+
+```jsx
+import {
+	forwardRef,
+	useImperativeHandle,
+	useRef,
+} from '@wordpress/element';
+
+const FancyInput = forwardRef( ( props, ref ) => {
+	const inputRef = useRef();
+
+	useImperativeHandle( ref, () => ( {
+		focus: () => inputRef.current.focus(),
+	} ) );
+
+	return <input ref={ inputRef } />;
+} );
+```
+
+## Utilities
+
+### isValidElement
+
+Checks if a value is a valid React element.
+
+```js
+import { isValidElement } from '@wordpress/element';
+
+if ( isValidElement( value ) ) {
+	console.log( 'Valid element' );
+}
+```
+
+### isEmptyElement
+
+Checks if an element is empty.
+
+```js
+import { isEmptyElement } from '@wordpress/element';
+
+if ( isEmptyElement( children ) ) {
+	console.log( 'No children' );
+}
+```
+
+### Children
+
+Utilities for working with children.
+
+```jsx
+import { Children } from '@wordpress/element';
+
+function Component( { children } ) {
+	const count = Children.count( children );
+	const array = Children.toArray( children );
+
+	return <div>Child count: { count }</div>;
+}
+```
+
+## Best Practices
+
+1. **Always use @wordpress/element** - Don't import React directly
+2. **Prefer hooks** - Use function components with hooks over classes
+3. **Memoize expensive operations** - Use useMemo and useCallback
+4. **Follow React patterns** - Element behaves like standard React
+5. **Handle errors** - Use error boundaries for production code

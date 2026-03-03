@@ -1,0 +1,735 @@
+---
+title: Block Transforms
+description: Convert blocks between types and create blocks from various sources with the Block Transforms API
+---
+
+Block Transforms allow blocks to be converted from and to other blocks, as well as from other entities like shortcodes, files, regular expressions, and raw DOM nodes.
+
+## Transform Directions
+
+Transforms work in two directions:
+
+- **`to`**: Transform this block into other block types
+- **`from`**: Create this block from other sources
+
+Declare transforms in the block configuration:
+
+```js
+export const settings = {
+	title: 'My Block',
+	transforms: {
+		from: [
+			/* transforms to create this block */
+		],
+		to: [
+			/* transforms from this block to others */
+		],
+	},
+};
+```
+
+## Transform Types
+
+Gutenberg supports six types of transformations:
+
+1. **block** - Convert between block types
+2. **enter** - Create blocks from keyboard input (Enter key)
+3. **files** - Create blocks from dropped files
+4. **prefix** - Create blocks from text prefixes
+5. **raw** - Create blocks from raw HTML/DOM
+6. **shortcode** - Create blocks from shortcodes
+
+## Block Transforms
+
+Convert between different block types using toolbar controls.
+
+### Basic Block Transform
+
+```js
+import { createBlock } from '@wordpress/blocks';
+
+transforms: {
+	from: [
+		{
+			type: 'block',
+			blocks: [ 'core/paragraph' ],
+			transform: ( { content } ) => {
+				return createBlock( 'core/heading', {
+					content,
+				} );
+			},
+		},
+	],
+}
+```
+
+This allows transforming a paragraph into a heading while preserving content.
+
+### Block Transform Properties
+
+#### type (required)
+
+Must be `'block'`.
+
+#### blocks (required)
+
+Array of block types this transform applies to. Use `'*'` for all blocks.
+
+```js
+blocks: [ 'core/paragraph', 'core/heading' ]
+
+// Or allow transformation from any block
+blocks: [ '*' ]
+```
+
+#### transform (required)
+
+Function that receives block attributes and returns new block(s).
+
+```js
+transform: ( attributes, innerBlocks ) => {
+	return createBlock( 'my-plugin/new-block', {
+		// Map attributes
+		content: attributes.content,
+	} );
+}
+```
+
+#### isMatch (optional)
+
+Function to determine if transform should be available.
+
+```js
+isMatch: ( attributes, block ) => {
+	// Only allow if block has content
+	return attributes.content && attributes.content.length > 0;
+}
+```
+
+#### isMultiBlock (optional)
+
+Allow transforming multiple selected blocks at once.
+
+```js
+{
+	type: 'block',
+	blocks: [ 'core/paragraph' ],
+	isMultiBlock: true,
+	transform: ( attributesArray, innerBlocksArray ) => {
+		// attributesArray is array of each block's attributes
+		// innerBlocksArray is array of each block's inner blocks
+		return createBlock( 'core/group', {}, attributesArray.map(
+			( attrs ) => createBlock( 'core/paragraph', attrs )
+		) );
+	},
+}
+```
+
+#### priority (optional)
+
+Control transform order (lower = higher priority). Default: `10`.
+
+```js
+priority: 5  // Will be checked before priority 10
+```
+
+### Block Transform Examples
+
+#### Transform with InnerBlocks
+
+```js
+transforms: {
+	to: [
+		{
+			type: 'block',
+			blocks: [ 'core/group' ],
+			transform: ( attributes, innerBlocks ) => {
+				return createBlock(
+					'core/group',
+					attributes,
+					innerBlocks
+				);
+			},
+		},
+	],
+}
+```
+
+#### Multi-Block Transform
+
+```js
+transforms: {
+	from: [
+		{
+			type: 'block',
+			blocks: [ 'core/paragraph' ],
+			isMultiBlock: true,
+			transform: ( attributesArray ) => {
+				// Combine multiple paragraphs into a list
+				const items = attributesArray.map(
+					( { content } ) => `<li>${ content }</li>`
+				).join( '' );
+				return createBlock( 'core/list', {
+					values: items,
+				} );
+			},
+		},
+	],
+}
+```
+
+## Enter Transform
+
+Create blocks when users type and press Enter.
+
+```js
+transforms: {
+	from: [
+		{
+			type: 'enter',
+			regExp: /^-{3,}$/,
+			transform: () => createBlock( 'core/separator' ),
+		},
+	],
+}
+```
+
+Typing `---` and pressing Enter creates a separator block.
+
+### Enter Transform Properties
+
+- **type**: `'enter'`
+- **regExp**: Regular expression to match
+- **transform**: Function returning block(s)
+- **priority**: Optional priority (default: 10)
+
+### Enter Transform Examples
+
+```js
+// Create heading from # prefix
+{
+	type: 'enter',
+	regExp: /^#{1,6}\s/,
+	transform: ( { content } ) => {
+		const level = content.match( /^#{1,6}/ )[0].length;
+		const text = content.replace( /^#{1,6}\s/, '' );
+		return createBlock( 'core/heading', {
+			level,
+			content: text,
+		} );
+	},
+}
+
+// Create quote from > prefix
+{
+	type: 'enter',
+	regExp: /^>\s/,
+	transform: ( { content } ) => {
+		return createBlock( 'core/quote', {
+			value: content.replace( /^>\s/, '' ),
+		} );
+	},
+}
+```
+
+## Files Transform
+
+Create blocks from dropped or pasted files.
+
+```js
+import { createBlobURL } from '@wordpress/blob';
+
+transforms: {
+	from: [
+		{
+			type: 'files',
+			isMatch: ( files ) => files.length === 1,
+			priority: 15,
+			transform: ( files ) => {
+				const file = files[0];
+				const blobURL = createBlobURL( file );
+				return createBlock( 'core/file', {
+					href: blobURL,
+					fileName: file.name,
+				} );
+			},
+		},
+	],
+}
+```
+
+### Files Transform Properties
+
+- **type**: `'files'`
+- **transform**: Function receiving array of files
+- **isMatch**: Optional function to check if files should be handled
+- **priority**: Optional priority (default: 10)
+
+### Files Transform Examples
+
+```js
+// Create image block from image files
+{
+	type: 'files',
+	isMatch: ( files ) => {
+		return files.length === 1 && files[0].type.startsWith( 'image/' );
+	},
+	transform: ( files ) => {
+		const file = files[0];
+		return createBlock( 'core/image', {
+			url: createBlobURL( file ),
+			alt: file.name,
+		} );
+	},
+}
+
+// Create gallery from multiple images
+{
+	type: 'files',
+	isMatch: ( files ) => {
+		return files.every( ( file ) => file.type.startsWith( 'image/' ) );
+	},
+	transform: ( files ) => {
+		const images = files.map( ( file ) => ( {
+			url: createBlobURL( file ),
+			alt: file.name,
+		} ) );
+		return createBlock( 'core/gallery', { images } );
+	},
+}
+```
+
+## Prefix Transform
+
+Create blocks from text prefixes followed by a space.
+
+```js
+transforms: {
+	from: [
+		{
+			type: 'prefix',
+			prefix: '?',
+			transform: ( content ) => {
+				return createBlock( 'my-plugin/question', {
+					content,
+				} );
+			},
+		},
+	],
+}
+```
+
+Typing `? ` creates a question block.
+
+### Prefix Transform Properties
+
+- **type**: `'prefix'`
+- **prefix**: String to match
+- **transform**: Function receiving remaining content
+- **priority**: Optional priority (default: 10)
+
+### Prefix Transform Examples
+
+```js
+// Create code block from ```
+{
+	type: 'prefix',
+	prefix: '```',
+	transform: ( content ) => {
+		return createBlock( 'core/code', { content } );
+	},
+}
+
+// Create pullquote from >>
+{
+	type: 'prefix',
+	prefix: '>>',
+	transform: ( content ) => {
+		return createBlock( 'core/pullquote', {
+			value: content,
+		} );
+	},
+}
+```
+
+## Raw Transform
+
+Create blocks from raw HTML or DOM nodes (paste, drop, convert to blocks).
+
+```js
+transforms: {
+	from: [
+		{
+			type: 'raw',
+			isMatch: ( node ) =>
+				node.nodeName === 'P' &&
+				/^\s*(https?:\/\/\S+)\s*$/i.test( node.textContent ),
+			transform: ( node ) => {
+				return createBlock( 'core/embed', {
+					url: node.textContent.trim(),
+				} );
+			},
+		},
+	],
+}
+```
+
+### Raw Transform Properties
+
+- **type**: `'raw'`
+- **transform**: Optional function receiving DOM node
+- **schema**: Optional HTML content model for validation
+- **selector**: Optional CSS selector (shorthand for isMatch)
+- **isMatch**: Optional function to check if node matches
+- **priority**: Optional priority (default: 10)
+
+### Schemas and Content Models
+
+Define which HTML elements and attributes are allowed:
+
+```js
+{
+	type: 'raw',
+	selector: 'div.my-custom-block',
+	schema: ( { phrasingContentSchema } ) => ( {
+		div: {
+			required: true,
+			attributes: [ 'data-post-id' ],
+			children: {
+				h2: {
+					children: phrasingContentSchema,
+				},
+				p: {
+					children: phrasingContentSchema,
+				},
+			},
+		},
+	} ),
+}
+```
+
+This matches:
+
+```html
+<div data-post-id="13">
+	<h2>The Post Title</h2>
+	<p>Some <em>great</em> content.</p>
+</div>
+```
+
+### Raw Transform Examples
+
+```js
+// Transform YouTube URLs
+{
+	type: 'raw',
+	isMatch: ( node ) => {
+		return (
+			node.nodeName === 'P' &&
+			/youtube\.com\/watch/i.test( node.textContent )
+		);
+	},
+	transform: ( node ) => {
+		return createBlock( 'core/embed', {
+			url: node.textContent.trim(),
+			providerNameSlug: 'youtube',
+		} );
+	},
+}
+
+// Transform custom HTML structure
+{
+	type: 'raw',
+	selector: 'blockquote.testimonial',
+	schema: {
+		blockquote: {
+			attributes: [ 'class' ],
+			children: {
+				p: {},
+				cite: {},
+			},
+		},
+	},
+	transform: ( node ) => {
+		const text = node.querySelector( 'p' )?.textContent || '';
+		const author = node.querySelector( 'cite' )?.textContent || '';
+		return createBlock( 'my-plugin/testimonial', {
+			text,
+			author,
+		} );
+	},
+}
+```
+
+## Shortcode Transform
+
+Create blocks from WordPress shortcodes.
+
+```js
+transforms: {
+	from: [
+		{
+			type: 'shortcode',
+			tag: 'video',
+			transform: ( { named: { src } } ) => {
+				return createBlock( 'core/video', { src } );
+			},
+		},
+	],
+}
+```
+
+### Shortcode Transform Properties
+
+- **type**: `'shortcode'`
+- **tag**: Shortcode tag (string or array)
+- **transform**: Optional function receiving shortcode attributes
+- **attributes**: Optional attribute mapping object
+- **isMatch**: Optional function to check if shortcode should transform
+- **priority**: Optional priority (default: 10)
+
+### Using transform Function
+
+```js
+{
+	type: 'shortcode',
+	tag: [ 'youtube', 'vimeo' ],
+	transform: ( { named: { url, id } } ) => {
+		return createBlock( 'core/embed', {
+			url: url || `https://youtube.com/watch?v=${ id }`,
+		} );
+	},
+	isMatch: ( { named: { id } } ) => {
+		// Only transform if ID is provided
+		return !! id;
+	},
+}
+```
+
+### Using attributes Mapping
+
+```js
+{
+	type: 'shortcode',
+	tag: 'gallery',
+	attributes: {
+		images: {
+			type: 'array',
+			shortcode: ( { named: { ids } } ) => {
+				return ids.split( ',' ).map( ( id ) => ( {
+					id: parseInt( id, 10 ),
+				} ) );
+			},
+		},
+		columns: {
+			type: 'number',
+			shortcode: ( { named: { columns = 3 } } ) => {
+				return parseInt( columns, 10 );
+			},
+		},
+	},
+}
+```
+
+## Ungroup Transform
+
+Define how a container block should be ungrouped:
+
+```js
+transforms: {
+	ungroup: ( attributes, innerBlocks ) => {
+		// Return the inner blocks, discarding the wrapper
+		return innerBlocks;
+	},
+}
+```
+
+For nested structures:
+
+```js
+transforms: {
+	ungroup: ( attributes, innerBlocks ) => {
+		// Extract nested inner blocks
+		return innerBlocks.flatMap(
+			( innerBlock ) => innerBlock.innerBlocks
+		);
+	},
+}
+```
+
+## Complete Transform Example
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { createBlock } from '@wordpress/blocks';
+
+registerBlockType( 'my-plugin/alert', {
+	title: 'Alert',
+	category: 'widgets',
+	attributes: {
+		content: {
+			type: 'string',
+			source: 'html',
+			selector: 'p',
+		},
+		type: {
+			type: 'string',
+			default: 'info',
+		},
+	},
+	transforms: {
+		from: [
+			// From paragraph
+			{
+				type: 'block',
+				blocks: [ 'core/paragraph' ],
+				transform: ( { content } ) => {
+					return createBlock( 'my-plugin/alert', {
+						content,
+						type: 'info',
+					} );
+				},
+			},
+			// From prefix
+			{
+				type: 'prefix',
+				prefix: '!',
+				transform: ( content ) => {
+					return createBlock( 'my-plugin/alert', {
+						content,
+						type: 'warning',
+					} );
+				},
+			},
+			// From shortcode
+			{
+				type: 'shortcode',
+				tag: 'alert',
+				attributes: {
+					content: {
+						shortcode: ( { content } ) => content,
+					},
+					type: {
+						shortcode: ( { named: { type = 'info' } } ) => type,
+					},
+				},
+			},
+		],
+		to: [
+			// To paragraph
+			{
+				type: 'block',
+				blocks: [ 'core/paragraph' ],
+				transform: ( { content } ) => {
+					return createBlock( 'core/paragraph', {
+						content,
+					} );
+				},
+			},
+			// To quote (info alerts only)
+			{
+				type: 'block',
+				blocks: [ 'core/quote' ],
+				isMatch: ( { type } ) => type === 'info',
+				transform: ( { content } ) => {
+					return createBlock( 'core/quote', {
+						value: content,
+					} );
+				},
+			},
+		],
+	},
+	edit: ( { attributes } ) => {
+		const { content, type } = attributes;
+		return (
+			<div { ...useBlockProps() } className={ `alert-${ type }` }>
+				<p>{ content }</p>
+			</div>
+		);
+	},
+	save: ( { attributes } ) => {
+		const { content, type } = attributes;
+		return (
+			<div { ...useBlockProps.save() } className={ `alert-${ type }` }>
+				<p>{ content }</p>
+			</div>
+		);
+	},
+} );
+```
+
+## Best Practices
+
+1. **Preserve user content**: Always try to maintain user data during transforms
+
+2. **Use isMatch wisely**: Prevent unwanted transforms with appropriate conditions
+
+3. **Set appropriate priority**: Lower priority for fallback transforms
+
+4. **Handle edge cases**: Test with empty content, special characters, etc.
+
+5. **Provide two-way transforms**: Allow users to undo transforms when possible
+
+6. **Document transforms**: Comment why each transform exists
+
+7. **Test thoroughly**: Verify transforms work with various content types
+
+## Common Patterns
+
+### Bidirectional Transform
+
+```js
+// In block A
+transforms: {
+	to: [
+		{
+			type: 'block',
+			blocks: [ 'my-plugin/block-b' ],
+			transform: ( attributes ) => {
+				return createBlock( 'my-plugin/block-b', attributes );
+			},
+		},
+	],
+}
+
+// In block B
+transforms: {
+	to: [
+		{
+			type: 'block',
+			blocks: [ 'my-plugin/block-a' ],
+			transform: ( attributes ) => {
+				return createBlock( 'my-plugin/block-a', attributes );
+			},
+		},
+	],
+}
+```
+
+### Wildcard Transform
+
+```js
+// Allow any block to transform into a group
+transforms: {
+	from: [
+		{
+			type: 'block',
+			blocks: [ '*' ],
+			transform: ( attributes, innerBlocks ) => {
+				return createBlock(
+					'core/group',
+					{},
+					[ createBlock( block.name, attributes, innerBlocks ) ]
+				);
+			},
+		},
+	],
+}
+```
+
+## Related Documentation
+
+- [Block Variations](/blocks/block-variations) - Different configurations of blocks
+- [Block Patterns](/blocks/block-patterns) - Predefined layouts as transforms
+- [Block Attributes](/blocks/block-attributes) - Understanding block data
+- [`createBlock` API](https://github.com/WordPress/gutenberg/tree/HEAD/packages/blocks/README.md#createBlock) - Creating blocks programmatically

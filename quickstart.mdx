@@ -1,80 +1,239 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Create your first custom WordPress block in minutes using modern JavaScript (ESNext and JSX).
 ---
 
-## Get started in three steps
+This guide demonstrates the basic principles of block development in WordPress using a hands-on approach. You'll create a custom block plugin that displays the copyright symbol (©) and the current year—the perfect addition to any website's footer.
 
-Get your documentation site running locally and make your first customization.
+<iframe width="100%" height="400" src="https://www.youtube.com/embed/nrut8SfXA44?si=YxvmHmAoYx-BDCog" title="WordPress Block Development: Quick Start Guide Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="true"></iframe>
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Note>
+  Before starting, ensure you have Node.js and npm installed on your computer. Review the [installation guide](/installation) if you haven't set up your development environment yet.
+</Note>
 
-### Step 2: Deploy your changes
+## Scaffold the block plugin
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Navigate to your plugins directory">
+    If you have a local WordPress development environment, navigate to the `plugins/` folder using the terminal:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```bash
+    cd /path/to/wordpress/wp-content/plugins/
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Note>
+      You can use `create-block` to scaffold a block anywhere and then use `wp-env` inside the generated plugin folder. This creates a local WordPress development environment with your new block plugin installed and activated.
+    </Note>
+  </Step>
 
-### Step 3: Go live
+  <Step title="Run the create-block command">
+    Use the `@wordpress/create-block` package with the tutorial template to scaffold the complete plugin:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    ```bash
+    npx @wordpress/create-block copyright-date-block --template @wordpress/create-block-tutorial-template
+    ```
+
+    The `slug` provided (`copyright-date-block`) defines:
+    - The folder name for the scaffolded plugin
+    - The internal block name
+
+    <Note>
+      The `create-block` package installs `wp-scripts` and adds the most common scripts to the block's `package.json` file automatically.
+    </Note>
+  </Step>
+
+  <Step title="Activate the plugin">
+    Navigate to the Plugins page of your local WordPress installation and activate the "Copyright Date Block" plugin. The example block will then be available in the Editor.
+  </Step>
+</Steps>
+
+## Start development
+
+With the plugin scaffolded and activated, you can start developing:
+
+```bash
+cd copyright-date-block && npm start
+```
+
+The `npm start` command:
+- Starts a development server
+- Watches for changes in the block's code
+- Automatically rebuilds the block whenever modifications are made
+
+<Warning>
+  When you're finished making changes, run `npm run build` to optimize the block code and make it production-ready.
+</Warning>
+
+## Test with wp-env
+
+The scaffolded plugin includes configuration for `wp-env`, making it easy to test your block:
+
+<Steps>
+  <Step title="Ensure Docker is running">
+    You must have [Docker](https://www.docker.com/products/docker-desktop) installed and running on your machine.
+  </Step>
+
+  <Step title="Start the environment">
+    Run the following command from your plugin directory:
+
+    ```bash
+    npx wp-env start
+    ```
+
+    Once the script finishes, you can access the local environment at: `http://localhost:8888`
+  </Step>
+
+  <Step title="Log in and test">
+    Log into the WordPress dashboard using:
+    - **Username:** `admin`
+    - **Password:** `password`
+
+    The plugin will already be installed and activated. Open the Editor or Site Editor and insert the Copyright Date Block as you would any other block.
+  </Step>
+</Steps>
+
+## Project structure
+
+Here's what `create-block` generates for you:
+
+```
+copyright-date-block/
+├── build/              # Compiled production files
+├── src/                # Source files
+│   ├── edit.js        # Block editor interface
+│   ├── save.js        # Block save function
+│   ├── block.json     # Block metadata
+│   └── index.js       # Block registration
+├── package.json        # Dependencies and scripts
+├── copyright-date-block.php  # Main plugin file
+└── readme.txt         # Plugin readme
+```
+
+## Key files explained
+
+### block.json
+
+The `block.json` file contains all metadata for your block:
+
+```json
+{
+  "apiVersion": 2,
+  "name": "create-block/copyright-date-block",
+  "title": "Copyright Date Block",
+  "category": "text",
+  "icon": "smiley",
+  "description": "Example block showing copyright with current year.",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "copyright-date-block",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}
+```
+
+### edit.js
+
+Defines how your block appears in the editor:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+import './editor.scss';
+
+export default function Edit() {
+  return (
+    <p {...useBlockProps()}>
+      © {new Date().getFullYear()}
+    </p>
+  );
+}
+```
+
+### save.js
+
+Defines how your block is saved to the database:
+
+```jsx
+import { useBlockProps } from '@wordpress/block-editor';
+
+export default function save() {
+  return (
+    <p {...useBlockProps.save()}>
+      © {new Date().getFullYear()}
+    </p>
+  );
+}
+```
+
+## Common npm scripts
+
+The scaffolded plugin includes these useful scripts:
+
+<CodeGroup>
+  ```bash Development
+  # Start development mode with watch
+  npm start
+
+  # Build for production
+  npm run build
+  ```
+
+  ```bash Code quality
+  # Format code
+  npm run format
+
+  # Lint JavaScript
+  npm run lint:js
+
+  # Lint CSS
+  npm run lint:css
+  ```
+
+  ```bash Environment
+  # Start wp-env
+  npx wp-env start
+
+  # Stop wp-env
+  npx wp-env stop
+
+  # Check wp-env status
+  npx wp-env status
+  ```
+</CodeGroup>
+
+## Customize your block
+
+Now that you have a working block, try customizing it:
+
+1. **Change the icon** - Modify the `icon` property in `block.json`
+2. **Add styling** - Edit `editor.scss` for editor styles or `style.scss` for frontend styles
+3. **Add attributes** - Define custom attributes in `block.json` to make your block configurable
+4. **Add controls** - Use WordPress components like `TextControl` or `ColorPicker` in `edit.js`
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Block Editor Handbook" icon="book" href="https://developer.wordpress.org/block-editor/">
+    Explore comprehensive tutorials, API references, and guides.
+  </Card>
+  <Card title="Block development examples" icon="code" href="https://github.com/WordPress/block-development-examples">
+    Browse example blocks demonstrating different features and techniques.
+  </Card>
+  <Card title="Core blocks source" icon="cube" href="https://github.com/WordPress/gutenberg/tree/trunk/packages/block-library/src">
+    Study how WordPress core blocks are implemented.
+  </Card>
+  <Card title="WordPress Developer Blog" icon="newspaper" href="https://developer.wordpress.org/news/">
+    Stay updated with the latest WordPress development articles.
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Additional resources
+
+- [Get started with create-block](https://developer.wordpress.org/block-editor/getting-started/devenv/get-started-with-create-block/)
+- [Get started with wp-scripts](https://developer.wordpress.org/block-editor/getting-started/devenv/get-started-with-wp-scripts/)
+- [Get started with wp-env](https://developer.wordpress.org/block-editor/getting-started/devenv/get-started-with-wp-env/)
+- [Block API Reference](https://developer.wordpress.org/block-editor/reference-guides/block-api/)
+- [Component Reference](https://developer.wordpress.org/block-editor/reference-guides/components/)

@@ -1,0 +1,328 @@
+---
+title: Testing Guide
+description: Learn how to run and write tests for the Gutenberg Block Editor framework, including JavaScript, PHP, and E2E tests.
+---
+
+Gutenberg contains both PHP and JavaScript code and encourages comprehensive testing for both.
+
+## Why Test?
+
+Tests are important because they:
+- Help ensure the application behaves as expected
+- Provide concise examples of how to use code
+- Prevent regressions when making changes
+- Document expected behavior
+
+When writing tests, consider:
+- What behavior(s) are we testing?
+- What errors are likely to occur?
+- Does the test actually test what we think it does?
+- Is it readable and maintainable?
+
+## JavaScript Testing
+
+### Test Framework
+
+Gutenberg uses [Jest](https://jestjs.io/) as the test runner with:
+- Jest API for globals (`describe`, `test`, `beforeEach`, etc.)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro) for component testing
+
+### Running JavaScript Tests
+
+```bash
+# All JS tests and linting
+npm test
+
+# Unit tests only
+npm run test:unit
+
+# Specific test by name pattern
+npm run test:unit -- --testNamePattern="TestName"
+
+# Specific test directory
+npm run test:unit <path_to_test_directory>
+
+# Watch mode for active development
+npm run test:unit:watch
+```
+
+### Code Linting
+
+```bash
+# Check JS linting
+npm run lint:js
+
+# Auto-fix JS issues
+npm run format
+```
+
+### Test File Structure
+
+Keep tests in a `test` folder alongside your code:
+
+```
++-- my-component
+    +-- test
+    |   +-- index.js
+    |   +-- mocks/
+    |   +-- fixtures/
+    +-- index.js
+```
+
+### User Interactions
+
+Use `@testing-library/user-event` for simulating user interactions:
+
+```javascript
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+test('fires onChange when typing', async () => {
+  const user = userEvent.setup();
+  const onChange = jest.fn();
+
+  render(<MyComponent onChange={onChange} />);
+
+  const input = screen.getByRole('textbox');
+  await user.type(input, 'Hello');
+
+  expect(onChange).toHaveBeenCalled();
+});
+```
+
+### Integration Testing for Blocks
+
+Test blocks within a special block editor instance:
+
+```javascript
+import { initializeEditor } from 'test/integration/helpers/integration-test-editor';
+
+async function setup(attributes) {
+  const testBlock = { name: 'core/my-block', attributes };
+  return initializeEditor(testBlock);
+}
+
+test('block renders correctly', async () => {
+  const { getByRole } = await setup({ text: 'Hello' });
+  expect(getByRole('textbox')).toBeInTheDocument();
+});
+```
+
+### Snapshot Testing
+
+Snapshots capture component output:
+
+```javascript
+test('should render correctly', () => {
+  const { container } = render(<MyComponent />);
+  expect(container).toMatchSnapshot();
+});
+```
+
+**Updating Snapshots**:
+
+```bash
+npm run test:unit -- --updateSnapshot --testPathPattern path/to/tests
+```
+
+### Debugging Tests
+
+Debug tests using Node inspector:
+
+```bash
+npm run test:unit:debug
+```
+
+Then connect a debugger:
+1. Open `chrome://inspect` in Chrome
+2. Click "inspect" under Remote Target
+3. Set breakpoints and debug
+
+## End-to-End (E2E) Testing
+
+### Running E2E Tests
+
+E2E tests require `wp-env` to be running:
+
+```bash
+# Start wp-env first
+npm run wp-env start
+
+# Run E2E tests
+npm run test:e2e
+
+# Specific test file
+npm run test:e2e -- <path_to_test_file.spec.js>
+
+# Run with browser visible
+npm run test:e2e -- --headed
+
+# Watch mode
+npm run test:e2e:watch
+```
+
+### Playwright Tests
+
+New E2E tests should use Playwright:
+
+```bash
+# Run Playwright tests
+npm run test:e2e:playwright
+```
+
+## PHP Testing
+
+### Running PHP Tests
+
+PHP tests use [PHPUnit](https://phpunit.de/) and require `wp-env`:
+
+```bash
+# All PHP tests
+npm run test:php
+# or
+composer test
+
+# Specific file
+vendor/bin/phpunit <path_to_test_file.php>
+
+# Specific directory
+vendor/bin/phpunit <path_to_test_directory>/
+
+# Watch mode
+npm run test:php:watch
+```
+
+### PHP Code Standards
+
+```bash
+# Check PHP standards
+npm run lint:php
+# or
+vendor/bin/phpcs
+
+# Auto-fix PHP standards
+vendor/bin/phpcbf
+
+# Specific file
+vendor/bin/phpcbf <path_to_php_file.php>
+```
+
+### Testing Prefixed Functions
+
+Gutenberg's build system prefixes PHP functions with `gutenberg_`. Always test the **built (prefixed) versions**:
+
+```php
+class My_Block_Test extends WP_UnitTestCase {
+    public function test_my_function() {
+        // Test the built function (with gutenberg_ prefix)
+        $result = gutenberg_block_core_my_block_render_function($args);
+        $this->assertEquals($expected, $result);
+    }
+
+    public function test_my_class() {
+        // Test the built class (with _Gutenberg suffix)
+        $handler = new WP_Example_Block_Handler_Gutenberg();
+        $result = $handler->process($input);
+        $this->assertEquals($expected, $result);
+    }
+}
+```
+
+## Performance Testing
+
+Run performance tests to monitor editor metrics:
+
+```bash
+# Run performance tests
+npm run test:performance
+
+# Compare across branches
+./bin/plugin/cli.js perf trunk v8.1.0 v8.0.0
+
+# Use specific test branch
+./bin/plugin/cli.js perf trunk v8.1.0 --tests-branch add/perf-tests
+```
+
+Metrics tracked:
+- Editor load time
+- Typing response time
+- Block selection time
+
+## Mobile Testing
+
+### React Native Unit Tests
+
+```bash
+# Run native mobile tests
+npm run test:native
+
+# Debug native tests
+npm run test:native:debug
+```
+
+### Mobile E2E Tests
+
+Mobile E2E tests run in CI on Android and iOS. See the [React Native Integration Test Guide](https://github.com/WordPress/gutenberg/blob/trunk/docs/contributors/code/react-native/integration-test-guide.md) for details.
+
+## Test Quality Guidelines
+
+### Write Readable Tests
+
+Describe expected behavior from a user perspective:
+
+```javascript
+// Good
+test('checking checkbox should disable submit button', () => {
+  // ...
+});
+
+// Not so good
+test('checking checkbox should set state.disabled to true', () => {
+  // ...
+});
+```
+
+### Setup and Teardown
+
+Use Jest lifecycle methods:
+
+```javascript
+beforeAll(() => {
+  // One-time setup for all tests
+});
+
+afterEach(() => {
+  // Clean up after each test
+});
+```
+
+### Mocking Dependencies
+
+```javascript
+jest.mock('config', () => ({
+  isEnabled: jest.fn(() => false),
+}));
+
+import { isEnabled } from 'config';
+
+test('feature is disabled by default', () => {
+  expect(myFunction()).toBe(false);
+});
+
+test('feature can be enabled', () => {
+  isEnabled.mockImplementationOnce(() => true);
+  expect(myFunction()).toBe(true);
+});
+```
+
+## CI and Flaky Tests
+
+Tests that pass and fail without code changes are considered flaky. The CI system:
+- Auto-retries failed tests up to twice
+- Reports flaky tests to GitHub issues under the `[Type] Flaky Test` label
+
+## Next Steps
+
+- Review [Coding Guidelines](/contributing/coding-guidelines) for code style
+- Check [Common Pitfalls](/contributing/common-pitfalls) to avoid mistakes
+- Understand the [Folder Structure](/contributing/folder-structure) to locate test files

@@ -1,0 +1,223 @@
+---
+title: Code Contribution Guide
+description: Set up your development environment and start contributing code to the Gutenberg Block Editor framework.
+---
+
+This guide will help you set up your local environment to contribute code to the Gutenberg project.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+### Node.js
+
+Gutenberg requires [Node.js](https://nodejs.org/). The project currently uses Node.js v20 and npm v10. While we aim to use the Active LTS version, this may vary.
+
+We recommend using [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm) to manage Node.js versions:
+
+```bash
+# Install the version specified in .nvmrc
+nvm install
+nvm use
+```
+
+### Git
+
+Gutenberg uses Git for source control. Ensure you have:
+- An updated version of Git installed
+- A GitHub account
+
+See the [Development Workflow](/contributing/development-workflow) guide for details on using Git with Gutenberg.
+
+### Docker Desktop (Recommended)
+
+We recommend using the `@wordpress/env` package for your local WordPress environment. Docker is required for this:
+
+- **macOS/Linux**: Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- **Windows 10 Home**: Follow [Docker for Windows with WSL2](https://docs.docker.com/docker-for-windows/wsl/) instructions
+
+**Alternatives**: You can also use [Local](https://localwp.com/), [WampServer](https://wampserver.aviatechno.net/), [MAMP](https://www.mamp.info/), or a remote server.
+
+### GitHub CLI (Optional)
+
+The [GitHub CLI](https://cli.github.com/) can be very useful for checking out pull requests locally from both the main repository and forks.
+
+## Getting the Gutenberg Code
+
+### Fork and Clone
+
+Fork the Gutenberg repository to your GitHub account, then clone it:
+
+```bash
+git clone https://github.com/YOUR_GITHUB_USERNAME/gutenberg.git
+cd gutenberg
+git remote add upstream https://github.com/WordPress/gutenberg.git
+```
+
+## Building Gutenberg
+
+### Install Dependencies
+
+Install the project dependencies:
+
+```bash
+npm install
+```
+
+Note: This requires [Python](https://www.python.org/) to be installed and in your system path.
+
+### Build the Plugin
+
+You have two build options:
+
+#### Development Build (Recommended)
+
+For active development with automatic rebuilds:
+
+```bash
+npm run dev
+```
+
+This runs continuous builds as source files change and includes additional warnings and errors for troubleshooting.
+
+#### Production Build
+
+For optimized production builds:
+
+```bash
+npm run build
+```
+
+## Local WordPress Environment
+
+### Using wp-env (Recommended)
+
+The `@wordpress/env` package provides a quick way to create a standard WordPress environment using Docker.
+
+#### Start the Environment
+
+Make sure Docker is running, then start `wp-env` from the Gutenberg directory:
+
+```bash
+npm run wp-env start
+```
+
+This creates a Docker instance with:
+- Latest WordPress Docker image
+- Gutenberg plugin mounted and activated
+- Live reload of your local code changes
+
+#### Access WordPress
+
+- **Site**: http://localhost:8888
+- **Admin**: http://localhost:8888/wp-admin/
+  - Username: `admin`
+  - Password: `password`
+
+#### Database Access
+
+**phpMyAdmin**: Available at http://localhost:9000/
+
+**Direct MySQL Connection**:
+
+1. Run `npm run wp-env start` and note the MySQL port number
+2. Use these connection details:
+   - Host: `127.0.0.1`
+   - Username: `root`
+   - Password: `password`
+   - Database: `wordpress`
+   - Port: (from step 1)
+
+Note: The MySQL port changes each time `wp-env` restarts.
+
+#### wp-env Commands
+
+```bash
+# Stop the environment
+npm run wp-env stop
+
+# Destroy the environment completely
+npm run wp-env destroy
+
+# Check environment status
+npm run wp-env status
+```
+
+### Using Local or MAMP
+
+If you prefer Local, MAMP, or WampServer:
+
+1. Clone and build Gutenberg as described above
+2. Create a symlink or copy the Gutenberg directory to your `wp-content/plugins` folder
+3. For e2e tests, symlink test plugins:
+
+```bash
+cd wp-content/plugins
+ln -s gutenberg/packages/e2e-tests/plugins/* .
+```
+
+## Developer Tools
+
+Configure your editor for the best development experience:
+
+### EditorConfig
+
+Install the [EditorConfig extension](https://editorconfig.org/) for your editor. It will automatically configure your editor to match the project's coding standards.
+
+### ESLint
+
+Install the ESLint extension for your editor:
+- **VS Code**: [ESLint Extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+
+Configure auto-fix on save in VS Code:
+
+```json
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}
+```
+
+### Prettier
+
+Install the Prettier extension:
+- **VS Code**: [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+
+Configure formatting on save in VS Code:
+
+```json
+{
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
+}
+```
+
+### TypeScript
+
+The project uses TypeScript via JSDoc for type checking JavaScript files. VS Code has built-in TypeScript support.
+
+## Storybook
+
+Test and develop UI components in isolation with Storybook:
+
+```bash
+npm run storybook:dev
+```
+
+View the live Storybook: [https://wordpress.github.io/gutenberg/](https://wordpress.github.io/gutenberg/)
+
+## Next Steps
+
+Now that your environment is set up:
+
+- Review the [Development Workflow](/contributing/development-workflow) to learn the Git workflow
+- Check the [Testing Guide](/contributing/testing) to understand testing requirements
+- Read the [Coding Guidelines](/contributing/coding-guidelines) for project conventions
+- Explore the [Folder Structure](/contributing/folder-structure) to understand the codebase organization

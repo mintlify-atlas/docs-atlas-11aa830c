@@ -1,0 +1,535 @@
+---
+title: Nested Blocks (InnerBlocks)
+description: Create container blocks that nest other blocks using the InnerBlocks component
+---
+
+You can create blocks that contain other blocks using the `InnerBlocks` component. This pattern is used in blocks like Columns, Group, Cover, and any block where you want to nest content.
+
+<Note>
+A single block can only contain **one** `InnerBlocks` component.
+</Note>
+
+## Basic Usage
+
+Here's the simplest implementation of InnerBlocks:
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+
+registerBlockType( 'my-plugin/container', {
+	title: 'Container',
+	category: 'design',
+
+	edit: () => {
+		const blockProps = useBlockProps();
+		return (
+			<div { ...blockProps }>
+				<InnerBlocks />
+			</div>
+		);
+	},
+
+	save: () => {
+		const blockProps = useBlockProps.save();
+		return (
+			<div { ...blockProps }>
+				<InnerBlocks.Content />
+			</div>
+		);
+	},
+} );
+```
+
+## InnerBlocks.Content
+
+In the `save` function, use `<InnerBlocks.Content />` to render the saved inner blocks:
+
+```js
+save: () => {
+	const blockProps = useBlockProps.save();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks.Content />
+		</div>
+	);
+}
+```
+
+This outputs the actual saved content of all nested blocks.
+
+## Controlling Allowed Blocks
+
+Limit which blocks can be inserted as children:
+
+### Dynamic Allow List
+
+Use the `allowedBlocks` prop for dynamic control:
+
+```js
+edit: ( { attributes } ) => {
+	const { allowedBlocks } = attributes;
+	const blockProps = useBlockProps();
+
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks allowedBlocks={ allowedBlocks } />
+		</div>
+	);
+}
+```
+
+### Static Allow List
+
+For a fixed list, use the `allowedBlocks` setting in block.json:
+
+```json
+{
+	"title": "Navigation",
+	"name": "core/navigation",
+	"allowedBlocks": [
+		"core/navigation-link",
+		"core/search",
+		"core/social-links",
+		"core/page-list",
+		"core/spacer"
+	]
+}
+```
+
+## Block Templates
+
+Prefill InnerBlocks with a default template:
+
+```js
+const TEMPLATE = [
+	[ 'core/image', {} ],
+	[ 'core/heading', { placeholder: 'Book Title' } ],
+	[ 'core/paragraph', { placeholder: 'Summary' } ],
+];
+
+edit: () => {
+	const blockProps = useBlockProps();
+	return (
+		<div { ...blockProps }>
+			<InnerBlocks template={ TEMPLATE } />
+		</div>
+	);
+}
+```
+
+When the block is first inserted, it will contain these three blocks with their placeholder values.
+
+### Template Locking
+
+Control how users can modify the template:
+
+```js
+<InnerBlocks
+	template={ TEMPLATE }
+	templateLock="all"
+/>
+```
+
+**Lock options:**
+
+- `all` - Prevents all operations (no insert, move, or delete)
+- `insert` - Prevents inserting/removing blocks (allows reordering)
+- `contentOnly` - Only allows editing block content
+- `false` - No locking (default)
+
+### Complete Template Example
+
+```js
+const BOOK_REVIEW_TEMPLATE = [
+	[ 'core/image', {
+		align: 'left',
+		sizeSlug: 'medium',
+	} ],
+	[ 'core/heading', {
+		level: 2,
+		placeholder: 'Book Title',
+	} ],
+	[ 'core/paragraph', {
+		placeholder: 'Author name...',
+		fontSize: 'small',
+	} ],
+	[ 'core/paragraph', {
+		placeholder: 'Write your review...',
+	} ],
+	[ 'core/buttons', {}, [
+		[ 'core/button', {
+			text: 'Buy Now',
+		} ],
+	] ],
+];
+
+registerBlockType( 'my-plugin/book-review', {
+	title: 'Book Review',
+	category: 'widgets',
+	edit: () => {
+		return (
+			<div { ...useBlockProps() }>
+				<InnerBlocks
+					template={ BOOK_REVIEW_TEMPLATE }
+					templateLock="insert"
+				/>
+			</div>
+		);
+	},
+	save: () => {
+		return (
+			<div { ...useBlockProps.save() }>
+				<InnerBlocks.Content />
+			</div>
+		);
+	},
+} );
+```
+
+## Nested Templates
+
+Templates can include nested inner blocks:
+
+```php
+$template = array(
+	array( 'core/paragraph', array(
+		'placeholder' => 'Add a root-level paragraph',
+	) ),
+	array( 'core/columns', array(), array(
+		array( 'core/column', array(), array(
+			array( 'core/image', array() ),
+		) ),
+		array( 'core/column', array(), array(
+			array( 'core/paragraph', array(
+				'placeholder' => 'Add an inner paragraph'
+			) ),
+		) ),
+	) )
+);
+```
+
+## Orientation
+
+For horizontally-styled blocks, set the orientation:
+
+```js
+<InnerBlocks orientation="horizontal" />
+```
+
+This:
+- Displays block movers horizontally
+- Ensures drag and drop works correctly
+- Doesn't affect the actual layout (use CSS for that)
+
+## Default Block
+
+Specify which block is inserted when the user clicks the appender:
+
+```js
+<InnerBlocks
+	defaultBlock={ { name: 'core/paragraph', attributes: { content: 'Start writing...' } } }
+	directInsert
+/>
+```
+
+The `directInsert` prop makes the default block insert immediately without showing the block picker.
+
+## Block Relationships
+
+Control where blocks can be inserted using parent/child relationships.
+
+### Parent Relationship
+
+A block can only be a **direct child** of specified parents:
+
+```json
+{
+	"title": "Column",
+	"name": "core/column",
+	"parent": [ "core/columns" ]
+}
+```
+
+The Column block only appears as an option inside Columns blocks.
+
+### Ancestor Relationship
+
+A block can be **anywhere in the tree** under specified ancestors:
+
+```json
+{
+	"title": "Comment Author Name",
+	"name": "core/comment-author-name",
+	"ancestor": [ "core/comment-template" ]
+}
+```
+
+Comment Author Name can be deeply nested, as long as it's somewhere inside Comment Template.
+
+### Allowed Blocks (Children)
+
+Specify which blocks can be **direct children**:
+
+```json
+{
+	"title": "Navigation",
+	"name": "core/navigation",
+	"allowedBlocks": [
+		"core/navigation-link",
+		"core/search",
+		"core/social-links"
+	]
+}
+```
+
+### Comparison
+
+| Setting | Restriction | Example |
+|---------|-------------|----------|
+| `parent` | Must be direct child | Column inside Columns |
+| `ancestor` | Must be descendant | Comment Author inside Comment Template (any depth) |
+| `allowedBlocks` | Defines allowed children | Navigation defines which blocks can go inside |
+
+## Using useInnerBlocksProps Hook
+
+For more control over markup, use the `useInnerBlocksProps` hook:
+
+```js
+import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+
+edit: () => {
+	const blockProps = useBlockProps();
+	const innerBlocksProps = useInnerBlocksProps();
+
+	return (
+		<div { ...blockProps }>
+			<div { ...innerBlocksProps } />
+		</div>
+	);
+}
+```
+
+### Merging Props
+
+You can merge `blockProps` and `innerBlocksProps`:
+
+```js
+edit: () => {
+	const blockProps = useBlockProps();
+	const innerBlocksProps = useInnerBlocksProps( blockProps );
+
+	return <div { ...innerBlocksProps } />;
+}
+```
+
+### Accessing Children
+
+Destructure `children` to add elements alongside inner blocks:
+
+```js
+edit: () => {
+	const blockProps = useBlockProps();
+	const { children, ...innerBlocksProps } = useInnerBlocksProps( blockProps );
+
+	return (
+		<div { ...innerBlocksProps }>
+			{ children }
+			<div className="custom-element">
+				Custom content at same level as children
+			</div>
+		</div>
+	);
+}
+```
+
+### Complete Hook Example
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+
+const TEMPLATE = [
+	[ 'core/heading', { placeholder: 'Card Title' } ],
+	[ 'core/paragraph', { placeholder: 'Card content...' } ],
+];
+
+registerBlockType( 'my-plugin/card', {
+	title: 'Card',
+	category: 'design',
+
+	edit: () => {
+		const blockProps = useBlockProps( {
+			className: 'my-card',
+		} );
+
+		const innerBlocksProps = useInnerBlocksProps(
+			blockProps,
+			{
+				template: TEMPLATE,
+				templateLock: false,
+			}
+		);
+
+		return <div { ...innerBlocksProps } />;
+	},
+
+	save: () => {
+		const blockProps = useBlockProps.save( {
+			className: 'my-card',
+		} );
+
+		const innerBlocksProps = useInnerBlocksProps.save( blockProps );
+
+		return <div { ...innerBlocksProps } />;
+	},
+} );
+```
+
+## Post Templates vs InnerBlocks Templates
+
+### InnerBlocks Template
+
+Defines default blocks **inside a specific block**:
+
+```js
+const TEMPLATE = [
+	[ 'core/image', {} ],
+	[ 'core/heading', {} ],
+];
+
+<InnerBlocks template={ TEMPLATE } />
+```
+
+### Post Template
+
+Defines default blocks for an **entire post type**:
+
+```php
+add_action( 'init', function() {
+	$post_type_object = get_post_type_object( 'post' );
+	$post_type_object->template = array(
+		array( 'core/image' ),
+		array( 'core/heading' ),
+		array( 'my-plugin/custom-block' ),
+	);
+	$post_type_object->template_lock = 'all'; // Optional
+} );
+```
+
+## Complete Example: Testimonial Block
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+
+const TESTIMONIAL_TEMPLATE = [
+	[ 'core/paragraph', {
+		placeholder: 'Testimonial text...',
+		fontSize: 'large',
+	} ],
+	[ 'core/separator' ],
+	[ 'core/paragraph', {
+		placeholder: 'Author name',
+		align: 'right',
+		fontSize: 'small',
+	} ],
+];
+
+registerBlockType( 'my-plugin/testimonial', {
+	title: 'Testimonial',
+	icon: 'format-quote',
+	category: 'widgets',
+	supports: {
+		color: {
+			background: true,
+			text: true,
+		},
+		spacing: {
+			padding: true,
+		},
+	},
+
+	edit: () => {
+		const blockProps = useBlockProps( {
+			className: 'testimonial',
+		} );
+
+		const innerBlocksProps = useInnerBlocksProps(
+			blockProps,
+			{
+				template: TESTIMONIAL_TEMPLATE,
+				templateLock: 'insert',
+				allowedBlocks: [ 'core/paragraph', 'core/separator' ],
+			}
+		);
+
+		return <blockquote { ...innerBlocksProps } />;
+	},
+
+	save: () => {
+		const blockProps = useBlockProps.save( {
+			className: 'testimonial',
+		} );
+
+		const innerBlocksProps = useInnerBlocksProps.save( blockProps );
+
+		return <blockquote { ...innerBlocksProps } />;
+	},
+} );
+```
+
+## Best Practices
+
+1. **One InnerBlocks per block**: You can only have one InnerBlocks component per block
+
+2. **Always use InnerBlocks.Content**: In the save function, use `<InnerBlocks.Content />` not `<InnerBlocks />`
+
+3. **Consider template locking**: Decide if users should modify the structure
+
+4. **Use semantic HTML**: Choose appropriate wrapper elements (div, section, article, etc.)
+
+5. **Test deeply nested scenarios**: Ensure your block works when nested multiple levels deep
+
+6. **Provide clear templates**: Make placeholder text descriptive
+
+## Common Patterns
+
+### Two-Column Layout
+
+```js
+const COLUMNS_TEMPLATE = [
+	[ 'core/column', {}, [
+		[ 'core/paragraph', { placeholder: 'Left column...' } ],
+	] ],
+	[ 'core/column', {}, [
+		[ 'core/paragraph', { placeholder: 'Right column...' } ],
+	] ],
+];
+```
+
+### Hero Section
+
+```js
+const HERO_TEMPLATE = [
+	[ 'core/heading', {
+		level: 1,
+		placeholder: 'Hero Title',
+		fontSize: 'huge',
+	} ],
+	[ 'core/paragraph', {
+		placeholder: 'Hero description...',
+		fontSize: 'large',
+	} ],
+	[ 'core/buttons', {}, [
+		[ 'core/button', { text: 'Call to Action' } ],
+	] ],
+];
+```
+
+## Related Documentation
+
+- [Block Templates](/blocks/block-templates) - Post-level templates
+- [Dynamic Blocks](/blocks/dynamic-blocks) - InnerBlocks in dynamic blocks
+- [Block Patterns](/blocks/block-patterns) - Reusable block combinations
+- [InnerBlocks README](https://github.com/WordPress/gutenberg/tree/HEAD/packages/block-editor/src/components/inner-blocks/README.md) - Component API reference

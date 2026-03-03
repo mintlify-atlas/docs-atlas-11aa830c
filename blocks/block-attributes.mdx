@@ -1,0 +1,487 @@
+---
+title: Block Attributes
+description: Define and manage block data with the attributes API
+---
+
+Block attributes provide information about the data stored by a block. Attributes define the structure of your block's data and how it's extracted from saved content.
+
+## What are Attributes?
+
+Attributes are the structured data needs of a block. They can exist in different forms when serialized, but are declared together under a common interface. For example, rich content, image URLs, background colors, or button titles.
+
+## Defining Attributes
+
+Attributes are specified in the `attributes` field - an object where each key is the attribute name, and the value is the attribute definition.
+
+```js
+attributes: {
+	url: {
+		type: 'string',
+		source: 'attribute',
+		selector: 'img',
+		attribute: 'src',
+	},
+	title: {
+		type: 'string',
+	},
+	size: {
+		enum: [ 'large', 'small' ],
+	},
+}
+```
+
+## Accessing Attributes
+
+Attributes are available in both the `edit` and `save` functions:
+
+```js
+function YourBlockEdit( { attributes } ) {
+	return (
+		<p>
+			URL: { attributes.url },
+			Title: { attributes.title },
+			Size: { attributes.size }
+		</p>
+	);
+}
+```
+
+## Type Validation
+
+The `type` indicates the type of data stored by the attribute. A `type` is required unless an `enum` is provided.
+
+Valid types:
+- `null`
+- `boolean`
+- `object`
+- `array`
+- `string`
+- `integer`
+- `number` (same as `integer`)
+
+```js
+attributes: {
+	isActive: {
+		type: 'boolean',
+		default: false,
+	},
+	count: {
+		type: 'number',
+		default: 0,
+	},
+	items: {
+		type: 'array',
+		default: [],
+	},
+	settings: {
+		type: 'object',
+		default: {},
+	},
+}
+```
+
+## Enum Validation
+
+An attribute can be restricted to a fixed set of values using `enum`:
+
+```js
+attributes: {
+	size: {
+		enum: [ 'large', 'small', 'tiny' ],
+		default: 'large',
+	}
+}
+```
+
+## Attribute Sources
+
+Attribute sources define how attribute values are extracted from saved post content.
+
+### No Source (Comment Delimiter)
+
+When no `source` is specified, data is stored in the block's comment delimiter:
+
+```js
+attributes: {
+	title: {
+		type: 'string',
+		default: 'Hello World',
+	}
+}
+```
+
+Saved HTML:
+```html
+<!-- wp:my-plugin/my-block {"title":"Hello World"} -->
+<div>Content here</div>
+<!-- /wp:my-plugin/my-block -->
+```
+
+### Attribute Source
+
+Extract values from HTML element attributes:
+
+```js
+attributes: {
+	url: {
+		type: 'string',
+		source: 'attribute',
+		selector: 'img',
+		attribute: 'src',
+	}
+}
+```
+
+**Saved content:**
+```html
+<div>
+	<img src="https://example.com/image.jpg" />
+</div>
+```
+
+**Extracted attribute:**
+```js
+{ "url": "https://example.com/image.jpg" }
+```
+
+#### Boolean Attributes
+
+For boolean HTML attributes like `disabled`:
+
+```js
+attributes: {
+	disabled: {
+		type: 'boolean',
+		source: 'attribute',
+		selector: 'button',
+		attribute: 'disabled',
+	}
+}
+```
+
+**Saved content:**
+```html
+<button type="button" disabled>Click Me</button>
+```
+
+**Extracted attribute:**
+```js
+{ "disabled": true }
+```
+
+### Text Source
+
+Extract inner text from markup (uses `textContent`):
+
+```js
+attributes: {
+	caption: {
+		type: 'string',
+		source: 'text',
+		selector: 'figcaption',
+	}
+}
+```
+
+**Saved content:**
+```html
+<figure>
+	<img src="/image.jpg" />
+	<figcaption>The inner text of the figcaption element</figcaption>
+</figure>
+```
+
+**Extracted attribute:**
+```js
+{ "caption": "The inner text of the figcaption element" }
+```
+
+### HTML Source
+
+Extract inner HTML from markup (uses `innerHTML`):
+
+```js
+attributes: {
+	content: {
+		type: 'string',
+		source: 'html',
+		selector: 'figcaption',
+	}
+}
+```
+
+**Saved content:**
+```html
+<figcaption>
+	The inner text of the <strong>figcaption</strong> element
+</figcaption>
+```
+
+**Extracted attribute:**
+```js
+{ "content": "The inner text of the <strong>figcaption</strong> element" }
+```
+
+### Query Source
+
+Extract an array of values from multiple elements:
+
+```js
+attributes: {
+	images: {
+		type: 'array',
+		source: 'query',
+		selector: 'img',
+		query: {
+			url: {
+				type: 'string',
+				source: 'attribute',
+				attribute: 'src',
+			},
+			alt: {
+				type: 'string',
+				source: 'attribute',
+				attribute: 'alt',
+			},
+		}
+	}
+}
+```
+
+**Saved content:**
+```html
+<div>
+	<img src="https://example.com/large.jpg" alt="large image" />
+	<img src="https://example.com/small.jpg" alt="small image" />
+</div>
+```
+
+**Extracted attribute:**
+```js
+{
+	"images": [
+		{ "url": "https://example.com/large.jpg", "alt": "large image" },
+		{ "url": "https://example.com/small.jpg", "alt": "small image" }
+	]
+}
+```
+
+## Selectors
+
+The `selector` can be any valid CSS selector:
+
+```js
+// HTML tag
+selector: 'img'
+
+// Class
+selector: '.my-content'
+
+// ID
+selector: '#unique-element'
+
+// Nested
+selector: '.wrapper .content'
+
+// Attribute
+selector: 'img[data-type="thumbnail"]'
+```
+
+If no selector is specified, the source runs against the block's root node.
+
+## Default Values
+
+Provide default values that are used when the attribute isn't found in content:
+
+```js
+attributes: {
+	title: {
+		type: 'string',
+		default: 'Hello World',
+	},
+	count: {
+		type: 'number',
+		default: 10,
+	},
+	items: {
+		type: 'array',
+		default: [
+			{ url: 'https://example.com/1.jpg', alt: 'image 1' },
+			{ url: 'https://example.com/2.jpg', alt: 'image 2' }
+		],
+	},
+	settings: {
+		type: 'object',
+		default: {
+			width: 100,
+			height: 200,
+		},
+	},
+}
+```
+
+## Attribute Roles
+
+The `role` property designates an attribute's conceptual type:
+
+### Content Role
+
+Marks attributes as user-editable content:
+
+```js
+attributes: {
+	content: {
+		type: 'string',
+		source: 'html',
+		selector: 'p',
+		role: 'content',
+	}
+}
+```
+
+Blocks with `content` role attributes may be enabled for privileged editing in special circumstances like content-only locking.
+
+### Local Role
+
+Marks attributes as temporary and non-persistable:
+
+```js
+attributes: {
+	temporaryData: {
+		type: 'string',
+		role: 'local',
+	}
+}
+```
+
+Attributes with `local` role are ignored by the Block Serializer and never saved to post content.
+
+## Updating Attributes
+
+Use `setAttributes` to update attribute values in the editor:
+
+```js
+edit: ( { attributes, setAttributes } ) => {
+	const { title, count } = attributes;
+
+	return (
+		<div { ...useBlockProps() }>
+			<input
+				value={ title }
+				onChange={ ( e ) => setAttributes( { title: e.target.value } ) }
+			/>
+			<button onClick={ () => setAttributes( { count: count + 1 } ) }>
+				Increment: { count }
+			</button>
+		</div>
+	);
+}
+```
+
+## Save Function Requirements
+
+The block is responsible for ensuring attributes with a `source` field are saved correctly:
+
+```js
+save: ( { attributes } ) => {
+	const blockProps = useBlockProps.save();
+	return (
+		<div { ...blockProps }>
+			{/* url attribute must be in the markup */}
+			<img src={ attributes.url } />
+			{/* title and size are saved in comment delimiter automatically */}
+		</div>
+	);
+}
+```
+
+Attributes without a `source` are automatically saved in the block comment delimiter.
+
+## Complete Example
+
+```js
+import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps } from '@wordpress/block-editor';
+
+registerBlockType( 'my-plugin/book', {
+	title: 'Book',
+	category: 'widgets',
+	attributes: {
+		cover: {
+			type: 'string',
+			source: 'attribute',
+			selector: 'img',
+			attribute: 'src',
+		},
+		title: {
+			type: 'string',
+			source: 'html',
+			selector: '.book-title',
+			role: 'content',
+		},
+		author: {
+			type: 'string',
+			source: 'text',
+			selector: '.book-author',
+		},
+		pages: {
+			type: 'number',
+			default: 0,
+		},
+		genre: {
+			enum: [ 'fiction', 'non-fiction', 'mystery', 'sci-fi' ],
+			default: 'fiction',
+		},
+	},
+	edit: ( { attributes, setAttributes } ) => {
+		return (
+			<div { ...useBlockProps() }>
+				<img src={ attributes.cover } alt="" />
+				<input
+					value={ attributes.title }
+					onChange={ ( e ) => setAttributes( { title: e.target.value } ) }
+				/>
+				<input
+					value={ attributes.author }
+					onChange={ ( e ) => setAttributes( { author: e.target.value } ) }
+				/>
+			</div>
+		);
+	},
+	save: ( { attributes } ) => {
+		return (
+			<div { ...useBlockProps.save() }>
+				<img src={ attributes.cover } alt="" />
+				<h2 className="book-title">{ attributes.title }</h2>
+				<p className="book-author">{ attributes.author }</p>
+			</div>
+		);
+	},
+} );
+```
+
+## Best Practices
+
+1. **Use appropriate sources**: Store data in HTML when possible rather than comment delimiters to reduce data storage.
+
+2. **Provide defaults**: Always provide sensible default values for attributes.
+
+3. **Match save and edit**: Ensure your save function outputs the correct HTML structure for your attribute sources.
+
+4. **Type carefully**: Use the correct type for each attribute to ensure proper validation.
+
+5. **Document attributes**: Add comments to explain complex attribute structures.
+
+## Deprecated: Meta Source
+
+<Warning>
+Meta attribute sources are deprecated. Use EntityProvider and related hook APIs instead.
+</Warning>
+
+For working with post meta, see the [Create Meta Block guide](https://developer.wordpress.org/block-editor/how-to-guides/metabox/).
+
+## Related Documentation
+
+- [Block Deprecation](/blocks/block-deprecation) - Handle attribute changes over time
+- [Block Supports](/blocks/block-supports) - Auto-generated attributes
+- [Dynamic Blocks](/blocks/dynamic-blocks) - Server-side attribute handling

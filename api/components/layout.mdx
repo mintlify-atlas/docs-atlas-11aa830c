@@ -1,0 +1,406 @@
+---
+title: Layout Components
+description: Container and layout primitives for organizing content in the block editor
+---
+
+Layout components provide flexible containers and primitives for organizing content, creating structured interfaces, and managing spacing in WordPress block editor applications.
+
+## Flex Layouts
+
+### Flex
+
+Flexible box layout container for arranging items horizontally or vertically.
+
+```jsx
+import { Flex, FlexItem, FlexBlock } from '@wordpress/components';
+
+function MyFlex() {
+  return (
+    <Flex>
+      <FlexItem>Item 1</FlexItem>
+      <FlexBlock>Flexible Item</FlexBlock>
+      <FlexItem>Item 3</FlexItem>
+    </Flex>
+  );
+}
+```
+
+**Props:**
+- `direction?: 'row' | 'column'` - Flex direction
+- `align?: string` - Align items (e.g., 'center', 'flex-start')
+- `justify?: string` - Justify content (e.g., 'space-between', 'center')
+- `gap?: number` - Spacing between items
+- `wrap?: boolean` - Allow items to wrap
+
+**Sub-components:**
+- `FlexItem` - Fixed-size flex item
+- `FlexBlock` - Flexible item that fills available space
+
+[Storybook: Flex](https://wordpress.github.io/gutenberg/?path=/docs/components-flex--docs)
+
+### HStack
+
+Horizontal stack layout (flex row) with consistent spacing.
+
+```jsx
+import { HStack, Button } from '@wordpress/components';
+
+function MyHStack() {
+  return (
+    <HStack spacing={3}>
+      <Button>Cancel</Button>
+      <Button variant="primary">Save</Button>
+    </HStack>
+  );
+}
+```
+
+**Props:**
+- `spacing?: number` - Space between items (default: 2)
+- `alignment?: 'top' | 'center' | 'bottom' | 'stretch'` - Vertical alignment
+- `justify?: 'left' | 'center' | 'right' | 'space-between'` - Horizontal distribution
+
+[Storybook: HStack](https://wordpress.github.io/gutenberg/?path=/docs/components-hstack--docs)
+
+### VStack
+
+Vertical stack layout (flex column) with consistent spacing.
+
+```jsx
+import { VStack, TextControl } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+function MyForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  return (
+    <VStack spacing={4}>
+      <TextControl
+        label="Name"
+        value={name}
+        onChange={setName}
+      />
+      <TextControl
+        label="Email"
+        type="email"
+        value={email}
+        onChange={setEmail}
+      />
+    </VStack>
+  );
+}
+```
+
+**Props:**
+- `spacing?: number` - Space between items (default: 2)
+- `alignment?: 'left' | 'center' | 'right' | 'stretch'` - Horizontal alignment
+
+[Storybook: VStack](https://wordpress.github.io/gutenberg/?path=/docs/components-vstack--docs)
+
+## Grid Layouts
+
+### Grid
+
+CSS Grid layout container for two-dimensional layouts.
+
+```jsx
+import { __experimentalGrid as Grid } from '@wordpress/components';
+
+function MyGrid() {
+  return (
+    <Grid columns={3} gap={4}>
+      <div>Item 1</div>
+      <div>Item 2</div>
+      <div>Item 3</div>
+      <div>Item 4</div>
+      <div>Item 5</div>
+      <div>Item 6</div>
+    </Grid>
+  );
+}
+```
+
+**Props:**
+- `columns?: number | string` - Number of columns or template
+- `rows?: number | string` - Number of rows or template
+- `gap?: number` - Gap between items
+- `columnGap?: number` - Horizontal gap
+- `rowGap?: number` - Vertical gap
+- `align?: string` - Align items
+- `justify?: string` - Justify items
+
+## Spacing
+
+### Spacer
+
+Flexible spacing component for creating gaps between elements.
+
+```jsx
+import { Spacer } from '@wordpress/components';
+
+function MyComponent() {
+  return (
+    <div>
+      <h2>Title</h2>
+      <Spacer />
+      <p>Content with automatic spacing</p>
+    </div>
+  );
+}
+```
+
+**Props:**
+- `margin?: number | string` - Margin value
+- `marginY?: number | string` - Vertical margin
+- `marginX?: number | string` - Horizontal margin
+- `marginTop?: number | string`
+- `marginBottom?: number | string`
+- `padding?: number | string` - Padding value
+
+[Storybook: Spacer](https://wordpress.github.io/gutenberg/?path=/docs/components-spacer--docs)
+
+### Divider
+
+Visual separator between content sections.
+
+```jsx
+import { Divider } from '@wordpress/components';
+
+function MyContent() {
+  return (
+    <div>
+      <section>Section 1</section>
+      <Divider />
+      <section>Section 2</section>
+    </div>
+  );
+}
+```
+
+**Props:**
+- `margin?: number` - Margin around divider
+- `marginStart?: number` - Start margin
+- `marginEnd?: number` - End margin
+
+## Card Components
+
+### Card
+
+Flexible content container with elevation and borders.
+
+```jsx
+import {
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  __experimentalText as Text,
+  __experimentalHeading as Heading,
+} from '@wordpress/components';
+
+function MyCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <Heading level={4}>Card Title</Heading>
+      </CardHeader>
+      <CardBody>
+        <Text>Card content goes here.</Text>
+      </CardBody>
+      <CardFooter>
+        <Text>Footer information</Text>
+      </CardFooter>
+    </Card>
+  );
+}
+```
+
+**Props:**
+- `size?: 'small' | 'medium' | 'large'` - Card size
+- `elevation?: number` - Shadow depth (0-5)
+- `isBorderless?: boolean` - Remove border
+- `isRounded?: boolean` - Rounded corners
+
+**Sub-components:**
+- `CardHeader` - Card header section
+- `CardBody` - Main content area
+- `CardFooter` - Footer section
+- `CardMedia` - Media content section
+- `CardDivider` - Divider between sections
+
+[Storybook: Card](https://wordpress.github.io/gutenberg/?path=/docs/components-card--docs)
+
+## Panel Components
+
+### Panel
+
+Expandable/collapsible sections container.
+
+```jsx
+import { Panel, PanelBody, PanelRow } from '@wordpress/components';
+import { more } from '@wordpress/icons';
+
+function MyPanel() {
+  return (
+    <Panel header="Settings">
+      <PanelBody title="General" icon={more} initialOpen={true}>
+        <PanelRow>General settings content</PanelRow>
+      </PanelBody>
+      <PanelBody title="Advanced" initialOpen={false}>
+        <PanelRow>Advanced settings content</PanelRow>
+      </PanelBody>
+    </Panel>
+  );
+}
+```
+
+**Panel Props:**
+- `header?: string` - Panel header text
+- `className?: string` - Additional CSS class
+
+**PanelBody Props:**
+- `title?: string` - Section title
+- `icon?: IconType` - Title icon
+- `initialOpen?: boolean` - Initially expanded (default: false)
+- `opened?: boolean` - Controlled open state
+- `onToggle?: (opened: boolean) => void` - Toggle handler
+
+**PanelRow:**
+- Simple wrapper for panel content with consistent spacing
+
+[Storybook: Panel](https://wordpress.github.io/gutenberg/?path=/docs/components-panel--docs)
+
+## Surface Components
+
+### Surface
+
+Base surface component with elevation and borders.
+
+```jsx
+import { __experimentalSurface as Surface } from '@wordpress/components';
+
+function MySurface() {
+  return (
+    <Surface
+      elevation={2}
+      borderRadius="large"
+    >
+      <p>Content on elevated surface</p>
+    </Surface>
+  );
+}
+```
+
+### Elevation
+
+Applies shadow/elevation effects to components.
+
+```jsx
+import { __experimentalElevation as Elevation } from '@wordpress/components';
+
+function MyElevation() {
+  return (
+    <div style={{ position: 'relative' }}>
+      <Elevation value={3} />
+      <p>Content with elevation</p>
+    </div>
+  );
+}
+```
+
+## Structural Components
+
+### View
+
+Polymorphic base component for custom layouts.
+
+```jsx
+import { __experimentalView as View } from '@wordpress/components';
+
+function MyView() {
+  return (
+    <View
+      as="section"
+      className="my-section"
+    >
+      <p>Content</p>
+    </View>
+  );
+}
+```
+
+### Box
+
+Utility component for spacing and layout control.
+
+```jsx
+import { __experimentalBox as Box } from '@wordpress/components';
+
+function MyBox() {
+  return (
+    <Box
+      padding={4}
+      margin={2}
+      backgroundColor="#f0f0f0"
+    >
+      <p>Boxed content</p>
+    </Box>
+  );
+}
+```
+
+## Z-Index Management
+
+### ZStack
+
+Stacks children along the z-axis.
+
+```jsx
+import { __experimentalZStack as ZStack } from '@wordpress/components';
+
+function MyZStack() {
+  return (
+    <ZStack offset={20} isLayered>
+      <div style={{ background: 'red', width: 100, height: 100 }} />
+      <div style={{ background: 'blue', width: 100, height: 100 }} />
+      <div style={{ background: 'green', width: 100, height: 100 }} />
+    </ZStack>
+  );
+}
+```
+
+## Responsive Utilities
+
+### VisuallyHidden
+
+Hides content visually while keeping it accessible to screen readers.
+
+```jsx
+import { VisuallyHidden } from '@wordpress/components';
+
+function MyComponent() {
+  return (
+    <button>
+      <VisuallyHidden>Close menu</VisuallyHidden>
+      <span aria-hidden="true">×</span>
+    </button>
+  );
+}
+```
+
+[Storybook: VisuallyHidden](https://wordpress.github.io/gutenberg/?path=/docs/components-visuallyhidden--docs)
+
+## Container Queries
+
+Many layout components support responsive props based on container size. Check individual component documentation in Storybook for container query support.
+
+<Note>
+  Layout components are foundational primitives. Prefer using semantic layout components (HStack, VStack, Card) over generic containers (View, Box) for better code readability.
+</Note>
+
+## Resources
+
+- [Storybook: All Layout Components](https://wordpress.github.io/gutenberg/)
+- [CSS Flex Guide](https://css-tricks.com/snippets/css/a-guide-to-flexbox/)
+- [CSS Grid Guide](https://css-tricks.com/snippets/css/complete-guide-grid/)
