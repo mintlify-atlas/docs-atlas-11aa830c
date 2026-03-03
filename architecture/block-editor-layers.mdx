@@ -7,7 +7,7 @@ The Block Editor is architected as three distinct layers, each with specific res
 
 ## The Three-Layer Architecture
 
-```
+```text
 ┌─────────────────────────────────────┐
 │  @wordpress/edit-post / edit-site   │  Layer 3: Full Screen
 │  (WordPress admin screens)          │
@@ -198,7 +198,7 @@ Multiple packages can exist at this layer:
 
 **Rule:** Lower layers MUST NOT depend on higher ones.
 
-```
+```text
 ✅ Allowed:
 - edit-post → editor → block-editor
 - editor → block-editor
